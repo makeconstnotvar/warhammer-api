@@ -9,15 +9,16 @@ import (
 
 var db *gorm.DB
 
-// Faction Модель фракции
+// Модель фракции
 type Faction struct {
 	ID          uint   `gorm:"primaryKey"`
 	Name        string `gorm:"unique;not null"`
 	Description string
+	RaceID      uint
 	Characters  []Character `gorm:"foreignKey:FactionID"`
 }
 
-// Character Модель персонажа
+// Модель персонажа
 type Character struct {
 	ID          uint   `gorm:"primaryKey"`
 	Name        string `gorm:"not null"`
@@ -26,15 +27,23 @@ type Character struct {
 	FactionID   uint
 }
 
+// Модель расы
+type Race struct {
+	ID          uint   `gorm:"primaryKey"`
+	Name        string `gorm:"unique;not null"`
+	Description string
+	Factions    []Faction `gorm:"foreignKey:RaceID"`
+}
+
 // Инициализация БД
 func initDB() {
-	dsn := "host=localhost user=postgres password=yourpassword dbname=warhammer port=5432 sslmode=disable"
+	dsn := "host=localhost user=postgres password=qwerty dbname=warhammer port=5432 sslmode=disable"
 	var err error
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("Не удалось подключиться к базе данных")
 	}
-	db.AutoMigrate(&Faction{}, &Character{})
+	db.AutoMigrate(&Faction{}, &Character{}, &Race{})
 }
 
 func main() {
@@ -54,6 +63,13 @@ func main() {
 	r.GET("/characters/:id", getCharacterByID)
 	r.PUT("/characters/:id", updateCharacter)
 	r.DELETE("/characters/:id", deleteCharacter)
+
+	// Расы
+	r.GET("/races", getRaces)
+	r.POST("/races", createRace)
+	r.GET("/races/:id", getRaceByID)
+	r.PUT("/races/:id", updateRace)
+	r.DELETE("/races/:id", deleteRace)
 
 	r.Run(":8080")
 }
@@ -145,5 +161,50 @@ func updateCharacter(c *gin.Context) {
 
 func deleteCharacter(c *gin.Context) {
 	db.Delete(&Character{}, c.Param("id"))
+	c.Status(http.StatusNoContent)
+}
+
+// CRUD операции для рас
+func getRaces(c *gin.Context) {
+	var races []Race
+	db.Preload("Factions.Characters").Find(&races)
+	c.JSON(http.StatusOK, races)
+}
+
+func createRace(c *gin.Context) {
+	var race Race
+	if err := c.ShouldBindJSON(&race); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	db.Create(&race)
+	c.JSON(http.StatusCreated, race)
+}
+
+func getRaceByID(c *gin.Context) {
+	var race Race
+	if err := db.First(&race, c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Раса не найдена"})
+		return
+	}
+	c.JSON(http.StatusOK, race)
+}
+
+func updateRace(c *gin.Context) {
+	var race Race
+	if err := db.First(&race, c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Раса не найдена"})
+		return
+	}
+	if err := c.ShouldBindJSON(&race); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	db.Save(&race)
+	c.JSON(http.StatusOK, race)
+}
+
+func deleteRace(c *gin.Context) {
+	db.Delete(&Race{}, c.Param("id"))
 	c.Status(http.StatusNoContent)
 }
