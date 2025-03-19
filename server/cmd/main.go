@@ -5,35 +5,10 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"net/http"
+	"warhammer-api/internal/models"
 )
 
 var db *gorm.DB
-
-// Модель фракции
-type Faction struct {
-	ID          uint   `gorm:"primaryKey"`
-	Name        string `gorm:"unique;not null"`
-	Description string
-	RaceID      uint
-	Characters  []Character `gorm:"foreignKey:FactionID"`
-}
-
-// Модель персонажа
-type Character struct {
-	ID          uint   `gorm:"primaryKey"`
-	Name        string `gorm:"not null"`
-	Description string
-	Rank        string
-	FactionID   uint
-}
-
-// Модель расы
-type Race struct {
-	ID          uint   `gorm:"primaryKey"`
-	Name        string `gorm:"unique;not null"`
-	Description string
-	Factions    []Faction `gorm:"foreignKey:RaceID"`
-}
 
 // Инициализация БД
 func initDB() {
@@ -205,6 +180,6 @@ func updateRace(c *gin.Context) {
 }
 
 func deleteRace(c *gin.Context) {
-	db.Delete(&Race{}, c.Param("id"))
+	db.Delete(&models.Race{}, c.Param("id"))
 	c.Status(http.StatusNoContent)
 }
