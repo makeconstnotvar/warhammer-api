@@ -1,0 +1,49 @@
+# Исполняемые файлы и бинарники
+*.exe
+*.out
+*.o
+*.a
+*.so
+*.dll
+
+# Скомпилированные бинарники
+/bin/
+/build/
+/dist/
+
+# Кеш Go-модулей
+/pkg/
+*.test
+*.prof
+
+# Файлы IDE и редакторов
+.vscode/
+.idea/
+*.iml
+
+# Логи и временные файлы
+*.log
+*.tmp
+*.swp
+*.swo
+*.DS_Store
+
+# Переменные окружения и конфиденциальные файлы
+.env
+.env.local
+.env.production
+.env.development
+
+# Go-модули (их лучше скачивать через `go mod tidy`)
+/vendor/
+
+# Кеши зависимостей (не нужны, если используешь `go mod`)
+go.sum
+go.work
+
+# Кеши тестов
+*.cover
+
+# Docker и контейнерные файлы
+docker-compose.override.yml
+.dockerignore
