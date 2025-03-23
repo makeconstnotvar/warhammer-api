@@ -24,7 +24,7 @@ func NewFactionRepository(db *gorm.DB) FactionRepository {
 
 func (r *FactionRepo) GetAll() ([]models.Faction, error) {
 	var factions []models.Faction
-	result := r.db.Preload("Characters").Find(&factions)
+	result := r.db. /*.Preload("Characters")*/ Find(&factions)
 	if result.Error != nil {
 		return nil, result.Error
 	}

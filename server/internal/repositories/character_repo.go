@@ -23,24 +23,24 @@ func NewCharacterRepository(db *gorm.DB) CharacterRepository {
 }
 
 func (r *CharacterRepo) GetAll() ([]models.Character, error) {
-	var factions []models.Character
-	result := r.db.Preload("Characters").Find(&factions)
+	var characters []models.Character
+	result := r.db.Find(&characters)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	return factions, nil
+	return characters, nil
 }
 
 func (r *CharacterRepo) GetById(id int) (*models.Character, error) {
-	var faction models.Character
-	result := r.db.Preload("Characters").First(&faction, id)
+	var character models.Character
+	result := r.db.First(&character, id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, nil // если запись не найдена
 		}
 		return nil, result.Error
 	}
-	return &faction, nil
+	return &character, nil
 }
 
 func (r *CharacterRepo) Create(data *models.Character) (*models.Character, error) {
@@ -52,16 +52,16 @@ func (r *CharacterRepo) Create(data *models.Character) (*models.Character, error
 }
 
 func (r *CharacterRepo) Update(data *models.Character) (*models.Character, error) {
-	var faction models.Character
-	result := r.db.First(&faction, data.ID)
+	var character models.Character
+	result := r.db.First(&character, data.ID)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	result = r.db.Model(&faction).Updates(data)
+	result = r.db.Model(&character).Updates(data)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	return &faction, nil
+	return &character, nil
 }
 
 func (r *CharacterRepo) Delete(id int) error {

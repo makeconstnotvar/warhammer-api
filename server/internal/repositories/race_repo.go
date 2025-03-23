@@ -22,7 +22,7 @@ func NewRaceRepository(db *gorm.DB) RaceRepository {
 
 func (r *RaceRepo) GetAll() ([]models.Race, error) {
 	var races []models.Race
-	result := r.db.Preload("Factions.Characters").Find(&races)
+	result := r.db. /*.Preload("Factions.Characters")*/ Find(&races)
 	if result.Error != nil {
 		return nil, result.Error
 	}

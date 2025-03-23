@@ -6,5 +6,5 @@ type Character struct {
 	Name        string `gorm:"not null"`
 	Description string
 	Rank        string
-	FactionID   uint
+	FactionID   uint `gorm:"not null"`
 }
