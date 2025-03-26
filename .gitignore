@@ -1,49 +1,60 @@
-# Исполняемые файлы и бинарники
-*.exe
-*.out
-*.o
-*.a
-*.so
-*.dll
+# Зависимости
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+yarn.lock
 
-# Скомпилированные бинарники
-/bin/
-/build/
+# Переменные окружения
+#.env
+#.env.local
+#.env.development
+#.env.test
+#.env.production
+#server/.env
+
+# Сборки
 /dist/
+/build/
+/out/
 
-# Кеш Go-модулей
-/pkg/
-*.test
-*.prof
+# Директория покрытия тестами
+/coverage/
+
+# Логи
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Файлы IDE и редакторов
-.vscode/
 .idea/
-*.iml
-
-# Логи и временные файлы
-*.log
-*.tmp
+.vscode/
 *.swp
 *.swo
-*.DS_Store
+*.sublime-*
+.DS_Store
+.project
+.classpath
+.settings/
+*.iml
 
-# Переменные окружения и конфиденциальные файлы
-server/.env
-.env.local
-.env.production
-.env.development
+# Временные директории
+.tmp/
+.temp/
+.cache/
 
-# Go-модули (их лучше скачивать через `go mod tidy`)
-/vendor/
+# Кэш npm
+.npm
 
-# Кеши зависимостей (не нужны, если используешь `go mod`)
-go.sum
-go.work
+# Кэш eslint
+.eslintcache
 
-# Кеши тестов
-*.cover
-
-# Docker и контейнерные файлы
+# Docker файлы
 docker-compose.override.yml
 .dockerignore
+
+# Разное
+.DS_Store
+Thumbs.db
