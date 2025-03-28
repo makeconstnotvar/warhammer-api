@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const config = require('./config');
 const { apiRoutes} = require('./routes');
-
+const helmet = require('helmet');
+const morgan = require('morgan');
 
 // Создание приложения Express
 const app = express();
@@ -15,6 +16,8 @@ app.use((req, res, next) => {
 
 // Настройка CORS
 app.use(cors());
+app.use(helmet());
+app.use(morgan('combined'));
 
 // Поддержка JSON
 app.use(express.json());
