@@ -5,7 +5,7 @@ const pool = new Pool({
     host: config.database.host,
     user: config.database.user,
     password: config.database.password,
-    database:  config.database.host   ,
+    database:  config.database.name   ,
     port: config.database.port,
 });
 
