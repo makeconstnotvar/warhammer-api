@@ -1,29 +1,20 @@
-const {Pool} = require('pg');
-const config = require('./config');
+const { Pool } = require('pg');
+const config = require("./config");
 
-class Database {
-    constructor() {
-        this.pool = new Pool({
-            host: config.database.host,
-            port: config.database.port,
-            user: config.database.user,
-            password: config.database.password,
-            database: config.database.name
-        });
-    }
+const pool = new Pool({
+    host: config.database.host,
+    user: config.database.user,
+    password: config.database.password,
+    database:  config.database.host   ,
+    port: config.database.port,
+});
 
-    async query(text, params) {
-        const start = Date.now();
-        const result = await this.pool.query(text, params);
-        const duration = Date.now() - start;
-        console.log(`Executed query: ${text}, Duration: ${duration}ms, Rows: ${result.rowCount}`);
-        return result;
-    }
+pool.on('connect', () => {
+    console.log('Подключение к базе данных установлено');
+});
 
-    async getClient() {
-        const client = await this.pool.connect();
-        return client;
-    }
-}
+pool.on('error', (err) => {
+    console.error('Ошибка подключения к базе данных:', err);
+});
 
-module.exports = new Database();
+module.exports = pool;
