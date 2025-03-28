@@ -1,29 +1,35 @@
-function setupRouter(fastify, raceHandler, factionHandler, characterHandler) {
-    // Регистрируем все маршруты с общим префиксом /api
-    fastify.register((instance, opts, done) => {
-        // Фракции
-        instance.get('/factions', factionHandler.getAll);
-        instance.post('/factions', factionHandler.create);
-        instance.get('/factions/:id', factionHandler.getById);
-        instance.put('/factions/:id', factionHandler.update);
-        instance.delete('/factions/:id', factionHandler.delete);
+const express = require('express');
+const {factionHandler} = require("./handlers/factionHandler");
+const {characterHandler} = require("./handlers/characterHandler");
+const {raceHandler} = require("./handlers/raceHandler");
 
-        // Персонажи
-        instance.get('/characters', characterHandler.getAll);
-        instance.post('/characters', characterHandler.create);
-        instance.get('/characters/:id', characterHandler.getById);
-        instance.put('/characters/:id', characterHandler.update);
-        instance.delete('/characters/:id', characterHandler.delete);
+// Фракции
+const apiRoutes = express.Router();
 
-        // Расы
-        instance.get('/races', raceHandler.getAll);
-        instance.post('/races', raceHandler.create);
-        instance.get('/races/:id', raceHandler.getById);
-        instance.put('/races/:id', raceHandler.update);
-        instance.delete('/races/:id', raceHandler.delete);
+apiRoutes.get('/factions', factionHandler.getAll);
+apiRoutes.post('/factions', factionHandler.create);
+apiRoutes.get('/factions/:id', factionHandler.getById);
+apiRoutes.put('/factions/:id', factionHandler.update);
+apiRoutes.delete('/factions/:id', factionHandler.delete);
 
-        done();
-    }, { prefix: '/api' });
-}
+// Персонажи
+apiRoutes.get('/characters', characterHandler.getAll);
+apiRoutes.post('/characters', characterHandler.create);
+apiRoutes.get('/characters/:id', characterHandler.getById);
+apiRoutes.put('/characters/:id', characterHandler.update);
+apiRoutes.delete('/characters/:id', characterHandler.delete);
 
-module.exports = { setupRouter };
+// Расы
+apiRoutes.get('/races', raceHandler.getAll);
+apiRoutes.post('/races', raceHandler.create);
+apiRoutes.get('/races/:id', raceHandler.getById);
+apiRoutes.put('/races/:id', raceHandler.update);
+apiRoutes.delete('/races/:id', raceHandler.delete);
+
+apiRoutes.use((err, req, res, next) => {
+    console.error(err);
+    res.status(500).json({error: 'Internal Server Error'});
+});
+
+
+module.exports = {apiRoutes};

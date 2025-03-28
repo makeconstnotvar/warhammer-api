@@ -1,4 +1,4 @@
-const db = require('../database/db');
+const db = require('../db');
 const Race = require('../models/raceModel');
 
 class RaceRepository {

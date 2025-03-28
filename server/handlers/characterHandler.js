@@ -1,57 +1,55 @@
 const characterService = require('../services/characterService');
-const Character = require('../models/characterModel');
 
-class CharacterHandler {
-	async getAll(request, reply) {
+const characterHandler = {
+	async getAll(req, res, next) {
 		try {
 			const characters = await characterService.getAll();
-			return characters; // В Fastify можно просто вернуть данные
+			res.json(characters);
 		} catch (error) {
-			reply.code(500).send({ error: error.message });
+			next(error);
 		}
-	}
+	},
 
-	async getById(request, reply) {
+	async getById(req, res, next) {
 		try {
-			const { id } = request.params;
+			const { id } = req.params;
 			const character = await characterService.getById(id);
-			return character;
+			res.json(character);
 		} catch (error) {
-			reply.code(404).send({ error: error.message });
+			next(error);
 		}
-	}
+	},
 
-	async create(request, reply) {
+	async create(req, res, next) {
 		try {
-			const characterData = request.body;
+			const characterData = req.body;
 			const character = await characterService.create(characterData);
-			reply.code(201);
-			return character;
+			res.status(201).json(character);
 		} catch (error) {
-			reply.code(400).send({ error: error.message });
+			next(error);
 		}
-	}
+	},
 
-	async update(request, reply) {
+	async update(req, res, next) {
 		try {
-			const { id } = request.params;
-			const characterData = request.body;
+			const { id } = req.params;
+			const characterData = req.body;
 			const updated = await characterService.update(id, characterData);
-			return updated;
+			res.json(updated);
 		} catch (error) {
-			reply.code(404).send({ error: error.message });
+			next(error);
 		}
-	}
+	},
 
-	async delete(request, reply) {
+	async delete(req, res, next) {
 		try {
-			const { id } = request.params;
+			const { id } = req.params;
 			const deleted = await characterService.delete(id);
-			return deleted;
+			res.json(deleted);
 		} catch (error) {
-			reply.code(404).send({ error: error.message });
+			next(error);
 		}
 	}
 }
 
-module.exports = new CharacterHandler();
+module.exports = {characterHandler};

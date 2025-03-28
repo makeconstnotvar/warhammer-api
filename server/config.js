@@ -1,7 +1,7 @@
 const dotenv = require('dotenv');
 
 // Загрузка переменных окружения из .env файла
-dotenv.config({path: './server/.env'})
+dotenv.config({path: '../.env'})
 
 const config = {
     database: {

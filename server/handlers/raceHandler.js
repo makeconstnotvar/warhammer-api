@@ -1,56 +1,68 @@
 const raceService = require('../services/raceService');
 
-class RaceHandler {
-	async getAll(request, reply) {
+const raceHandler =  {
+	async getAll(req, res, next) {
 		try {
 			const races = await raceService.getAll();
-			return races;
+			res.json(races);
 		} catch (error) {
-			reply.code(500).send({ error: error.message });
+			next(error);
 		}
-	}
+	},
 
-	async getById(request, reply) {
+	async getById(req, res, next) {
 		try {
-			const { id } = request.params;
+			const { id } = req.params;
 			const race = await raceService.getById(id);
-			return race;
+			if (!race) {
+				res.status(404).json({ error: 'Race not found' });
+			} else {
+				res.json(race);
+			}
 		} catch (error) {
-			reply.code(404).send({ error: error.message });
+			next(error);
 		}
-	}
+	},
 
-	async create(request, reply) {
+	async create(req, res, next) {
 		try {
-			const raceData = request.body;
+			const raceData = req.body;
 			const race = await raceService.create(raceData);
-			reply.code(201);
-			return race;
+			res.status(201).json(race);
 		} catch (error) {
-			reply.code(400).send({ error: error.message });
+			res.status(400).json({ error: error.message });
 		}
-	}
+	},
 
-	async update(request, reply) {
+	async update(req, res, next) {
 		try {
-			const { id } = request.params;
-			const raceData = request.body;
+			const { id } = req.params;
+			const raceData = req.body;
 			const updated = await raceService.update(id, raceData);
-			return updated;
+			if (!updated) {
+				res.status(404).json({ error: 'Race not found' });
+			} else {
+				res.json(updated);
+			}
 		} catch (error) {
-			reply.code(404).send({ error: error.message });
+			next(error);
+		}
+	},
+
+	async delete(req, res, next) {
+		try {
+			const { id } = req.params;
+			const deleted = await raceService.delete(id);
+			if (!deleted) {
+				res.status(404).json({ error: 'Race not found' });
+			} else {
+				res.json(deleted);
+			}
+		} catch (error) {
+			next(error);
 		}
 	}
 
-	async delete(request, reply) {
-		try {
-			const { id } = request.params;
-			const deleted = await raceService.delete(id);
-			return deleted;
-		} catch (error) {
-			reply.code(404).send({ error: error.message });
-		}
-	}
 }
 
-module.exports = new RaceHandler();
+module.exports = {raceHandler};

@@ -1,56 +1,68 @@
 const factionService = require('../services/factionService');
 
-class FactionHandler {
-	async getAll(request, reply) {
+const factionHandler = {
+	async getAll(req, res, next) {
 		try {
 			const factions = await factionService.getAll();
-			return factions;
+			res.json(factions);
 		} catch (error) {
-			reply.code(500).send({ error: error.message });
+			next(error);
 		}
-	}
+	},
 
-	async getById(request, reply) {
+	async getById(req, res, next) {
 		try {
-			const { id } = request.params;
+			const { id } = req.params;
 			const faction = await factionService.getById(id);
-			return faction;
+			if (!faction) {
+				res.status(404).json({ error: 'Faction not found' });
+			} else {
+				res.json(faction);
+			}
 		} catch (error) {
-			reply.code(404).send({ error: error.message });
+			next(error);
 		}
-	}
+	},
 
-	async create(request, reply) {
+	async create(req, res, next) {
 		try {
-			const factionData = request.body;
+			const factionData = req.body;
 			const faction = await factionService.create(factionData);
-			reply.code(201);
-			return faction;
+			res.status(201).json(faction);
 		} catch (error) {
-			reply.code(400).send({ error: error.message });
+			res.status(400).json({ error: error.message });
 		}
-	}
+	},
 
-	async update(request, reply) {
+	async update(req, res, next) {
 		try {
-			const { id } = request.params;
-			const factionData = request.body;
+			const { id } = req.params;
+			const factionData = req.body;
 			const updated = await factionService.update(id, factionData);
-			return updated;
+			if (!updated) {
+				res.status(404).json({ error: 'Faction not found' });
+			} else {
+				res.json(updated);
+			}
 		} catch (error) {
-			reply.code(404).send({ error: error.message });
+			next(error);
+		}
+	},
+
+	async delete(req, res, next) {
+		try {
+			const { id } = req.params;
+			const deleted = await factionService.delete(id);
+			if (!deleted) {
+				res.status(404).json({ error: 'Faction not found' });
+			} else {
+				res.json(deleted);
+			}
+		} catch (error) {
+			next(error);
 		}
 	}
 
-	async delete(request, reply) {
-		try {
-			const { id } = request.params;
-			const deleted = await factionService.delete(id);
-			return deleted;
-		} catch (error) {
-			reply.code(404).send({ error: error.message });
-		}
-	}
 }
 
-module.exports = new FactionHandler();
+module.exports = {factionHandler};
