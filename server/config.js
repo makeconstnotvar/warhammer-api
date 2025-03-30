@@ -8,7 +8,7 @@ const config = {
         name: process.env.DB_NAME || 'warhammer',
     },
     server: {
-        port: parseInt(process.env.PORT || 8080)
+        port: parseInt(process.env.PORT || 3000)
     }
 };
 

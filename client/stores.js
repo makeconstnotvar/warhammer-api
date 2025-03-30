@@ -1,6 +1,7 @@
 import {FactionStore} from './stores/FactionStore';
 
-export const stores = {
+const stores = {
     $factionStore: new FactionStore(),
-};
+}
+
 export {stores}

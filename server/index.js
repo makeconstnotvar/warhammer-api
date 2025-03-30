@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const morgan = require('morgan');
 const helmet = require('helmet');
@@ -16,7 +17,13 @@ app.use(helmet());
 app.use(express.json());
 app.use('/api', apiRoutes)
 // Настройка маршрутов
+const distPath = path.join(__dirname, '../client/dist');
+app.use(express.static(distPath));
 
+// Fallback для SPA
+app.get('/', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+});
 // Запуск сервера
 app.use((err, req, res, next) => {
     console.error(err.stack);

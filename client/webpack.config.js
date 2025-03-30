@@ -1,36 +1,52 @@
 const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  mode: process.env.NODE_ENV || 'development',
-
+  mode: 'development', // или 'production' для билда
   entry: './client/index.js',
-
   output: {
-    path: path.resolve(__dirname, 'dist'), filename: 'bundle.js', publicPath: '/'
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'bundle.[contenthash].js',
+    clean: true,
   },
-
+  resolve: {
+    extensions: ['.js', '.jsx'],
+    alias: {
+      react: 'preact/compat',
+      'react-dom': 'preact/compat',
+    },
+  },
   module: {
     rules: [
       {
-        test: /\.(js|jsx)$/,
-        include: path.resolve(__dirname),
+        test: /\.jsx?$/,
         exclude: /node_modules/,
         use: {
-          loader: 'babel-loader', options: {
-            presets: ['@babel/preset-env', '@babel/preset-react']
-          }
-        }
+          loader: 'babel-loader',
+          options: {
+            presets: [
+              //['@babel/preset-env'],
+              ['@babel/preset-react', { runtime: 'automatic', importSource: 'preact' }],
+            ],
+            plugins: [
+              ['@babel/plugin-proposal-decorators', { legacy: true }],
+              ['@babel/plugin-proposal-class-properties', { loose: true }],
+            ],
+          },
+        },
       },
-      {
-        test: /\.css$/, use: ['style-loader', 'css-loader']
-      }]
+    ],
   },
-
-  resolve: {
-    extensions: ['.js', '.jsx']
-  },
-
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: './client/index.html',
+      inject: 'body',
+    }),
+  ],
+  devtool: 'source-map',
   devServer: {
-    static: path.join(__dirname, 'dist'), historyApiFallback: true, port: 3000, open: true
-  }
+    static: path.join(__dirname, 'dist'),
+    port: 8080,
+    historyApiFallback: true,
+  },
 };

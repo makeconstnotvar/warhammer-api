@@ -1,14 +1,10 @@
-import { makeAutoObservable } from 'mobx';
+import {action, makeAutoObservable, observable} from 'mobx';
 
 class FactionStore {
-    factions = [];
-    error = null;
+    @observable factions = [];
+    @observable  error = null;
 
-    constructor() {
-        makeAutoObservable(this);
-        this.fetchFactions();
-    }
-
+    @action
     async fetchFactions() {
         try {
             const response = await fetch('/api/factions');

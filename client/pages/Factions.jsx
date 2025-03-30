@@ -1,19 +1,20 @@
 import {h} from 'preact';
-import {inject, observer} from "mobx-react";
+import {observer} from "mobx-react-lite";
+import {stores} from '../stores'
 
-const FactionList = observer(inject('$factionStore')((props) => {
-    const {$factionStore} = props;
-    return (
-        <div>
-            <h2>Factions</h2>
-            {$factionStore.error && <p>Error: {$factionStore.error}</p>}
-            <ul>
-                {$factionStore.factions.map(faction => (
-                    <li key={faction.id}>{faction.name}</li>
-                ))}
-            </ul>
-        </div>
-    )
-}));
+const FactionList = observer((props) => {
+  const {$factionStore} = stores;
+  return (
+    <div>
+      <h2>Factions</h2>
+      {$factionStore.error && <p>Error: {$factionStore.error}</p>}
+      <ul>
+        {$factionStore.factions.map(faction => (
+          <li key={faction.id}>{faction.name}</li>
+        ))}
+      </ul>
+    </div>
+  )
+});
 
 export {FactionList};
