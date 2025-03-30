@@ -1,6 +1,10 @@
-import {action, observable} from 'mobx';
+import {action, makeObservable, observable} from 'mobx';
 
 class FactionStore {
+  constructor() {
+    makeObservable(this)
+  }
+
   @observable data = [];
   @observable error = null;
 
