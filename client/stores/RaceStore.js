@@ -1,12 +1,12 @@
 import {action, observable} from 'mobx';
 
-class FactionStore {
+class RaceStore {
   @observable data = [];
   @observable error = null;
 
   @action
   fetchData() {
-    const response = fetch('/api/factions')
+    const response = fetch('/api/races/')
       .then((response) => response.json()).then((data) => {
         this.data = data;
       })
@@ -16,4 +16,4 @@ class FactionStore {
   }
 }
 
-export {FactionStore};
+export {RaceStore};

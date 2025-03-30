@@ -16,7 +16,7 @@
   "scripts": {
     "server": "node server/index.js",
     "server-watch": "nodemon server/index.js",
-    "client": "webpack serve --config client/webpack.config.js --mode development",
+    "client-watch": "webpack --watch --config client/webpack.config.js",
     "build": "webpack --config client/webpack.config.js --mode development"
   },
   "dependencies": {
@@ -26,7 +26,7 @@
     "helmet": "^8.1.0",
     "morgan": "^1.10.0",
     "pg": "^8.14.1",
-    "preact-router": "^4.1.2"
+    "preact-iso": "^2.9.1"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",

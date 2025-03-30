@@ -25,12 +25,11 @@ module.exports = {
           loader: 'babel-loader',
           options: {
             presets: [
-              //['@babel/preset-env'],
-              ['@babel/preset-react', { runtime: 'automatic', importSource: 'preact' }],
+              ['@babel/preset-react', {runtime: 'automatic', importSource: 'preact'}],
             ],
             plugins: [
-              ['@babel/plugin-proposal-decorators', { legacy: true }],
-              ['@babel/plugin-proposal-class-properties', { loose: true }],
+              ['@babel/plugin-proposal-decorators', {legacy: true}],
+              ['@babel/plugin-proposal-class-properties', {loose: true}],
             ],
           },
         },
