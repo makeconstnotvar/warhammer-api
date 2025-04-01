@@ -5,8 +5,8 @@ class FactionStore {
     makeObservable(this)
   }
 
-  @observable data = [];
-  @observable error = null;
+  @observable accessor data = [];
+  @observable accessor error = null;
 
   @action
   fetchData() {

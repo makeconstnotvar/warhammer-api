@@ -28,8 +28,8 @@ module.exports = {
               ['@babel/preset-react', {runtime: 'automatic', importSource: 'preact'}],
             ],
             plugins: [
-              ['@babel/plugin-proposal-decorators', {legacy: true}],
-              ['@babel/plugin-proposal-class-properties', {loose: true}],
+              ['@babel/plugin-proposal-decorators', {version: '2023-05'}]
+
             ],
           },
         },
