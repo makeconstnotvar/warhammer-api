@@ -1,23 +1,8 @@
-import {action, makeObservable, observable} from 'mobx';
+import BaseStore from "./BaseStore";
+import {factionsApi} from "../api/factionsApi";
 
-class FactionStore {
-  constructor() {
-    makeObservable(this)
-  }
-
-  @observable accessor data = [];
-  @observable accessor error = null;
-
-  @action
-  fetchData() {
-    const response = fetch('/api/factions')
-      .then((response) => response.json()).then((data) => {
-        this.data = data;
-      })
-      .catch((error) => {
-        this.error = error.message;
-      });
-  }
+class FactionStore extends BaseStore {
+  fetchMethod = factionsApi.getFactions
 }
 
 export {FactionStore};
