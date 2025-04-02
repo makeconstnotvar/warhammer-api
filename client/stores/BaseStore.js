@@ -19,14 +19,6 @@ class BaseStore {
     throw 'Не задан fetchMethod';
   };
 
-  fetchItemMethod = function (params, executor) {
-    throw 'Не задан fetchMethod';
-  };
-
-  saveMethod = function (params) {
-    throw 'Не задан saveMethod';
-  };
-
   fetchFailed = e => {
 
   };
@@ -34,21 +26,16 @@ class BaseStore {
   fetchSuccess = response => {
   };
 
-  fetchItemSuccess = response => {
-    this.data = response;
-  };
-
-  saveSuccess = response => {
-
-  };
-
-  saveFailed = error => {
-
-  };
-
-  syncItems = store => {
-  };
-
+  @action
+  @action reset() {
+    this.data = [];
+    this.total = 0;
+    this.fetchProgress = false;
+    this.fetchError = false;
+    this.fetchDone = false;
+    this.fetchErrorText = '';
+    this.noResults = false;
+  }
 
   // Общая функциональность для получения данных
   @action fetchData(params) {
@@ -92,106 +79,6 @@ class BaseStore {
           this.fetchProgress = false;
         }
       }));
-  }
-
-
-  @action
-  async getById(id) {
-    try {
-      this.isLoading = true;
-      this.error = null;
-
-      const response = await axios.get(`/api/${this.endpoint}/${id}`);
-      this.selected = this.transformResponseData(response.data);
-
-      return this.selected;
-    } catch (error) {
-      this.error = error.response?.data?.message || error.message;
-      throw error;
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
-  @action
-  async create(itemData) {
-    try {
-      this.isLoading = true;
-      this.error = null;
-
-      const preparedData = this.prepareRequestData(itemData);
-
-      const response = await axios.post(`/api/${this.endpoint}`, preparedData);
-      const newItem = this.transformResponseData(response.data);
-      this.data.push(newItem);
-
-      return newItem;
-    } catch (error) {
-      this.error = error.response?.data?.message || error.message;
-      throw error;
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
-  @action
-  async update(id, itemData) {
-    try {
-      this.isLoading = true;
-      this.error = null;
-
-      const preparedData = this.prepareRequestData(itemData);
-
-      const response = await axios.put(`/api/${this.endpoint}/${id}`, preparedData);
-      const updatedItem = this.transformResponseData(response.data);
-
-      // Обновляем элемент в массиве data
-      const index = this.data.findIndex(item => item.id === id);
-      if (index !== -1) {
-        this.data[index] = updatedItem;
-      }
-
-      return updatedItem;
-    } catch (error) {
-      this.error = error.response?.data?.message || error.message;
-      throw error;
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
-  @action
-  async delete(id) {
-    try {
-      this.isLoading = true;
-      this.error = null;
-
-      await axios.delete(`/api/${this.endpoint}/${id}`);
-
-      // Удаляем элемент из массива data
-      this.data = this.data.filter(item => item.id !== id);
-
-      return id;
-    } catch (error) {
-      this.error = error.response?.data?.message || error.message;
-      throw error;
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
-  // Дополнительные утилитарные методы
-  @action
-  resetError() {
-    this.error = null;
-  }
-
-  @action
-  reset() {
-    this.data = [];
-    this.isLoading = false;
-    this.error = null;
-    this.selected = null;
   }
 }
 

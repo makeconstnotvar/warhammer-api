@@ -1,7 +1,8 @@
-import BaseStore from "./BaseStore";
 import {racesApi} from "../api/racesApi";
+import {withFetchArray} from "./utils/fetchArray";
 
-class RaceStore extends BaseStore {
+@withFetchArray
+class RaceStore  {
   fetchMethod = racesApi.getRaces
 }
 
