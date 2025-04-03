@@ -3,18 +3,19 @@ import {observer} from "mobx-react-lite";
 import {stores} from '../stores'
 import {useEffect} from "preact/hooks";
 
+
 const FactionList = observer(props => {
-  const {$factionStore} = stores;
+  const {$factionsStore} = stores;
   useEffect(() => {
-    $factionStore.fetchData()
+    $factionsStore.fetchData()
   }, []);
   return (
     <div>
       <h2>Фракции</h2>
-      {$factionStore.error && <p>Error: {$factionStore.error}</p>}
+      {$factionsStore.error && <p>Error: {$factionsStore.error}</p>}
       <ul>
         {
-          $factionStore.data.map(faction => (
+          $factionsStore.data.map(faction => (
             <li key={faction.id}>{faction.name}</li>
           ))
         }

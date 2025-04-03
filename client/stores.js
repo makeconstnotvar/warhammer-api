@@ -1,11 +1,13 @@
-import {FactionStore} from './stores/FactionStore';
-import {RaceStore} from "./stores/RaceStore";
-import {CharacterStore} from "./stores/CharacterStore";
+import {FactionsStore} from './stores/factionsStore';
+import {RacesStore} from "./stores/racesStore";
+import {CharactersStore} from "./stores/charactersStore";
+import {RaceStore} from "./stores/raceStore";
 
 const stores = {
-    $factionStore: new FactionStore(),
+    $factionsStore: new FactionsStore(),
+    $racesStore: new RacesStore(),
     $raceStore: new RaceStore(),
-    $characterStore: new CharacterStore(),
+    $charactersStore: new CharactersStore(),
 }
 
 export {stores}

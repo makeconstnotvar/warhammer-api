@@ -4,18 +4,20 @@ import {stores} from '../stores'
 import {useEffect} from "preact/hooks";
 
 const CharacterList = observer(props => {
+  const {$charactersStore} = stores;
+
   useEffect(() => {
-    $characterStore.fetchData()
+    $charactersStore.fetchData()
   }, []);
 
-  const {$characterStore} = stores;
+
   return (
     <div>
       <h2>Персонажи</h2>
-      {$characterStore.error && <p>Error: {$characterStore.error}</p>}
+      {$charactersStore.error && <p>Error: {$charactersStore.error}</p>}
       <ul>
         {
-          $characterStore.data.map(item => (
+          $charactersStore.data.map(item => (
             <li key={item.id}>{item.name}</li>
           ))
         }

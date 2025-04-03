@@ -1,82 +1,82 @@
 import {action, observable} from "mobx";
-import {isPermitted} from "../permissions";
+import {deepCopy, fetchArray, fetchOject} from "./functions";
 
-function createDecorator(prefix = 'fetch', options = {}) {
-  return function (target) {
-    return class extends target {
-      executor = {cancel: null};
-      @observable accessor data = [];
-      @observable accessor fetchProgress = false;
-      @observable accessor fetchError = false;
-      @observable accessor fetchDone = false;
-      @observable accessor fetchErrorText = '';
-      @observable accessor total = 0;
+// Создаем декоратор, который добавляет родительский класс с общей функциональностью
+function createDecorator(prefix = 'fetch', fetchData, defaultData = [], options = {}) {
+  // Определяем базовый класс, который будет родителем для целевого класса
+  const BaseStoreClass = class {
+    executor = {cancel: null};
+    defaultData = deepCopy(defaultData);
+    @observable accessor data = deepCopy(this.defaultData);
+    @observable accessor fetchProgress = false;
+    @observable accessor fetchError = false;
+    @observable accessor fetchDone = false;
+    @observable accessor fetchErrorText = '';
+    @observable accessor total = 0;
 
-      fetchDataAdapter = options.fetchDataAdapter || function (response) {
-        return {data: response, total: response.length};
-      };
+    fetchDataAdapter = options.fetchDataAdapter || function (response) {
+      return {data: response, total: response.length};
+    };
+    fetchMethod = options.fetchMethod || function (params, executor) {
+      throw 'Не задан fetchMethod';
+    };
+    fetchFailed = options.fetchFailed || function (e) {
+    };
+    fetchSuccess = options.fetchSuccess || function (response) {
+    };
+    checkPermissions = options.checkPermissions || function (e) {
+    };
+    checkNavigation = options.checkNavigation || function (e) {
+    };
+    logError = options.logError || function (e) {
+      console.log(e)
+    };
+    reset = options.reset || action(() => {
+      this.data = deepCopy(this.defaultData);
+      this.total = 0;
+      this.fetchProgress = false;
+      this.fetchError = false;
+      this.fetchDone = false;
+      this.fetchErrorText = '';
+    })
 
-      fetchMethod = options.fetchMethod || function (params, executor) {
-        throw 'Не задан fetchMethod';
-      };
+    @action fetchData = fetchData.bind(this)
+  };
 
-      fetchFailed = options.fetchFailed || function (e) {};
+  return function (TargetClass) {
+    // Создаем промежуточный класс с конструктором
+    const MixedClass = class extends BaseStoreClass {
+      constructor(...args) {
+        super(...args);
 
-      fetchSuccess = options.fetchSuccess || function(response) {};
+        // Создаем временный экземпляр целевого класса, чтобы получить доступ к свойствам
+        const tempInstance = new TargetClass(...args);
 
-      reset = options.reset || action(() => {
-        this.data = [];
-        this.total = 0;
-        this.fetchProgress = false;
-        this.fetchError = false;
-        this.fetchDone = false;
-        this.fetchErrorText = '';
-      })
-
-      // Общая функциональность для получения данных
-      @action fetchData(params) {
-        if (this.executor.cancel) {
-          this.executor.cancel('user cancel');
-        }
-
-        this.fetchProgress = true;
-        this.fetchError = false;
-        this.fetchErrorText = '';
-        this.fetchDone = false;
-        let fetchCancel = false;
-
-        return this.fetchMethod(params, this.executor)
-          .then(action(response => {
-            this.fetchDone = true;
-            response = this.fetchDataAdapter(response);
-            this.data = response?.data || [];
-            this.total = response?.total || 0;
-            this.fetchSuccess(response);
-          }))
-          .catch(action(e => {
-            if (e.message == 'user cancel') {
-              fetchCancel = true;
-              return;
-            }
-
-            this.fetchError = true;
-            if (isPermitted(e?.response?.data?.code)) {
-              this.fetchErrorText = e.response.data.message;
-            }
-
-            this.fetchFailed(e);
-            if (e.uri) {
-              //navigate(e.uri);
-            }
-            console.error(e);
-          }))
-          .finally(action(() => {
-            if (!fetchCancel) {
-              this.fetchProgress = false;
-            }
-          }));
+        // Копируем все свойства экземпляра
+        Object.keys(tempInstance).forEach(key => {
+          // Если свойство переопределяет метод базового класса, копируем его
+          this[key] = tempInstance[key];
+        });
       }
-    }
-  }
+    };
+
+    // Копируем все методы из прототипа TargetClass
+    Object.getOwnPropertyNames(TargetClass.prototype).forEach(prop => {
+      if (prop !== 'constructor') {
+        MixedClass.prototype[prop] = TargetClass.prototype[prop];
+      }
+    });
+
+    // Копируем статические свойства из TargetClass
+    Object.getOwnPropertyNames(TargetClass).forEach(prop => {
+      if (prop !== 'prototype' && prop !== 'name' && prop !== 'length') {
+        MixedClass[prop] = TargetClass[prop];
+      }
+    });
+
+    return MixedClass;
+  };
 }
-export const withFetchArray = createDecorator();
+
+export const withFetchArray = createDecorator('fetch', fetchArray, []);
+export const withFetchObject = createDecorator('fetch', fetchOject, {});

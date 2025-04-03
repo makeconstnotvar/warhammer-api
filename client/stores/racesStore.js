@@ -2,8 +2,8 @@ import {racesApi} from "../api/racesApi";
 import {withFetchArray} from "./utils/fetchArray";
 
 @withFetchArray
-class RaceStore  {
+class RacesStore {
   fetchMethod = racesApi.getRaces
 }
 
-export {RaceStore};
+export {RacesStore};
