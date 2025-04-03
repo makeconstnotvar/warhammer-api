@@ -21,7 +21,7 @@ const distPath = path.join(__dirname, '../client/dist');
 app.use(express.static(distPath));
 
 // Fallback для SPA
-app.get('/', (req, res) => {
+app.get('/*splat', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
 });
 // Запуск сервера
