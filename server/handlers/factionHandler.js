@@ -3,8 +3,17 @@ const factionService = require('../services/factionService');
 const factionHandler = {
 	async getAll(req, res, next) {
 		try {
-			const factions = await factionService.getAll();
-			res.json(factions);
+			// Извлекаем параметры пагинации и фильтрации из запроса
+			const page = parseInt(req.query.page) || 1;
+			const limit = parseInt(req.query.limit) || 20;
+
+			// Собираем фильтры из query параметров
+			const filters = {};
+			if (req.query.name) filters.name = req.query.name;
+
+			// Получаем данные с учетом пагинации и фильтрации
+			const result = await factionService.getAll({ page, limit, filters });
+			res.json(result); // Возвращаем { data, total }
 		} catch (error) {
 			next(error);
 		}
@@ -62,7 +71,6 @@ const factionHandler = {
 			next(error);
 		}
 	}
-
 }
 
-module.exports = {factionHandler};
+module.exports = { factionHandler };

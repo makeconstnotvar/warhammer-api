@@ -17,10 +17,7 @@ function createDecorator(prefix = 'fetch', fetchData, defaultData = [], options 
     @observable accessor total = 0;
 
     fetchDataAdapter = options.fetchDataAdapter || function (response) {
-      return {
-        data: response.data,
-        total: response.length
-      };
+      return response
     };
     fetchMethod = options.fetchMethod || function (params, executor) {
       throw 'Не задан fetchMethod';

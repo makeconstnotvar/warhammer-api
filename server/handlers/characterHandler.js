@@ -3,8 +3,19 @@ const characterService = require('../services/characterService');
 const characterHandler = {
 	async getAll(req, res, next) {
 		try {
-			const characters = await characterService.getAll();
-			res.json(characters);
+			// Извлекаем параметры пагинации и фильтрации из запроса
+			const page = parseInt(req.query.page) || 1;
+			const limit = parseInt(req.query.limit) || 20;
+
+			// Собираем фильтры из query параметров
+			const filters = {};
+			if (req.query.name) filters.name = req.query.name;
+			if (req.query.faction_id) filters.factionId = parseInt(req.query.faction_id);
+			if (req.query.race_id) filters.raceId = parseInt(req.query.race_id);
+
+			// Получаем данные с учетом пагинации и фильтрации
+			const result = await characterService.getAll({ page, limit, filters });
+			res.json(result); // Возвращаем { data, total }
 		} catch (error) {
 			next(error);
 		}
@@ -52,4 +63,4 @@ const characterHandler = {
 	}
 }
 
-module.exports = {characterHandler};
+module.exports = { characterHandler };

@@ -1,10 +1,19 @@
 const raceService = require('../services/raceService');
 
-const raceHandler =  {
+const raceHandler = {
 	async getAll(req, res, next) {
 		try {
-			const races = await raceService.getAll();
-			res.json(races);
+			// Извлекаем параметры пагинации и фильтрации из запроса
+			const page = parseInt(req.query.page) || 1;
+			const limit = parseInt(req.query.limit) || 20;
+
+			// Собираем фильтры из query параметров
+			const filters = {};
+			if (req.query.name) filters.name = req.query.name;
+
+			// Получаем данные с учетом пагинации и фильтрации
+			const result = await raceService.getAll({ page, limit, filters });
+			res.json(result); // Возвращаем { data, total }
 		} catch (error) {
 			next(error);
 		}
@@ -62,7 +71,6 @@ const raceHandler =  {
 			next(error);
 		}
 	}
-
 }
 
-module.exports = {raceHandler};
+module.exports = { raceHandler };

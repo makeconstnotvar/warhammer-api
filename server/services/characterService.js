@@ -1,8 +1,8 @@
 const characterRepository = require('../repositories/characterRepository');
 
 class CharacterService {
-	async getAll() {
-		return await characterRepository.findAll();
+	async getAll(options = {}) {
+		return await characterRepository.findAll(options);
 	}
 
 	async getById(id) {

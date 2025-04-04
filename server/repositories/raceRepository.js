@@ -2,9 +2,54 @@ const db = require('../db');
 const Race = require('../models/raceModel');
 
 class RaceRepository {
-	async findAll() {
-		const result = await db.query('SELECT * FROM races ORDER BY name');
-		return result.rows.map(row => new Race(row));
+	async findAll(options = {}) {
+		const { page = 1, limit = 20, filters = {} } = options;
+		const offset = (page - 1) * limit;
+
+		// Строим запрос с учетом фильтров
+		let queryParams = [];
+		let whereConditions = [];
+		let filterIndex = 1;
+
+		// Добавляем условия фильтрации
+		if (filters.name) {
+			whereConditions.push(`name ILIKE $${filterIndex}`);
+			queryParams.push(`%${filters.name}%`);
+			filterIndex++;
+		}
+
+		// Формируем WHERE часть запроса
+		const whereClause = whereConditions.length > 0
+			? `WHERE ${whereConditions.join(' AND ')}`
+			: '';
+
+		// Запрос для получения данных с пагинацией
+		const dataQuery = `
+			SELECT * FROM races 
+			${whereClause}
+			ORDER BY name
+			LIMIT $${filterIndex} OFFSET $${filterIndex + 1}
+		`;
+
+		// Запрос для получения общего количества записей
+		const countQuery = `
+			SELECT COUNT(*) as total FROM races 
+			${whereClause}
+		`;
+
+		// Добавляем параметры пагинации
+		queryParams.push(limit, offset);
+
+		// Выполняем оба запроса параллельно для оптимизации
+		const [dataResult, countResult] = await Promise.all([
+			db.query(dataQuery, queryParams),
+			db.query(countQuery, queryParams.slice(0, -2)) // Не включаем параметры LIMIT и OFFSET
+		]);
+
+		return {
+			data: dataResult.rows.map(row => new Race(row)),
+			total: parseInt(countResult.rows[0].total)
+		};
 	}
 
 	async findById(id) {

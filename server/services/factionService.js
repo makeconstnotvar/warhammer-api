@@ -1,8 +1,8 @@
 const factionRepository = require('../repositories/factionRepository');
 
 class FactionService {
-	async getAll() {
-		return await factionRepository.findAll();
+	async getAll(options = {}) {
+		return await factionRepository.findAll(options);
 	}
 
 	async getById(id) {

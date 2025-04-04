@@ -1,8 +1,8 @@
 const raceRepository = require('../repositories/raceRepository');
 
 class RaceService {
-	async getAll() {
-		return await raceRepository.findAll();
+	async getAll(options = {}) {
+		return await raceRepository.findAll(options);
 	}
 
 	async getById(id) {
