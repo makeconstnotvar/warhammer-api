@@ -12,7 +12,7 @@ const FactionList = observer(props => {
   return (
     <div>
       <h2>Фракции</h2>
-      {$factionsStore.error && <p>Error: {$factionsStore.error}</p>}
+      {$factionsStore.fetchError && <p>Error: {$factionsStore.fetchError}</p>}
       <ul>
         {
           $factionsStore.data.map(faction => (

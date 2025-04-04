@@ -13,7 +13,7 @@ const RaceList = observer(props => {
   return (
     <div>
       <h2>Рассы</h2>
-      {$racesStore.error && <p>Error: {$racesStore.error}</p>}
+      {$racesStore.fetchError && <p>Error: {$racesStore.fetchError}</p>}
       <ul>
         {
           $racesStore.data.map(item => (

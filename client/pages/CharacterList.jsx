@@ -14,7 +14,7 @@ const CharacterList = observer(props => {
   return (
     <div>
       <h2>Персонажи</h2>
-      {$charactersStore.error && <p>Error: {$charactersStore.error}</p>}
+      {$charactersStore.fetchError && <p>Error: {$charactersStore.fetchError}</p>}
       <ul>
         {
           $charactersStore.data.map(item => (

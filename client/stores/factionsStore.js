@@ -1,5 +1,5 @@
 import {factionsApi} from "../api/factionsApi";
-import {withFetchArray} from "./utils/fetchArray";
+import {withFetchArray} from "./utils/createDecorator";
 
 @withFetchArray
 class FactionsStore {

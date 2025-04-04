@@ -1,4 +1,4 @@
-export function fetchArray(params) {
+export function fetchObject(params) {
   (async () => {
     if (this.executor.cancel) {
       this.executor.cancel('user cancel');
@@ -13,8 +13,7 @@ export function fetchArray(params) {
     try {
       let response = await this.fetchMethod(params, this.executor)
       response = this.fetchDataAdapter(response);
-      this.data = response?.data || [];
-      this.total = response?.total || 0;
+      this.data = response?.data || {};
       this.fetchSuccess(response);
       this.fetchDone = true;
     } catch (e) {
@@ -34,4 +33,3 @@ export function fetchArray(params) {
     }
   })()
 }
-

@@ -1,5 +1,5 @@
 import {racesApi} from "../api/racesApi";
-import {withFetchArray} from "./utils/fetchArray";
+import {withFetchArray} from "./utils/createDecorator";
 
 @withFetchArray
 class RacesStore {

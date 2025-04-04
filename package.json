@@ -17,7 +17,7 @@
     "server": "node server/index.js",
     "server-watch": "nodemon server/index.js",
     "client-watch": "webpack --watch --config client/webpack.config.js",
-    "build": "webpack --config client/webpack.config.js --mode development"
+    "build-dev": "webpack --config client/webpack.config.js"
   },
   "dependencies": {
     "axios": "^1.8.4",
