@@ -40,15 +40,7 @@ module.exports = {
         use: [
           'style-loader',
           'css-loader',
-          {
-            loader: 'sass-loader',
-            options: {
-              sassOptions: {
-                quietDeps: true,
-                silenceDeprecations: true,
-              },
-            },
-          }
+          'sass-loader'
         ]
       },
       {
