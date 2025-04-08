@@ -42,11 +42,16 @@ module.exports = {
           {
             loader: 'sass-loader',
             options: {
+              // Вместо sassOptions с quietDeps
+              implementation: require('sass'),
               sassOptions: {
+                // Сохраняем ваши существующие опции
                 quietDeps: true
               },
+              // Добавляем эту опцию для использования нового API
+              api: 'modern'
             },
-          },
+          }
         ]
       },
       {

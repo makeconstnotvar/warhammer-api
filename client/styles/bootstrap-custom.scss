@@ -1,39 +1,46 @@
-// Переменные Bootstrap, заменяем все единицы на px
-$font-size-base: 16px;
+// Базовый размер шрифта в px
+$font-size-base-px: 16px;
 $line-height-base: 1.5;
-$spacer: 16px; // 1rem = 16px по умолчанию
-$grid-gutter-width: 30px;
+$spacer-px: 16px;
 
-// Переопределение всех единиц em и rem на px
-$input-btn-padding-y: 6px;
-$input-btn-padding-x: 12px;
+// Переопределение базовых единиц измерения
+$font-size-base: $font-size-base-px / $font-size-base-px * 1rem; // эквивалент 1rem
+$spacer: $spacer-px / $font-size-base-px * 1rem; // эквивалент 1rem
+
+// Переопределение всех единиц, которые вызывают конфликты
+$nav-link-padding-y: 6px / $font-size-base-px * 1rem;
+$nav-link-padding-x: 12px / $font-size-base-px * 1rem;
+
+// Другие необходимые переопределения
+$input-btn-padding-y: 6px / $font-size-base-px * 1rem;
+$input-btn-padding-x: 12px / $font-size-base-px * 1rem;
 $input-btn-line-height: 1.5;
 
-$input-btn-padding-y-sm: 4px;
-$input-btn-padding-x-sm: 8px;
+$input-btn-padding-y-sm: 4px / $font-size-base-px * 1rem;
+$input-btn-padding-x-sm: 8px / $font-size-base-px * 1rem;
 
-$input-btn-padding-y-lg: 8px;
-$input-btn-padding-x-lg: 16px;
+$input-btn-padding-y-lg: 8px / $font-size-base-px * 1rem;
+$input-btn-padding-x-lg: 16px / $font-size-base-px * 1rem;
 
 // Отключаем предупреждения в Bootstrap
 $enable-deprecation-messages: false !default;
 
 // Переопределения размеров заголовков
-$h1-font-size: 40px; // обычно 2.5rem
-$h2-font-size: 32px; // обычно 2rem
-$h3-font-size: 28px; // обычно 1.75rem
-$h4-font-size: 24px; // обычно 1.5rem
-$h5-font-size: 20px; // обычно 1.25rem
-$h6-font-size: 16px; // обычно 1rem
+$h1-font-size: 40px / $font-size-base-px * 1rem;
+$h2-font-size: 32px / $font-size-base-px * 1rem;
+$h3-font-size: 28px / $font-size-base-px * 1rem;
+$h4-font-size: 24px / $font-size-base-px * 1rem;
+$h5-font-size: 20px / $font-size-base-px * 1rem;
+$h6-font-size: 16px / $font-size-base-px * 1rem;
 
 // Переопределение отступов
 $spacers: (
         0: 0,
-        1: 4px,   // обычно 0.25rem
-        2: 8px,   // обычно 0.5rem
-        3: 16px,  // обычно 1rem
-        4: 24px,  // обычно 1.5rem
-        5: 48px   // обычно 3rem
+        1: 4px / $font-size-base-px * 1rem,
+        2: 8px / $font-size-base-px * 1rem,
+        3: 16px / $font-size-base-px * 1rem,
+        4: 24px / $font-size-base-px * 1rem,
+        5: 48px / $font-size-base-px * 1rem
 );
 
 // Переопределение размеров контейнеров
@@ -60,7 +67,7 @@ $container-max-widths: (
 @import "~bootstrap/scss/containers";
 @import "~bootstrap/scss/grid";
 
-// Компоненты (выберите нужные)
+// Компоненты
 @import "~bootstrap/scss/nav";
 @import "~bootstrap/scss/navbar";
 @import "~bootstrap/scss/card";
@@ -73,9 +80,9 @@ $container-max-widths: (
 @import "~bootstrap/scss/utilities";
 @import "~bootstrap/scss/utilities/api";
 
-// Добавляем правило для замены всех оставшихся rem
+// Переопределение rem в px после загрузки Bootstrap
 html {
-  font-size: 16px; // Для совместимости, если Bootstrap использует rem внутри
+  font-size: $font-size-base-px;
 }
 /*
 
