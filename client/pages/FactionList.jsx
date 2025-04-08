@@ -1,11 +1,13 @@
 import {h} from 'preact';
 import {observer} from "mobx-react-lite";
 import {stores} from '../stores'
-import {useEffect} from "preact/hooks";
+import {useEffect,useState} from "preact/hooks";
+import {Pager} from "../components/Pager";
 
 
 const FactionList = observer(props => {
   const {$factionsStore} = stores;
+  const [currentPage, setCurrentPage] = useState(1);
   useEffect(() => {
     $factionsStore.fetchData()
   }, []);
@@ -20,6 +22,11 @@ const FactionList = observer(props => {
           ))
         }
       </ul>
+      <Pager
+        currentPage={currentPage}
+        total={$factionsStore.total}
+        onPageChange={x => setCurrentPage(x)}
+      />
     </div>
   )
 });

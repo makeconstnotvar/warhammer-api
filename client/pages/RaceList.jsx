@@ -1,11 +1,13 @@
 import {h} from 'preact';
 import {observer} from "mobx-react-lite";
 import {stores} from '../stores'
-import {useEffect} from "preact/hooks";
+import {useEffect,useState} from "preact/hooks";
+import {Pager} from "../components/Pager";
 
 
 const RaceList = observer(props => {
   const {$racesStore} = stores;
+  const [currentPage, setCurrentPage] = useState(1);
   useEffect(() => {
     $racesStore.fetchData()
   }, []);
@@ -21,6 +23,11 @@ const RaceList = observer(props => {
           ))
         }
       </ul>
+      <Pager
+        currentPage={currentPage}
+        total={$racesStore.total}
+        onPageChange={x => setCurrentPage(x)}
+      />
     </div>
   )
 });
