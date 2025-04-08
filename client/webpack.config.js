@@ -7,7 +7,8 @@ module.exports = {
   entry: './client/index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'bundle.[contenthash].js',
+    //filename: 'bundle.[contenthash].js',
+    filename: 'bundle.js',
     clean: true,
   },
   resolve: {
@@ -42,14 +43,10 @@ module.exports = {
           {
             loader: 'sass-loader',
             options: {
-              // Вместо sassOptions с quietDeps
-              implementation: require('sass'),
               sassOptions: {
-                // Сохраняем ваши существующие опции
-                quietDeps: true
+                quietDeps: true,
+                silenceDeprecations: true,
               },
-              // Добавляем эту опцию для использования нового API
-              api: 'modern'
             },
           }
         ]
