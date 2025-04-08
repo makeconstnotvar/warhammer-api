@@ -1,35 +1,50 @@
-import {h} from 'preact';
-import {observer} from "mobx-react-lite";
-import {stores} from '../stores'
-import {useEffect, useState} from "preact/hooks";
-import {Pager} from "../components/Pager";
+import { h } from 'preact';
+import { observer } from "mobx-react-lite";
+import { stores } from '../stores';
+import { useEffect, useState } from "preact/hooks";
+import { Pager } from "../components/Pager";
 
 const CharacterList = observer(props => {
-  const {$charactersStore} = stores;
+  const { $charactersStore } = stores;
   const [currentPage, setCurrentPage] = useState(1);
+
   useEffect(() => {
-    $charactersStore.fetchData()
+    $charactersStore.fetchData();
   }, []);
 
-
   return (
-    <div>
-      <h2>Персонажи</h2>
-      {$charactersStore.fetchError && <p>Error: {$charactersStore.fetchError}</p>}
-      <ul>
-        {
-          $charactersStore.data.map(item => (
-            <li key={item.id}>{item.name}</li>
-          ))
-        }
-      </ul>
+    <div className="character-list">
+      <h2 className="mb-4">Персонажи</h2>
+
+      {$charactersStore.fetchError && (
+        <div className="alert alert-danger" role="alert">
+          Error: {$charactersStore.fetchError}
+        </div>
+      )}
+
+      {$charactersStore.fetchProgress ? (
+        <div className="d-flex justify-content-center">
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">Загрузка...</span>
+          </div>
+        </div>
+      ) : (
+        <div className="card">
+          <ul className="list-group list-group-flush">
+            {$charactersStore.data.map(item => (
+              <li key={item.id} className="list-group-item">{item.name}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <Pager
         currentPage={currentPage}
         total={$charactersStore.total}
         onPageChange={x => setCurrentPage(x)}
       />
     </div>
-  )
+  );
 });
 
-export {CharacterList};
+export { CharacterList };

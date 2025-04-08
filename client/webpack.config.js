@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 module.exports = {
   mode: 'development', // или 'production' для билда
@@ -29,11 +30,32 @@ module.exports = {
             ],
             plugins: [
               ['@babel/plugin-proposal-decorators', {version: '2023-05'}]
-
             ],
           },
         },
       },
+      {
+        test: /\.scss$/,
+        use: [
+          'style-loader',
+          'css-loader',
+          {
+            loader: 'sass-loader',
+            options: {
+              sassOptions: {
+                quietDeps: true
+              },
+            },
+          },
+        ]
+      },
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          'css-loader'
+        ]
+      }
     ],
   },
   plugins: [
@@ -41,6 +63,7 @@ module.exports = {
       template: './client/index.html',
       inject: 'body',
     }),
+    //new BundleAnalyzerPlugin()
   ],
   devtool: 'source-map',
   devServer: {

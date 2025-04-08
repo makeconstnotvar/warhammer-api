@@ -1,7 +1,7 @@
 import { h } from 'preact';
 
 /**
- * Компонент пейджера без стилизации
+ * Компонент пейджера со стилями Bootstrap
  *
  * @param {Object} props Свойства компонента
  * @param {number} props.currentPage Текущая страница
@@ -13,13 +13,13 @@ import { h } from 'preact';
  * @returns {JSX.Element}
  */
 const Pager = ({
-                     currentPage,
-                     total,
-                     pageSize = 10,
-                     visiblePages = 5,
-                     onPageChange,
-                     step = 1
-                   }) => {
+                 currentPage,
+                 total,
+                 pageSize = 10,
+                 visiblePages = 5,
+                 onPageChange,
+                 step = 1
+               }) => {
   // Вычисляем общее количество страниц внутри компонента
   const totalPages = Math.ceil(total / pageSize) || 1;
 
@@ -69,38 +69,52 @@ const Pager = ({
   }
 
   return (
-    <div className="paginator">
-      {/* Стрелка "назад" */}
-      <span
-        onClick={handlePrevClick}
-        style={{ cursor: currentPage <= 1 ? 'default' : 'pointer' }}
-      >
-        &lt;
-      </span>
+    <nav aria-label="Навигация по страницам">
+      <ul className="pagination justify-content-center">
+        <li className={`page-item ${currentPage <= 1 ? 'disabled' : ''}`}>
+          <a
+            className="page-link"
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handlePrevClick();
+            }}
+            aria-label="Предыдущая"
+          >
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
 
-      {/* Кнопки страниц */}
-      {pageNumbers.map(page => (
-        <span
-          key={page}
-          onClick={() => onPageChange(page)}
-          style={{
-            fontWeight: page === currentPage ? 'bold' : 'normal',
-            cursor: 'pointer',
-            margin: '0 5px'
-          }}
-        >
-          {page}
-        </span>
-      ))}
+        {pageNumbers.map(page => (
+          <li key={page} className={`page-item ${page === currentPage ? 'active' : ''}`}>
+            <a
+              className="page-link"
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                onPageChange(page);
+              }}
+            >
+              {page}
+            </a>
+          </li>
+        ))}
 
-      {/* Стрелка "вперед" */}
-      <span
-        onClick={handleNextClick}
-        style={{ cursor: currentPage >= totalPages ? 'default' : 'pointer' }}
-      >
-        &gt;
-      </span>
-    </div>
+        <li className={`page-item ${currentPage >= totalPages ? 'disabled' : ''}`}>
+          <a
+            className="page-link"
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handleNextClick();
+            }}
+            aria-label="Следующая"
+          >
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
   );
 };
 
