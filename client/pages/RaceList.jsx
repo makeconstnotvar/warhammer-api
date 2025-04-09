@@ -1,3 +1,4 @@
+// client/pages/RaceList.jsx
 import { h } from 'preact';
 import { observer, inject } from "mobx-react";
 import { useEffect, useState } from "preact/hooks";
@@ -8,10 +9,15 @@ const RaceList = inject('$racesStore')(observer(RaceListComponent));
 function RaceListComponent(props) {
   const { $racesStore } = props;
   const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
-    $racesStore.fetchData();
-  }, []);
+    $racesStore.fetchData({page: currentPage, limit:pageSize});
+  }, [currentPage]); // Запрос при изменении страницы
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
   return (
     <div className="race-list">
@@ -42,7 +48,8 @@ function RaceListComponent(props) {
       <Pager
         currentPage={currentPage}
         total={$racesStore.total}
-        onPageChange={x => setCurrentPage(x)}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
       />
     </div>
   );

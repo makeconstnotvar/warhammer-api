@@ -1,3 +1,4 @@
+// client/pages/CharacterList.jsx
 import {h} from 'preact';
 import {inject, observer} from "mobx-react";
 import {useEffect, useState} from "preact/hooks";
@@ -8,10 +9,15 @@ const CharacterList = inject("$charactersStore")(observer(CharacterListComponent
 function CharacterListComponent(props) {
   const {$charactersStore} = props;
   const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
-    $charactersStore.fetchData();
-  }, []);
+    $charactersStore.fetchData({page: currentPage, limit:pageSize});
+  }, [currentPage]); // Запрос при изменении страницы
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
   return (
     <div className="character-list">
@@ -42,7 +48,8 @@ function CharacterListComponent(props) {
       <Pager
         currentPage={currentPage}
         total={$charactersStore.total}
-        onPageChange={x => setCurrentPage(x)}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
       />
     </div>
   );

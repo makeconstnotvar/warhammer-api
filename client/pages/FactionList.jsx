@@ -1,3 +1,4 @@
+// client/pages/FactionList.jsx
 import {h} from 'preact';
 import {inject, observer} from "mobx-react";
 import {useEffect, useState} from "preact/hooks";
@@ -8,10 +9,15 @@ const FactionList = inject('$factionsStore')(observer(FactionListComponent));
 function FactionListComponent(props) {
   const {$factionsStore} = props;
   const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
-    $factionsStore.fetchData();
-  }, []);
+    $factionsStore.fetchData({page: currentPage, limit:pageSize});
+  }, [currentPage]); // Запрос при изменении страницы
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
   return (
     <div className="faction-list">
@@ -42,7 +48,8 @@ function FactionListComponent(props) {
       <Pager
         currentPage={currentPage}
         total={$factionsStore.total}
-        onPageChange={x => setCurrentPage(x)}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
       />
     </div>
   );
