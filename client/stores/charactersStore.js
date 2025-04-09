@@ -1,5 +1,5 @@
 import {charactersApi} from "../api/charactersApi";
-import {withFetchArray} from "./utils/createDecorator";
+import {withFetchArray, withFetchObject} from "./utils/createDecorator";
 
 @withFetchArray
 class CharactersStore {
