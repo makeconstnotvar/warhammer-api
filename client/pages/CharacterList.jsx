@@ -3,9 +3,9 @@ import {inject, observer} from "mobx-react";
 import {useEffect, useState} from "preact/hooks";
 import {Pager} from "../components/Pager";
 
-@inject("$charactersStore")
-@observer
-function CharacterList(props) {
+const CharacterList = inject("$charactersStore")(observer(CharacterListComponent));
+
+function CharacterListComponent(props) {
   const {$charactersStore} = props;
   const [currentPage, setCurrentPage] = useState(1);
 

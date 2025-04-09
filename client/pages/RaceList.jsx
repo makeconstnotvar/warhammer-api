@@ -1,11 +1,11 @@
 import { h } from 'preact';
-import { observer,inject } from "mobx-react";
+import { observer, inject } from "mobx-react";
 import { useEffect, useState } from "preact/hooks";
 import { Pager } from "../components/Pager";
 
-@inject('$racesStore')
-@observer
-function RaceList (props) {
+const RaceList = inject('$racesStore')(observer(RaceListComponent));
+
+function RaceListComponent(props) {
   const { $racesStore } = props;
   const [currentPage, setCurrentPage] = useState(1);
 

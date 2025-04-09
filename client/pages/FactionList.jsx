@@ -3,10 +3,9 @@ import {inject, observer} from "mobx-react";
 import {useEffect, useState} from "preact/hooks";
 import {Pager} from "../components/Pager";
 
-@inject('$factionsStore')
-@observer
+const FactionList = inject('$factionsStore')(observer(FactionListComponent));
 
-function FactionList(props) {
+function FactionListComponent(props) {
   const {$factionsStore} = props;
   const [currentPage, setCurrentPage] = useState(1);
 
