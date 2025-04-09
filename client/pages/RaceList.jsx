@@ -1,11 +1,12 @@
 import { h } from 'preact';
-import { observer } from "mobx-react-lite";
-import { stores } from '../stores';
+import { observer,inject } from "mobx-react";
 import { useEffect, useState } from "preact/hooks";
 import { Pager } from "../components/Pager";
 
-const RaceList = observer(props => {
-  const { $racesStore } = stores;
+@inject('$racesStore')
+@observer
+function RaceList (props) {
+  const { $racesStore } = props;
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -45,6 +46,6 @@ const RaceList = observer(props => {
       />
     </div>
   );
-});
+}
 
 export { RaceList };

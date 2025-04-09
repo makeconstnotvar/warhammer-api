@@ -1,12 +1,14 @@
-import { h } from 'preact';
+import {h} from 'preact';
 
-const NotFound = () => (
-  <div className="not-found-page">
-    <div className="alert alert-danger" role="alert">
-      <h2 className="alert-heading">Страница не найдена</h2>
-      <p>Запрашиваемая страница не существует.</p>
+function NotFound() {
+  return (
+    <div className="not-found-page">
+      <div className="alert alert-danger" role="alert">
+        <h2 className="alert-heading">Страница не найдена</h2>
+        <p>Запрашиваемая страница не существует.</p>
+      </div>
     </div>
-  </div>
-);
+  )
+}
 
-export { NotFound };
+export {NotFound};

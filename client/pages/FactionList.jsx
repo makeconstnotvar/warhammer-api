@@ -1,11 +1,13 @@
-import { h } from 'preact';
-import { observer } from "mobx-react-lite";
-import { stores } from '../stores';
-import { useEffect, useState } from "preact/hooks";
-import { Pager } from "../components/Pager";
+import {h} from 'preact';
+import {inject, observer} from "mobx-react";
+import {useEffect, useState} from "preact/hooks";
+import {Pager} from "../components/Pager";
 
-const FactionList = observer(props => {
-  const { $factionsStore } = stores;
+@inject('$factionsStore')
+@observer
+
+function FactionList(props) {
+  const {$factionsStore} = props;
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -45,6 +47,6 @@ const FactionList = observer(props => {
       />
     </div>
   );
-});
+}
 
-export { FactionList };
+export {FactionList};
