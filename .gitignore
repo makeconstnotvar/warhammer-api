@@ -58,3 +58,4 @@ docker-compose.override.yml
 # Разное
 .DS_Store
 Thumbs.db
+client/dist/

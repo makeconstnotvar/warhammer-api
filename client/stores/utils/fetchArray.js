@@ -1,3 +1,5 @@
+import * as queryCore from 'query-core';
+
 export function fetchArray(params) {
   (async () => {
     if (this.executor.cancel) {
@@ -15,6 +17,15 @@ export function fetchArray(params) {
       response = this.fetchDataAdapter(response);
       this.data = response?.data || [];
       this.total = response?.total || 0;
+
+      if (Array.isArray(this.data)) {
+        await Promise.all(this.data.map(async (item) => {
+          if (typeof queryCore.getFieldStatus === 'function') {
+            item._progressStatus = await queryCore.getFieldStatus(item, 'progress');
+          }
+        }));
+      }
+
       this.fetchSuccess(response);
       this.fetchDone = true;
     } catch (e) {
@@ -34,4 +45,3 @@ export function fetchArray(params) {
     }
   })()
 }
-

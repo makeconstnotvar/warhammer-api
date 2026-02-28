@@ -1,13 +1,15 @@
-import {h} from 'preact';
-
 function NotFound() {
   return (
-    <div className="not-found-page">
-      <div className="alert alert-danger" role="alert">
-        <h2 className="alert-heading">Страница не найдена</h2>
-        <p>Запрашиваемая страница не существует.</p>
+    <section className="hero-panel hero-panel-compact">
+      <div>
+        <div className="section-eyebrow">404</div>
+        <h1>Страница не найдена</h1>
+        <p className="page-lead">
+          В клиенте доступны только разделы документации и примеров API.
+        </p>
+        <a className="action-link" href="/">Вернуться на главную</a>
       </div>
-    </div>
+    </section>
   )
 }
 

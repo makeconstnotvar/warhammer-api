@@ -1,36 +1,18 @@
-import { h } from 'preact';
-
-const Menu = props => {
+const Menu = () => {
   return (
-    <nav className="navbar navbar-expand-lg navbar-light bg-light">
-      <div className="container">
-        <a className="navbar-brand" href="/">Warhammer 40K</a>
-        <button
-          className="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-          aria-controls="navbarNav"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span className="navbar-toggler-icon"></span>
-        </button>
-        <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav">
-            <li className="nav-item">
-              <a className="nav-link" href="/">Главная</a>
-            </li>
-            <li className="nav-item">
-              <a className="nav-link" href="/races">Расы</a>
-            </li>
-            <li className="nav-item">
-              <a className="nav-link" href="/factions">Фракции</a>
-            </li>
-            <li className="nav-item">
-              <a className="nav-link" href="/characters">Персонажи</a>
-            </li>
-          </ul>
+    <nav className="topbar">
+      <div className="topbar-inner">
+        <a className="brand-lockup" href="/">
+          <span className="brand-title">Warhammer 40K API</span>
+          <span className="brand-subtitle">Public docs client</span>
+        </a>
+
+        <div className="topbar-links">
+          <a href="/quick-start">Quick Start</a>
+          <a href="/resources">Resources</a>
+          <a href="/query-guide">Query Guide</a>
+          <a href="/playground">Playground</a>
+          <a href="/examples/concurrency">Concurrency</a>
         </div>
       </div>
     </nav>

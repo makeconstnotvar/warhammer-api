@@ -64,6 +64,12 @@ module.exports = {
     static: path.join(__dirname, 'dist'),
     port: 8080,
     historyApiFallback: true,
+    proxy: [
+      {
+        context: ['/api'],
+        target: 'http://localhost:3000',
+      }
+    ],
   },
   stats: {
     warnings: false

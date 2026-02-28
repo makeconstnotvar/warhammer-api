@@ -3,9 +3,7 @@ import {fetchArray} from "./fetchArray";
 import {fetchObject} from "./fetchObject";
 import {deepCopy} from "./deepCopy";
 
-// Создаем декоратор, который добавляет родительский класс с общей функциональностью
-function createDecorator(prefix = 'fetch', fetchData, defaultData = [], options = {}) {
-  // Определяем базовый класс, который будет родителем для целевого класса
+function createDecorator(fetchData, defaultData = [], options = {}) {
   const BaseStoreClass = class {
     executor = {cancel: null};
     defaultData = deepCopy(defaultData);
@@ -46,30 +44,22 @@ function createDecorator(prefix = 'fetch', fetchData, defaultData = [], options 
   };
 
   return function (TargetClass) {
-    // Создаем промежуточный класс с конструктором
     const MixedClass = class extends BaseStoreClass {
       constructor(...args) {
         super(...args);
-
-        // Создаем временный экземпляр целевого класса, чтобы получить доступ к свойствам
         const tempInstance = new TargetClass(...args);
-
-        // Копируем все свойства экземпляра
         Object.keys(tempInstance).forEach(key => {
-          // Если свойство переопределяет метод базового класса, копируем его
           this[key] = tempInstance[key];
         });
       }
     };
 
-    // Копируем все методы из прототипа TargetClass
     Object.getOwnPropertyNames(TargetClass.prototype).forEach(prop => {
       if (prop !== 'constructor') {
         MixedClass.prototype[prop] = TargetClass.prototype[prop];
       }
     });
 
-    // Копируем статические свойства из TargetClass
     Object.getOwnPropertyNames(TargetClass).forEach(prop => {
       if (prop !== 'prototype' && prop !== 'name' && prop !== 'length') {
         MixedClass[prop] = TargetClass[prop];
@@ -80,5 +70,5 @@ function createDecorator(prefix = 'fetch', fetchData, defaultData = [], options 
   };
 }
 
-export const withFetchArray = createDecorator('fetch', fetchArray, []);
-export const withFetchObject = createDecorator('fetch', fetchObject, {});
+export const withFetchArray = createDecorator(fetchArray, []);
+export const withFetchObject = createDecorator(fetchObject, {});

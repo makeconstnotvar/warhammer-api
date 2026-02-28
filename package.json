@@ -21,18 +21,19 @@
   },
   "dependencies": {
     "axios": "^1.8.4",
+    "bootstrap": "^5.3.5",
     "cors": "^2.8.5",
+    "css-loader": "^7.1.2",
     "dotenv": "^16.4.7",
     "express": "^5.0.1",
     "helmet": "^8.1.0",
     "morgan": "^1.10.0",
     "pg": "^8.14.1",
     "preact-iso": "^2.9.1",
-    "bootstrap": "^5.3.5",
-    "style-loader": "^4.0.0",
-    "css-loader": "^7.1.2",
+    "query-core": "^0.2.2",
     "sass": "^1.86.3",
-    "sass-loader": "^16.0.5"
+    "sass-loader": "^16.0.5",
+    "style-loader": "^4.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",
