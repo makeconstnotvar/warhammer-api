@@ -108,6 +108,9 @@ Frontend:
 - legacy `GET /api/factions` продолжает работать после миграций
 - `GET /api/v1/factions?include=leaders,races,homeworld` отвечает из PostgreSQL
 - `GET /api/v1/characters?filter[faction]=ultramarines&include=faction,race,homeworld,events` отвечает из PostgreSQL
+- `GET /api/v1/random/character` отвечает из PostgreSQL
+- `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion` отвечает из PostgreSQL
+- `GET /api/v1/stats/factions/by-race` и `GET /api/v1/stats/events/by-era` отвечают из PostgreSQL
 
 Чего сейчас нет:
 - tests

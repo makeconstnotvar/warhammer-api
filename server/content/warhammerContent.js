@@ -41,14 +41,24 @@ const featuredQueries = [
     path: '/api/v1/events?filter[era]=indomitus-era&include=planets,factions,characters',
   },
   {
-    title: 'Фракции с лидерами и расами',
-    description: 'Готовый сценарий для compare page.',
-    path: '/api/v1/factions?include=leaders,races,homeworld&sort=name',
+    title: 'Сравнение фракций',
+    description: 'Готовый сценарий для compare page и сравнительных карточек.',
+    path: '/api/v1/compare/factions?ids=imperium-of-man,black-legion&include=races,leaders,homeworld',
   },
   {
     title: 'Глобальный search',
     description: 'Один input, несколько списков результатов.',
     path: '/api/v1/search?search=cadia&resources=planets,events,factions',
+  },
+  {
+    title: 'Статистика фракций по расам',
+    description: 'Подходит для charts, dashboards и учебной агрегации.',
+    path: '/api/v1/stats/factions/by-race',
+  },
+  {
+    title: 'Случайный персонаж',
+    description: 'Быстрая ручка для featured card, hero-блоков и экспериментов.',
+    path: '/api/v1/random/character?include=faction,race,homeworld',
   },
 ];
 
@@ -93,6 +103,16 @@ const queryGuide = {
       title: 'Сложный фильтр',
       description: 'Отбор событий по эре и участникам.',
       path: '/api/v1/events?filter[era]=indomitus-era&filter[factions]=imperium-of-man,ultramarines',
+    },
+    {
+      title: 'Сравнение двух фракций',
+      description: 'Один endpoint для compare page с общими и различающимися атрибутами.',
+      path: '/api/v1/compare/factions?ids=imperium-of-man,ultramarines&include=races,leaders,homeworld',
+    },
+    {
+      title: 'Агрегация для диаграммы',
+      description: 'Подготовленные данные для bar chart без ручной агрегации на клиенте.',
+      path: '/api/v1/stats/events/by-era',
     },
   ],
 };

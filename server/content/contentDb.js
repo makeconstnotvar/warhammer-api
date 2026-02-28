@@ -661,9 +661,90 @@ async function searchResourceRows(resourceKey, search, limit) {
   };
 }
 
+async function loadResourcesByIdentifiers(resourceKey, identifiers) {
+  const normalizedValues = splitCsv(identifiers)
+    .map((value) => normalizeValue(value))
+    .filter(Boolean);
+
+  if (!normalizedValues.length) {
+    return [];
+  }
+
+  const config = getResourceDbConfig(resourceKey);
+  const query = `
+    SELECT ${config.selectClause}
+    ${config.fromClause}
+    WHERE ${buildIdentityMatch(`${config.alias}.id`, `${config.alias}.slug`, `${config.alias}.name`, '$1')}
+  `;
+
+  const result = await db.query(query, [normalizedValues]);
+  return result.rows.map((row) => config.serialize(row));
+}
+
+async function getRandomResourceRow(resourceKey) {
+  const config = getResourceDbConfig(resourceKey);
+  const query = `
+    SELECT ${config.selectClause}
+    ${config.fromClause}
+    ORDER BY RANDOM()
+    LIMIT 1
+  `;
+
+  const result = await db.query(query);
+  return result.rows[0] ? config.serialize(result.rows[0]) : null;
+}
+
+async function getFactionStatsByRace() {
+  const query = `
+    SELECT
+      r.id,
+      r.slug,
+      r.name,
+      COUNT(DISTINCT fr.faction_id)::int AS count
+    FROM races r
+    LEFT JOIN faction_races fr ON fr.race_id = r.id
+    GROUP BY r.id, r.slug, r.name
+    ORDER BY count DESC, r.name ASC
+  `;
+
+  const result = await db.query(query);
+  return result.rows.map((row) => ({
+    id: toNumber(row.id),
+    slug: row.slug,
+    name: row.name,
+    count: toNumber(row.count),
+  }));
+}
+
+async function getEventStatsByEra() {
+  const query = `
+    SELECT
+      e.id,
+      e.slug,
+      e.name,
+      COUNT(ev.id)::int AS count
+    FROM eras e
+    LEFT JOIN events ev ON ev.era_id = e.id
+    GROUP BY e.id, e.slug, e.name
+    ORDER BY count DESC, e.name ASC
+  `;
+
+  const result = await db.query(query);
+  return result.rows.map((row) => ({
+    id: toNumber(row.id),
+    slug: row.slug,
+    name: row.name,
+    count: toNumber(row.count),
+  }));
+}
+
 module.exports = {
+  getEventStatsByEra,
+  getFactionStatsByRace,
+  getRandomResourceRow,
   getResourceCount,
   getResourceRow,
+  loadResourcesByIdentifiers,
   listResourceRows,
   loadResourcesByIds,
   searchResourceRows,

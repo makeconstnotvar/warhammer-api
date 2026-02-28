@@ -47,6 +47,10 @@ npm run client-watch
 - `GET /api/v1/search?search=cadia`
 - `GET /api/v1/characters?include=faction,race,homeworld,events`
 - `GET /api/v1/examples/concurrency`
+- `GET /api/v1/random/character?include=faction,race,homeworld`
+- `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion&include=races,leaders,homeworld`
+- `GET /api/v1/stats/factions/by-race`
+- `GET /api/v1/stats/events/by-era`
 
 ## Структура
 

@@ -52,6 +52,30 @@ apiV1Routes.get('/search', async (req, res, next) => {
   }
 });
 
+apiV1Routes.get('/random/:resource', async (req, res, next) => {
+  try {
+    res.json(await contentApi.getRandomResource(req.params.resource, req.query));
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiV1Routes.get('/compare/:resource', async (req, res, next) => {
+  try {
+    res.json(await contentApi.compareResources(req.params.resource, req.query));
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiV1Routes.get('/stats/:resource/:groupKey', async (req, res, next) => {
+  try {
+    res.json(await contentApi.getStats(req.params.resource, req.params.groupKey));
+  } catch (error) {
+    next(error);
+  }
+});
+
 apiV1Routes.get('/:resource/:idOrSlug', async (req, res, next) => {
   try {
     res.json(await contentApi.getResourceDetail(req.params.resource, req.params.idOrSlug, req.query));
