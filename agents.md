@@ -35,6 +35,9 @@
 - клиент больше не является списочным demo UI, а работает как docs-first приложение
 - база данных может быть поднята из кода через `db:migrate` и `db:seed`
 - `api/v1` теперь читает из PostgreSQL, а не из in-memory набора
+- домен расширен ресурсами `keywords`, `weapons`, `units`
+- `search` ранжирует результаты по релевантности
+- `compare` поддерживает `factions`, `characters`, `units`
 
 ## Структура верхнего уровня
 
@@ -111,13 +114,15 @@ Frontend:
 - `GET /api/v1/random/character` отвечает из PostgreSQL
 - `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion` отвечает из PostgreSQL
 - `GET /api/v1/stats/factions/by-race` и `GET /api/v1/stats/events/by-era` отвечают из PostgreSQL
+- `GET /api/v1/keywords`, `GET /api/v1/weapons`, `GET /api/v1/units` отвечают из PostgreSQL
+- `GET /api/v1/random/unit` отвечает из PostgreSQL
+- `GET /api/v1/compare/units?ids=terminator-squad,intercessor-squad` отвечает из PostgreSQL
+- `GET /api/v1/search?search=cadia` сортирует результаты по релевантности
 
 Чего сейчас нет:
 - tests
 - linting
 - formatting scripts
-- migrations
-- seed scripts
 - OpenAPI или Swagger
 - Docker-конфигурации
 

@@ -30,10 +30,16 @@ const resourceAliases = {
   events: 'events',
   faction: 'factions',
   factions: 'factions',
+  keyword: 'keywords',
+  keywords: 'keywords',
   planet: 'planets',
   planets: 'planets',
   race: 'races',
   races: 'races',
+  unit: 'units',
+  units: 'units',
+  weapon: 'weapons',
+  weapons: 'weapons',
 };
 
 function splitCsv(value) {
@@ -315,6 +321,27 @@ function buildCharacterComparison(items) {
   };
 }
 
+function buildUnitComparison(items) {
+  const powerItems = items
+    .map((item) => ({ id: item.id, name: item.name, powerLevel: item.powerLevel ?? 0 }))
+    .sort((left, right) => right.powerLevel - left.powerLevel);
+  const strongest = powerItems[0] || null;
+  const weakest = powerItems[powerItems.length - 1] || null;
+
+  return {
+    eraIds: uniqueValues(items.map((item) => item.eraId)),
+    factionIds: uniqueValues(items.flatMap((item) => item.factionIds || [])),
+    powerSpread: strongest && weakest ? strongest.powerLevel - weakest.powerLevel : 0,
+    sharedFactionIds: intersectArrays(items.map((item) => item.factionIds || [])),
+    sharedKeywordIds: intersectArrays(items.map((item) => item.keywordIds || [])),
+    sharedWeaponIds: intersectArrays(items.map((item) => item.weaponIds || [])),
+    statuses: uniqueValues(items.map((item) => item.status)),
+    strongest,
+    unitTypes: uniqueValues(items.map((item) => item.unitType)),
+    weakest,
+  };
+}
+
 async function compareResources(resourceKey, query) {
   const parsed = parseListQuery(resourceKey, query);
   const identifiers = query.ids || query.items || query.values;
@@ -327,6 +354,7 @@ async function compareResources(resourceKey, query) {
   const comparisonBuilders = {
     factions: buildFactionComparison,
     characters: buildCharacterComparison,
+    units: buildUnitComparison,
   };
 
   const comparisonBuilder = comparisonBuilders[parsed.resourceKey];
@@ -505,7 +533,7 @@ async function searchAll(query, pathname) {
   }
 
   const requestedResources = splitCsv(query.resources);
-  const resources = requestedResources.length ? requestedResources : resourceOrder;
+  const resources = (requestedResources.length ? requestedResources : resourceOrder).map((resourceKey) => normalizeResourceKey(resourceKey));
   const limit = Math.min(parsePositiveInt(query.limit, 12), MAX_PAGE_SIZE);
 
   resources.forEach((resourceKey) => getResourceConfig(resourceKey));
@@ -515,11 +543,23 @@ async function searchAll(query, pathname) {
     .flatMap((entry, index) => entry.rows.map((item) => ({
       id: item.id,
       name: item.name,
+      rank: item._searchRank || 0,
       resource: resources[index],
       slug: item.slug,
       summary: item.summary,
-    })));
-  const results = allResults.slice(0, limit);
+    })))
+    .sort((left, right) => {
+      if (right.rank !== left.rank) {
+        return right.rank - left.rank;
+      }
+
+      if (left.resource !== right.resource) {
+        return left.resource.localeCompare(right.resource);
+      }
+
+      return left.name.localeCompare(right.name);
+    });
+  const results = allResults.slice(0, limit).map(({ rank, ...item }) => item);
   const total = resultsByResource.reduce((sum, entry) => sum + entry.total, 0);
   const totalPages = Math.max(1, Math.ceil(total / limit));
 

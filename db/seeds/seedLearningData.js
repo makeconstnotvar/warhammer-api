@@ -106,6 +106,96 @@ async function insertFactions(client) {
   }
 }
 
+async function insertKeywords(client) {
+  for (const keyword of dataset.keywords) {
+    await client.query(
+      `INSERT INTO keywords (
+        id, slug, name, description, category
+      ) VALUES ($1, $2, $3, $4, $5)`,
+      [
+        keyword.id,
+        keyword.slug,
+        keyword.name,
+        keyword.description,
+        keyword.category,
+      ]
+    );
+  }
+}
+
+async function insertWeapons(client) {
+  for (const weapon of dataset.weapons) {
+    await client.query(
+      `INSERT INTO weapons (
+        id, slug, name, summary, description, status, weapon_type, power_level, faction_id, era_id, image_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [
+        weapon.id,
+        weapon.slug,
+        weapon.name,
+        weapon.summary,
+        weapon.description,
+        weapon.status,
+        weapon.weaponType,
+        weapon.powerLevel,
+        weapon.factionId || null,
+        weapon.eraId || null,
+        null,
+      ]
+    );
+
+    for (const keywordId of weapon.keywordIds || []) {
+      await client.query(
+        'INSERT INTO weapon_keywords (weapon_id, keyword_id) VALUES ($1, $2)',
+        [weapon.id, keywordId]
+      );
+    }
+  }
+}
+
+async function insertUnits(client) {
+  for (const unit of dataset.units) {
+    await client.query(
+      `INSERT INTO units (
+        id, slug, name, summary, description, status, unit_type, power_level, era_id, image_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        unit.id,
+        unit.slug,
+        unit.name,
+        unit.summary,
+        unit.description,
+        unit.status,
+        unit.unitType,
+        unit.powerLevel,
+        unit.eraId || null,
+        null,
+      ]
+    );
+
+    for (const factionId of unit.factionIds || []) {
+      await client.query(
+        'INSERT INTO unit_factions (unit_id, faction_id, is_primary) VALUES ($1, $2, $3)',
+        [unit.id, factionId, factionId === unit.factionIds[0]]
+      );
+    }
+
+    for (const keywordId of unit.keywordIds || []) {
+      await client.query(
+        'INSERT INTO unit_keywords (unit_id, keyword_id) VALUES ($1, $2)',
+        [unit.id, keywordId]
+      );
+    }
+
+    for (const weaponId of unit.weaponIds || []) {
+      await client.query(
+        'INSERT INTO unit_weapons (unit_id, weapon_id) VALUES ($1, $2)',
+        [unit.id, weaponId]
+      );
+    }
+  }
+}
+
 async function insertCharacters(client) {
   for (const character of dataset.characters) {
     await client.query(
@@ -190,6 +280,9 @@ async function resetSequences(client) {
     SELECT setval(pg_get_serial_sequence('races', 'id'), COALESCE(MAX(id), 1), true) FROM races;
     SELECT setval(pg_get_serial_sequence('planets', 'id'), COALESCE(MAX(id), 1), true) FROM planets;
     SELECT setval(pg_get_serial_sequence('factions', 'id'), COALESCE(MAX(id), 1), true) FROM factions;
+    SELECT setval(pg_get_serial_sequence('keywords', 'id'), COALESCE(MAX(id), 1), true) FROM keywords;
+    SELECT setval(pg_get_serial_sequence('weapons', 'id'), COALESCE(MAX(id), 1), true) FROM weapons;
+    SELECT setval(pg_get_serial_sequence('units', 'id'), COALESCE(MAX(id), 1), true) FROM units;
     SELECT setval(pg_get_serial_sequence('characters', 'id'), COALESCE(MAX(id), 1), true) FROM characters;
     SELECT setval(pg_get_serial_sequence('character_titles', 'id'), COALESCE(MAX(id), 1), true) FROM character_titles;
     SELECT setval(pg_get_serial_sequence('events', 'id'), COALESCE(MAX(id), 1), true) FROM events;
@@ -208,9 +301,16 @@ async function run() {
         event_characters,
         event_factions,
         event_planets,
+        unit_weapons,
+        unit_keywords,
+        unit_factions,
+        weapon_keywords,
         faction_leaders,
         character_titles,
         faction_races,
+        units,
+        weapons,
+        keywords,
         events,
         characters,
         factions,
@@ -224,6 +324,9 @@ async function run() {
     await insertRaces(client);
     await insertPlanets(client);
     await insertFactions(client);
+    await insertKeywords(client);
+    await insertWeapons(client);
+    await insertUnits(client);
     await insertCharacters(client);
     await insertEvents(client);
     await resetSequences(client);

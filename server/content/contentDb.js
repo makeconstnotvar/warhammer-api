@@ -35,6 +35,10 @@ function toNumberArray(values) {
     .filter((value) => value !== null);
 }
 
+function escapeLikePattern(value) {
+  return String(value || '').replace(/[\\%_]/g, '\\$&');
+}
+
 function createQueryContext() {
   const params = [];
 
@@ -310,6 +314,216 @@ const resourceDbConfigs = {
       };
     },
   },
+  keywords: {
+    alias: 'k',
+    fromClause: 'FROM keywords k',
+    selectClause: `
+      k.id,
+      k.slug,
+      k.name,
+      k.description,
+      k.category
+    `,
+    sortMap: {
+      name: 'k.name',
+      category: 'k.category',
+    },
+    searchExpression: `CONCAT_WS(' ', k.name, k.description, k.category)`,
+    filterBuilders: {
+      category: (context, rawValue) => addAttributeFilter(context, 'k.category', rawValue),
+    },
+    serialize(row) {
+      return {
+        id: toNumber(row.id),
+        slug: row.slug,
+        name: row.name,
+        description: row.description,
+        category: row.category,
+      };
+    },
+  },
+  weapons: {
+    alias: 'w',
+    fromClause: 'FROM weapons w',
+    selectClause: `
+      w.id,
+      w.slug,
+      w.name,
+      w.summary,
+      w.description,
+      w.status,
+      w.weapon_type,
+      w.power_level,
+      w.faction_id,
+      w.era_id,
+      COALESCE(ARRAY(
+        SELECT wk.keyword_id
+        FROM weapon_keywords wk
+        WHERE wk.weapon_id = w.id
+        ORDER BY wk.keyword_id ASC
+      ), ARRAY[]::bigint[]) AS keyword_ids
+    `,
+    sortMap: {
+      name: 'w.name',
+      status: 'w.status',
+      weaponType: 'w.weapon_type',
+      powerLevel: 'w.power_level',
+    },
+    searchExpression: `CONCAT_WS(' ', w.name, w.summary, w.description, w.weapon_type)`,
+    filterBuilders: {
+      status: (context, rawValue) => addAttributeFilter(context, 'w.status', rawValue),
+      type: (context, rawValue) => addAttributeFilter(context, 'w.weapon_type', rawValue),
+      era: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM eras era_filter
+          WHERE era_filter.id = w.era_id
+            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+        )`
+      ),
+      faction: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM factions faction_filter
+          WHERE faction_filter.id = w.faction_id
+            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+        )`
+      ),
+      keywords: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM weapon_keywords wk
+          JOIN keywords keyword_filter ON keyword_filter.id = wk.keyword_id
+          WHERE wk.weapon_id = w.id
+            AND ${buildIdentityMatch('keyword_filter.id', 'keyword_filter.slug', 'keyword_filter.name', placeholder)}
+        )`
+      ),
+    },
+    serialize(row) {
+      return {
+        id: toNumber(row.id),
+        slug: row.slug,
+        name: row.name,
+        summary: row.summary,
+        description: row.description,
+        status: row.status,
+        weaponType: row.weapon_type,
+        powerLevel: toNumber(row.power_level),
+        factionId: toNumber(row.faction_id),
+        eraId: toNumber(row.era_id),
+        keywordIds: toNumberArray(row.keyword_ids),
+      };
+    },
+  },
+  units: {
+    alias: 'u',
+    fromClause: 'FROM units u',
+    selectClause: `
+      u.id,
+      u.slug,
+      u.name,
+      u.summary,
+      u.description,
+      u.status,
+      u.unit_type,
+      u.power_level,
+      u.era_id,
+      COALESCE(ARRAY(
+        SELECT uf.faction_id
+        FROM unit_factions uf
+        WHERE uf.unit_id = u.id
+        ORDER BY uf.is_primary DESC, uf.faction_id ASC
+      ), ARRAY[]::bigint[]) AS faction_ids,
+      COALESCE(ARRAY(
+        SELECT uk.keyword_id
+        FROM unit_keywords uk
+        WHERE uk.unit_id = u.id
+        ORDER BY uk.keyword_id ASC
+      ), ARRAY[]::bigint[]) AS keyword_ids,
+      COALESCE(ARRAY(
+        SELECT uw.weapon_id
+        FROM unit_weapons uw
+        WHERE uw.unit_id = u.id
+        ORDER BY uw.weapon_id ASC
+      ), ARRAY[]::bigint[]) AS weapon_ids
+    `,
+    sortMap: {
+      name: 'u.name',
+      status: 'u.status',
+      unitType: 'u.unit_type',
+      powerLevel: 'u.power_level',
+    },
+    searchExpression: `CONCAT_WS(' ', u.name, u.summary, u.description, u.unit_type)`,
+    filterBuilders: {
+      status: (context, rawValue) => addAttributeFilter(context, 'u.status', rawValue),
+      type: (context, rawValue) => addAttributeFilter(context, 'u.unit_type', rawValue),
+      era: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM eras era_filter
+          WHERE era_filter.id = u.era_id
+            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+        )`
+      ),
+      faction: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM unit_factions uf
+          JOIN factions faction_filter ON faction_filter.id = uf.faction_id
+          WHERE uf.unit_id = u.id
+            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+        )`
+      ),
+      keywords: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM unit_keywords uk
+          JOIN keywords keyword_filter ON keyword_filter.id = uk.keyword_id
+          WHERE uk.unit_id = u.id
+            AND ${buildIdentityMatch('keyword_filter.id', 'keyword_filter.slug', 'keyword_filter.name', placeholder)}
+        )`
+      ),
+      weapons: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM unit_weapons uw
+          JOIN weapons weapon_filter ON weapon_filter.id = uw.weapon_id
+          WHERE uw.unit_id = u.id
+            AND ${buildIdentityMatch('weapon_filter.id', 'weapon_filter.slug', 'weapon_filter.name', placeholder)}
+        )`
+      ),
+    },
+    serialize(row) {
+      return {
+        id: toNumber(row.id),
+        slug: row.slug,
+        name: row.name,
+        summary: row.summary,
+        description: row.description,
+        status: row.status,
+        unitType: row.unit_type,
+        powerLevel: toNumber(row.power_level),
+        eraId: toNumber(row.era_id),
+        factionIds: toNumberArray(row.faction_ids),
+        keywordIds: toNumberArray(row.keyword_ids),
+        weaponIds: toNumberArray(row.weapon_ids),
+      };
+    },
+  },
   events: {
     alias: 'ev',
     fromClause: 'FROM events ev',
@@ -543,6 +757,12 @@ function buildOrderClause(config, sortFields) {
   return `ORDER BY ${orderParts.join(', ')}`;
 }
 
+function getDefaultSearchSort(config) {
+  return Object.prototype.hasOwnProperty.call(config.sortMap, 'name')
+    ? ['name']
+    : [Object.keys(config.sortMap)[0]];
+}
+
 function addSearchCondition(config, context, search) {
   if (!search) {
     return;
@@ -637,26 +857,61 @@ async function getResourceCount(resourceKey) {
 
 async function searchResourceRows(resourceKey, search, limit) {
   const config = getResourceDbConfig(resourceKey);
+  const normalizedSearch = normalizeValue(search);
+  const escapedSearch = escapeLikePattern(normalizedSearch);
+  const exactPlaceholder = '$1';
+  const prefixPlaceholder = '$2';
+  const containsPlaceholder = '$3';
+  const rawContainsPlaceholder = '$4';
+  const limitPlaceholder = '$5';
+  const searchRankExpression = `
+    CASE
+      WHEN LOWER(${config.alias}.slug) = ${exactPlaceholder} THEN 140
+      WHEN LOWER(${config.alias}.name) = ${exactPlaceholder} THEN 135
+      WHEN REPLACE(LOWER(${config.alias}.slug), '-', ' ') = ${exactPlaceholder} THEN 132
+      WHEN LOWER(${config.alias}.slug) LIKE ${prefixPlaceholder} ESCAPE '\\' THEN 120
+      WHEN LOWER(${config.alias}.name) LIKE ${prefixPlaceholder} ESCAPE '\\' THEN 116
+      WHEN LOWER(${config.alias}.name) LIKE ${containsPlaceholder} ESCAPE '\\' THEN 102
+      WHEN LOWER(COALESCE(${config.alias}.summary, '')) LIKE ${containsPlaceholder} ESCAPE '\\' THEN 78
+      WHEN LOWER(COALESCE(${config.alias}.description, '')) LIKE ${containsPlaceholder} ESCAPE '\\' THEN 62
+      WHEN LOWER(${config.searchExpression}) LIKE ${containsPlaceholder} ESCAPE '\\' THEN 48
+      WHEN ${config.searchExpression} ILIKE ${rawContainsPlaceholder} ESCAPE '\\' THEN 36
+      ELSE 0
+    END
+  `;
+  const fallbackOrderClause = buildOrderClause(config, getDefaultSearchSort(config)).replace(/^ORDER BY\s+/i, '');
   const dataQuery = `
-    SELECT ${config.selectClause}
+    SELECT
+      ${config.selectClause},
+      ${searchRankExpression} AS search_rank
     ${config.fromClause}
-    WHERE ${config.searchExpression} ILIKE $1
-    ${buildOrderClause(config, Object.keys(config.sortMap).includes('name') ? ['name'] : [Object.keys(config.sortMap)[0]])}
-    LIMIT $2
+    WHERE ${config.searchExpression} ILIKE ${rawContainsPlaceholder} ESCAPE '\\'
+    ORDER BY search_rank DESC, ${fallbackOrderClause}
+    LIMIT ${limitPlaceholder}
   `;
   const countQuery = `
     SELECT COUNT(*)::int AS total
     ${config.fromClause}
-    WHERE ${config.searchExpression} ILIKE $1
+    WHERE ${config.searchExpression} ILIKE $1 ESCAPE '\\'
   `;
+  const params = [
+    normalizedSearch,
+    `${escapedSearch}%`,
+    `%${escapedSearch}%`,
+    `%${escapeLikePattern(String(search).trim())}%`,
+    limit,
+  ];
 
   const [dataResult, countResult] = await Promise.all([
-    db.query(dataQuery, [`%${String(search).trim()}%`, limit]),
-    db.query(countQuery, [`%${String(search).trim()}%`]),
+    db.query(dataQuery, params),
+    db.query(countQuery, [params[3]]),
   ]);
 
   return {
-    rows: dataResult.rows.map((row) => config.serialize(row)),
+    rows: dataResult.rows.map((row) => ({
+      ...config.serialize(row),
+      _searchRank: toNumber(row.search_rank),
+    })),
     total: countResult.rows[0].total,
   };
 }

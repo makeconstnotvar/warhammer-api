@@ -46,11 +46,18 @@ npm run client-watch
 - `GET /api/v1/query-guide`
 - `GET /api/v1/search?search=cadia`
 - `GET /api/v1/characters?include=faction,race,homeworld,events`
+- `GET /api/v1/units?include=factions,weapons,keywords`
+- `GET /api/v1/weapons?include=faction,era,keywords`
+- `GET /api/v1/keywords?filter[category]=weapon-profile`
 - `GET /api/v1/examples/concurrency`
 - `GET /api/v1/random/character?include=faction,race,homeworld`
+- `GET /api/v1/random/unit?include=factions,weapons,keywords`
 - `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion&include=races,leaders,homeworld`
+- `GET /api/v1/compare/units?ids=terminator-squad,intercessor-squad&include=factions,weapons,keywords`
 - `GET /api/v1/stats/factions/by-race`
 - `GET /api/v1/stats/events/by-era`
+
+Поиск `GET /api/v1/search` сейчас ранжирует результаты по релевантности: точный `slug` и `name` выше частичных совпадений по `summary` и `description`.
 
 ## Структура
 
