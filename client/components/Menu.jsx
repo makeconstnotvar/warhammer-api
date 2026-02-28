@@ -11,6 +11,8 @@ const Menu = () => {
           <a href="/quick-start">Quick Start</a>
           <a href="/resources">Resources</a>
           <a href="/query-guide">Query Guide</a>
+          <a href="/stats">Stats</a>
+          <a href="/compare">Compare</a>
           <a href="/playground">Playground</a>
           <a href="/examples/concurrency">Concurrency</a>
         </div>

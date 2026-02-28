@@ -7,6 +7,8 @@ import { ResourcePage } from "./pages/ResourcePage";
 import { QueryGuide } from "./pages/QueryGuide";
 import { Playground } from "./pages/Playground";
 import { ConcurrencyPage } from "./pages/ConcurrencyPage";
+import { Stats } from "./pages/Stats";
+import { ComparePage } from "./pages/ComparePage";
 
 const Routes = () => (
   <LocationProvider>
@@ -17,6 +19,8 @@ const Routes = () => (
         <Resources path="/resources"/>
         <ResourcePage path="/resources/:resource"/>
         <QueryGuide path="/query-guide"/>
+        <Stats path="/stats"/>
+        <ComparePage path="/compare"/>
         <Playground path="/playground"/>
         <ConcurrencyPage path="/examples/concurrency"/>
         <NotFound default/>

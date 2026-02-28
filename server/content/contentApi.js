@@ -13,6 +13,8 @@ const {
   getRandomResourceRow,
   getResourceCount,
   getResourceRow,
+  getUnitStatsByFaction,
+  getWeaponStatsByKeyword,
   loadResourcesByIdentifiers,
   listResourceRows,
   loadResourcesByIds,
@@ -517,6 +519,30 @@ async function getStats(resourceKey, groupKey) {
       meta: {
         groupBy: 'era',
         resource: 'events',
+        total: rows.reduce((sum, row) => sum + row.count, 0),
+      },
+    };
+  }
+
+  if (normalizedResourceKey === 'units' && groupKey === 'by-faction') {
+    const rows = await getUnitStatsByFaction();
+    return {
+      data: rows,
+      meta: {
+        groupBy: 'faction',
+        resource: 'units',
+        total: rows.reduce((sum, row) => sum + row.count, 0),
+      },
+    };
+  }
+
+  if (normalizedResourceKey === 'weapons' && groupKey === 'by-keyword') {
+    const rows = await getWeaponStatsByKeyword();
+    return {
+      data: rows,
+      meta: {
+        groupBy: 'keyword',
+        resource: 'weapons',
         total: rows.reduce((sum, row) => sum + row.count, 0),
       },
     };

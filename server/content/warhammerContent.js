@@ -56,6 +56,11 @@ const featuredQueries = [
     path: '/api/v1/stats/factions/by-race',
   },
   {
+    title: 'Статистика юнитов по фракциям',
+    description: 'Готовая сводка для faction dashboard и сравнения ростеров.',
+    path: '/api/v1/stats/units/by-faction',
+  },
+  {
     title: 'Случайный персонаж',
     description: 'Быстрая ручка для featured card, hero-блоков и экспериментов.',
     path: '/api/v1/random/character?include=faction,race,homeworld',
@@ -128,6 +133,11 @@ const queryGuide = {
       title: 'Агрегация для диаграммы',
       description: 'Подготовленные данные для bar chart без ручной агрегации на клиенте.',
       path: '/api/v1/stats/events/by-era',
+    },
+    {
+      title: 'Сводка оружия по keywords',
+      description: 'Подходит для charts, legends и exploration UI вокруг weapon profiles.',
+      path: '/api/v1/stats/weapons/by-keyword',
     },
   ],
 };

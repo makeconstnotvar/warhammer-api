@@ -38,6 +38,7 @@
 - домен расширен ресурсами `keywords`, `weapons`, `units`
 - `search` ранжирует результаты по релевантности
 - `compare` поддерживает `factions`, `characters`, `units`
+- `stats` поддерживает `factions/by-race`, `events/by-era`, `units/by-faction`, `weapons/by-keyword`
 
 ## Структура верхнего уровня
 
@@ -51,7 +52,7 @@
 - `client/`
   - приложение на Preact
   - публичная документация API
-  - страницы `Quick Start`, `Resources`, `Query Guide`, `Playground`, `Concurrency`
+  - страницы `Quick Start`, `Resources`, `Query Guide`, `Stats`, `Compare`, `Playground`, `Concurrency`
   - webpack build
 - `db/`
   - `migrations/` с канонической схемой
@@ -118,6 +119,8 @@ Frontend:
 - `GET /api/v1/random/unit` отвечает из PostgreSQL
 - `GET /api/v1/compare/units?ids=terminator-squad,intercessor-squad` отвечает из PostgreSQL
 - `GET /api/v1/search?search=cadia` сортирует результаты по релевантности
+- `GET /api/v1/stats/units/by-faction` отвечает из PostgreSQL
+- `GET /api/v1/stats/weapons/by-keyword` отвечает из PostgreSQL
 
 Чего сейчас нет:
 - tests

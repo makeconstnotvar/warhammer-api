@@ -9,6 +9,7 @@
 
 - клиент-документация на Preact
 - `api/v1` с `overview`, `catalog/resources`, `query-guide`, `search`, `examples/concurrency`
+- docs-клиент со страницами `Quick Start`, `Resources`, `Query Guide`, `Stats`, `Compare`, `Playground`, `Concurrency`
 - каноническая схема PostgreSQL для `eras`, `races`, `planets`, `factions`, `characters`, `events`
 - seed-набор данных по известным сущностям Warhammer 40k
 - `api/v1` читает данные из PostgreSQL, а `server/content/warhammerContent.js` используется как источник сидов и docs-метаданных
@@ -55,6 +56,8 @@ npm run client-watch
 - `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion&include=races,leaders,homeworld`
 - `GET /api/v1/compare/units?ids=terminator-squad,intercessor-squad&include=factions,weapons,keywords`
 - `GET /api/v1/stats/factions/by-race`
+- `GET /api/v1/stats/units/by-faction`
+- `GET /api/v1/stats/weapons/by-keyword`
 - `GET /api/v1/stats/events/by-era`
 
 Поиск `GET /api/v1/search` сейчас ранжирует результаты по релевантности: точный `slug` и `name` выше частичных совпадений по `summary` и `description`.

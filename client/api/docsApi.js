@@ -17,6 +17,8 @@ const docsApi = {
   getResourceDetail: (resource, idOrSlug, params = {}) => unwrap(client.get(`/${resource}/${idOrSlug}`, { params })),
   getQueryGuide: () => unwrap(client.get('/query-guide')),
   getConcurrencyExample: () => unwrap(client.get('/examples/concurrency')),
+  getCompare: (resource, params = {}) => unwrap(client.get(`/compare/${resource}`, { params })),
+  getStats: (resource, groupKey) => unwrap(client.get(`/stats/${resource}/${groupKey}`)),
   search: (params = {}) => unwrap(client.get('/search', { params })),
 };
 

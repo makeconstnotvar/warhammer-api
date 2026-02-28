@@ -993,12 +993,70 @@ async function getEventStatsByEra() {
   }));
 }
 
+async function getUnitStatsByFaction() {
+  const query = `
+    SELECT
+      f.id,
+      f.slug,
+      f.name,
+      COUNT(DISTINCT uf.unit_id)::int AS count,
+      COALESCE(ROUND(AVG(u.power_level))::int, 0) AS average_power_level,
+      COALESCE(MAX(u.power_level), 0)::int AS max_power_level
+    FROM factions f
+    LEFT JOIN unit_factions uf ON uf.faction_id = f.id
+    LEFT JOIN units u ON u.id = uf.unit_id
+    GROUP BY f.id, f.slug, f.name
+    ORDER BY count DESC, average_power_level DESC, f.name ASC
+  `;
+
+  const result = await db.query(query);
+  return result.rows.map((row) => ({
+    averagePowerLevel: toNumber(row.average_power_level),
+    count: toNumber(row.count),
+    id: toNumber(row.id),
+    maxPowerLevel: toNumber(row.max_power_level),
+    name: row.name,
+    slug: row.slug,
+  }));
+}
+
+async function getWeaponStatsByKeyword() {
+  const query = `
+    SELECT
+      k.id,
+      k.slug,
+      k.name,
+      k.category,
+      COUNT(DISTINCT wk.weapon_id)::int AS count,
+      COALESCE(ROUND(AVG(w.power_level))::int, 0) AS average_power_level,
+      COALESCE(MAX(w.power_level), 0)::int AS max_power_level
+    FROM keywords k
+    LEFT JOIN weapon_keywords wk ON wk.keyword_id = k.id
+    LEFT JOIN weapons w ON w.id = wk.weapon_id
+    GROUP BY k.id, k.slug, k.name, k.category
+    ORDER BY count DESC, average_power_level DESC, k.name ASC
+  `;
+
+  const result = await db.query(query);
+  return result.rows.map((row) => ({
+    averagePowerLevel: toNumber(row.average_power_level),
+    category: row.category,
+    count: toNumber(row.count),
+    id: toNumber(row.id),
+    maxPowerLevel: toNumber(row.max_power_level),
+    name: row.name,
+    slug: row.slug,
+  }));
+}
+
 module.exports = {
   getEventStatsByEra,
   getFactionStatsByRace,
   getRandomResourceRow,
   getResourceCount,
   getResourceRow,
+  getUnitStatsByFaction,
+  getWeaponStatsByKeyword,
   loadResourcesByIdentifiers,
   listResourceRows,
   loadResourcesByIds,
