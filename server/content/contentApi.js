@@ -1,20 +1,22 @@
 const {
   apiInfo,
   concurrencyExample,
-  dataset,
   featuredQueries,
   gettingStartedSteps,
   queryGuide,
   resourceDefinitions,
   resourceOrder,
 } = require('./warhammerContent');
+const {
+  getResourceCount,
+  getResourceRow,
+  listResourceRows,
+  loadResourcesByIds,
+  searchResourceRows,
+} = require('./contentDb');
 const { createApiError } = require('../lib/apiErrors');
 
 const MAX_PAGE_SIZE = 50;
-
-function normalizeValue(value) {
-  return String(value || '').trim().toLowerCase();
-}
 
 function splitCsv(value) {
   if (!value) {
@@ -40,19 +42,6 @@ function pickFields(record, requestedFields) {
   }, {});
 }
 
-function buildIndexes() {
-  return resourceOrder.reduce((result, resourceKey) => {
-    const collection = dataset[resourceKey] || [];
-    result[resourceKey] = {
-      byId: new Map(collection.map((item) => [String(item.id), item])),
-      bySlug: new Map(collection.map((item) => [String(item.slug), item])),
-    };
-    return result;
-  }, {});
-}
-
-const indexes = buildIndexes();
-
 function getResourceConfig(resourceKey) {
   const config = resourceDefinitions[resourceKey];
 
@@ -61,11 +50,6 @@ function getResourceConfig(resourceKey) {
   }
 
   return config;
-}
-
-function getCollection(resourceKey) {
-  getResourceConfig(resourceKey);
-  return dataset[resourceKey] || [];
 }
 
 function extractBracketValues(query, prefix) {
@@ -126,146 +110,50 @@ function parseListQuery(resourceKey, query) {
   return { fieldMap, filters, include, limit, page, search, sort };
 }
 
-function getComparableValues(value) {
-  if (Array.isArray(value)) {
-    return value.map((item) => normalizeValue(item));
-  }
-
-  return [normalizeValue(value)];
-}
-
-function matchesRelationFilter(item, filterConfig, rawValue) {
-  const relationIds = filterConfig.many
-    ? item[filterConfig.localField] || []
-    : [item[filterConfig.localField]].filter(Boolean);
-  const values = splitCsv(rawValue).map(normalizeValue);
-
-  if (values.length === 0) {
-    return true;
-  }
-
-  const relatedItems = relationIds
-    .map((relationId) => indexes[filterConfig.resource].byId.get(String(relationId)))
-    .filter(Boolean);
-
-  return relatedItems.some((relatedItem) => {
-    const candidates = [relatedItem.id, relatedItem.slug, relatedItem.name];
-    return candidates.some((candidate) => values.includes(normalizeValue(candidate)));
-  });
-}
-
-function matchesFilter(item, filterKey, rawValue, resourceConfig) {
-  const filterConfig = resourceConfig.filters[filterKey];
-
-  if (!rawValue) {
-    return true;
-  }
-
-  if (filterConfig.type === 'relation') {
-    return matchesRelationFilter(item, filterConfig, rawValue);
-  }
-
-  const values = splitCsv(rawValue).map(normalizeValue);
-
-  if (values.length === 0) {
-    return true;
-  }
-
-  const comparableValues = getComparableValues(item[filterConfig.field]);
-  return values.some((value) => comparableValues.includes(value));
-}
-
-function applyFilters(collection, filters, resourceConfig) {
-  return collection.filter((item) =>
-    Object.entries(filters).every(([filterKey, rawValue]) => matchesFilter(item, filterKey, rawValue, resourceConfig))
-  );
-}
-
-function buildSearchText(item, resourceConfig) {
-  return resourceConfig.searchFields
-    .map((field) => item[field])
-    .flat()
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-}
-
-function applySearch(collection, search, resourceConfig) {
-  if (!search) {
-    return collection;
-  }
-
-  const normalizedSearch = normalizeValue(search);
-  return collection.filter((item) => buildSearchText(item, resourceConfig).includes(normalizedSearch));
-}
-
-function comparePrimitiveValues(left, right) {
-  if (typeof left === 'number' && typeof right === 'number') {
-    return left - right;
-  }
-
-  return String(left || '').localeCompare(String(right || ''));
-}
-
-function applySort(collection, sortFields) {
-  if (!sortFields.length) {
-    return collection;
-  }
-
-  return [...collection].sort((leftItem, rightItem) => {
-    for (const sortField of sortFields) {
-      const direction = sortField.startsWith('-') ? -1 : 1;
-      const field = sortField.startsWith('-') ? sortField.slice(1) : sortField;
-      const diff = comparePrimitiveValues(leftItem[field], rightItem[field]);
-
-      if (diff !== 0) {
-        return diff * direction;
-      }
-    }
-
-    return 0;
-  });
-}
-
-function getIncludedRecordIds(item, includeConfig) {
-  if (includeConfig.many) {
-    return item[includeConfig.localField] || [];
-  }
-
-  return [item[includeConfig.localField]].filter(Boolean);
-}
-
 function serializeResource(resourceKey, item, fieldMap) {
   return pickFields(item, fieldMap[resourceKey]);
 }
 
-function buildIncluded(resourceKey, items, includeKeys, fieldMap) {
+async function buildIncluded(resourceKey, items, includeKeys, fieldMap) {
   const resourceConfig = getResourceConfig(resourceKey);
   const included = {};
-  const seen = new Set();
+  const seenByResource = {};
 
-  includeKeys.forEach((includeKey) => {
+  for (const includeKey of includeKeys) {
     const includeConfig = resourceConfig.includes[includeKey];
     const targetResource = includeConfig.resource;
+    const targetIds = new Set();
 
     items.forEach((item) => {
-      const relatedItems = getIncludedRecordIds(item, includeConfig)
-        .map((relationId) => indexes[targetResource].byId.get(String(relationId)))
-        .filter(Boolean);
+      const rawValue = item[includeConfig.localField];
 
-      relatedItems.forEach((relatedItem) => {
-        const seenKey = `${targetResource}:${relatedItem.id}`;
+      if (includeConfig.many) {
+        (rawValue || []).forEach((id) => targetIds.add(id));
+        return;
+      }
 
-        if (seen.has(seenKey)) {
-          return;
-        }
-
-        seen.add(seenKey);
-        included[targetResource] = included[targetResource] || [];
-        included[targetResource].push(serializeResource(targetResource, relatedItem, fieldMap));
-      });
+      if (rawValue !== null && rawValue !== undefined) {
+        targetIds.add(rawValue);
+      }
     });
-  });
+
+    if (!targetIds.size) {
+      continue;
+    }
+
+    const loadedItems = await loadResourcesByIds(targetResource, [...targetIds]);
+    seenByResource[targetResource] = seenByResource[targetResource] || new Set();
+    included[targetResource] = included[targetResource] || [];
+
+    loadedItems.forEach((loadedItem) => {
+      if (seenByResource[targetResource].has(loadedItem.id)) {
+        return;
+      }
+
+      seenByResource[targetResource].add(loadedItem.id);
+      included[targetResource].push(serializeResource(targetResource, loadedItem, fieldMap));
+    });
+  }
 
   return included;
 }
@@ -304,23 +192,14 @@ function buildLinks(pathname, originalQuery, page, limit, totalPages) {
   return { next, prev, self };
 }
 
-function listResource(resourceKey, query, pathname) {
-  const resourceConfig = getResourceConfig(resourceKey);
+async function listResource(resourceKey, query, pathname) {
   const parsed = parseListQuery(resourceKey, query);
-
-  let collection = getCollection(resourceKey);
-  collection = applyFilters(collection, parsed.filters, resourceConfig);
-  collection = applySearch(collection, parsed.search, resourceConfig);
-  collection = applySort(collection, parsed.sort);
-
-  const total = collection.length;
-  const totalPages = Math.max(1, Math.ceil(total / parsed.limit));
-  const offset = (parsed.page - 1) * parsed.limit;
-  const pagedItems = collection.slice(offset, offset + parsed.limit);
+  const result = await listResourceRows(resourceKey, parsed);
+  const totalPages = Math.max(1, Math.ceil(result.total / parsed.limit));
 
   return {
-    data: pagedItems.map((item) => serializeResource(resourceKey, item, parsed.fieldMap)),
-    included: buildIncluded(resourceKey, pagedItems, parsed.include, parsed.fieldMap),
+    data: result.rows.map((item) => serializeResource(resourceKey, item, parsed.fieldMap)),
+    included: await buildIncluded(resourceKey, result.rows, parsed.include, parsed.fieldMap),
     links: buildLinks(pathname, query, parsed.page, parsed.limit, totalPages),
     meta: {
       appliedFilters: parsed.filters,
@@ -330,19 +209,15 @@ function listResource(resourceKey, query, pathname) {
       resource: resourceKey,
       search: parsed.search,
       sort: parsed.sort,
-      total,
+      total: result.total,
       totalPages,
     },
   };
 }
 
-function findResourceItem(resourceKey, idOrSlug) {
-  return indexes[resourceKey].byId.get(String(idOrSlug)) || indexes[resourceKey].bySlug.get(String(idOrSlug));
-}
-
-function getResourceDetail(resourceKey, idOrSlug, query) {
+async function getResourceDetail(resourceKey, idOrSlug, query) {
   const parsed = parseListQuery(resourceKey, query);
-  const item = findResourceItem(resourceKey, idOrSlug);
+  const item = await getResourceRow(resourceKey, idOrSlug);
 
   if (!item) {
     throw createApiError(404, 'ENTITY_NOT_FOUND', `Resource "${resourceKey}" entry "${idOrSlug}" was not found`);
@@ -350,7 +225,7 @@ function getResourceDetail(resourceKey, idOrSlug, query) {
 
   return {
     data: serializeResource(resourceKey, item, parsed.fieldMap),
-    included: buildIncluded(resourceKey, [item], parsed.include, parsed.fieldMap),
+    included: await buildIncluded(resourceKey, [item], parsed.include, parsed.fieldMap),
     meta: {
       include: parsed.include,
       resource: resourceKey,
@@ -358,11 +233,12 @@ function getResourceDetail(resourceKey, idOrSlug, query) {
   };
 }
 
-function buildResourceStats(resourceKey) {
+async function buildResourceStats(resourceKey) {
   const resourceConfig = getResourceConfig(resourceKey);
+  const count = await getResourceCount(resourceKey);
 
   return {
-    count: getCollection(resourceKey).length,
+    count,
     description: resourceConfig.description,
     filters: Object.entries(resourceConfig.filters).map(([key, value]) => ({
       id: key,
@@ -382,13 +258,13 @@ function buildResourceStats(resourceKey) {
   };
 }
 
-function getOverview() {
+async function getOverview() {
   return {
     data: {
       api: apiInfo,
       featuredQueries,
       gettingStartedSteps,
-      resources: resourceOrder.map((resourceKey) => buildResourceStats(resourceKey)),
+      resources: await Promise.all(resourceOrder.map((resourceKey) => buildResourceStats(resourceKey))),
     },
     meta: {
       generatedAt: new Date().toISOString(),
@@ -396,21 +272,21 @@ function getOverview() {
   };
 }
 
-function getResourceCatalog() {
+async function getResourceCatalog() {
   return {
-    data: resourceOrder.map((resourceKey) => buildResourceStats(resourceKey)),
+    data: await Promise.all(resourceOrder.map((resourceKey) => buildResourceStats(resourceKey))),
     meta: {
       total: resourceOrder.length,
     },
   };
 }
 
-function getResourceDocumentation(resourceKey) {
+async function getResourceDocumentation(resourceKey) {
   const resourceConfig = getResourceConfig(resourceKey);
 
   return {
     data: {
-      count: getCollection(resourceKey).length,
+      count: await getResourceCount(resourceKey),
       defaultSort: resourceConfig.defaultSort,
       description: resourceConfig.description,
       fields: resourceConfig.fields,
@@ -454,7 +330,7 @@ function getConcurrencyExample() {
   };
 }
 
-function searchAll(query, pathname) {
+async function searchAll(query, pathname) {
   const search = String(query.search || query.q || '').trim();
 
   if (!search) {
@@ -467,23 +343,20 @@ function searchAll(query, pathname) {
 
   resources.forEach((resourceKey) => getResourceConfig(resourceKey));
 
-  const normalizedSearch = normalizeValue(search);
-  const results = resources.flatMap((resourceKey) => {
-    const resourceConfig = getResourceConfig(resourceKey);
-
-    return getCollection(resourceKey)
-      .filter((item) => buildSearchText(item, resourceConfig).includes(normalizedSearch))
-      .map((item) => ({
-        id: item.id,
-        name: item.name,
-        resource: resourceKey,
-        slug: item.slug,
-        summary: item.summary,
-      }));
-  });
+  const resultsByResource = await Promise.all(resources.map((resourceKey) => searchResourceRows(resourceKey, search, limit)));
+  const allResults = resultsByResource
+    .flatMap((entry, index) => entry.rows.map((item) => ({
+      id: item.id,
+      name: item.name,
+      resource: resources[index],
+      slug: item.slug,
+      summary: item.summary,
+    })));
+  const results = allResults.slice(0, limit);
+  const total = resultsByResource.reduce((sum, entry) => sum + entry.total, 0);
 
   return {
-    data: results.slice(0, limit),
+    data: results,
     included: {},
     links: buildLinks(pathname, query, 1, limit, 1),
     meta: {
@@ -492,7 +365,7 @@ function searchAll(query, pathname) {
       resource: 'search',
       resources,
       search,
-      total: results.length,
+      total,
       totalPages: 1,
     },
   };

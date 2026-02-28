@@ -4,21 +4,33 @@ const { createApiError } = require('./lib/apiErrors');
 
 const apiV1Routes = express.Router();
 
-apiV1Routes.get('/', (req, res) => {
-  res.json(contentApi.getOverview());
-});
-
-apiV1Routes.get('/overview', (req, res) => {
-  res.json(contentApi.getOverview());
-});
-
-apiV1Routes.get('/catalog/resources', (req, res) => {
-  res.json(contentApi.getResourceCatalog());
-});
-
-apiV1Routes.get('/catalog/resources/:resource', (req, res, next) => {
+apiV1Routes.get('/', async (req, res, next) => {
   try {
-    res.json(contentApi.getResourceDocumentation(req.params.resource));
+    res.json(await contentApi.getOverview());
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiV1Routes.get('/overview', async (req, res, next) => {
+  try {
+    res.json(await contentApi.getOverview());
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiV1Routes.get('/catalog/resources', async (req, res, next) => {
+  try {
+    res.json(await contentApi.getResourceCatalog());
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiV1Routes.get('/catalog/resources/:resource', async (req, res, next) => {
+  try {
+    res.json(await contentApi.getResourceDocumentation(req.params.resource));
   } catch (error) {
     next(error);
   }
@@ -32,25 +44,25 @@ apiV1Routes.get('/examples/concurrency', (req, res) => {
   res.json(contentApi.getConcurrencyExample());
 });
 
-apiV1Routes.get('/search', (req, res, next) => {
+apiV1Routes.get('/search', async (req, res, next) => {
   try {
-    res.json(contentApi.searchAll(req.query, req.baseUrl + req.path));
+    res.json(await contentApi.searchAll(req.query, req.baseUrl + req.path));
   } catch (error) {
     next(error);
   }
 });
 
-apiV1Routes.get('/:resource/:idOrSlug', (req, res, next) => {
+apiV1Routes.get('/:resource/:idOrSlug', async (req, res, next) => {
   try {
-    res.json(contentApi.getResourceDetail(req.params.resource, req.params.idOrSlug, req.query));
+    res.json(await contentApi.getResourceDetail(req.params.resource, req.params.idOrSlug, req.query));
   } catch (error) {
     next(error);
   }
 });
 
-apiV1Routes.get('/:resource', (req, res, next) => {
+apiV1Routes.get('/:resource', async (req, res, next) => {
   try {
-    res.json(contentApi.listResource(req.params.resource, req.query, req.baseUrl + req.path));
+    res.json(await contentApi.listResource(req.params.resource, req.query, req.baseUrl + req.path));
   } catch (error) {
     next(error);
   }

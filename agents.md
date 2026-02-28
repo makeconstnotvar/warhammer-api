@@ -23,12 +23,18 @@
 - сервер на Node.js + Express
 - доступ к PostgreSQL через `pg`
 - простая слоистая структура серверной части: `handler -> service -> repository -> model`
-- клиент на Preact с MobX store
-- страницы списков для races, factions и characters
-- пагинация на сервере и в клиенте
+- клиент на Preact, который теперь играет роль публичной документации
+- новый `api/v1` с богатым read API поверх учебного набора данных
+- канонические migrations и seed scripts для PostgreSQL
+- документационные страницы, playground и demo конкурентных запросов
 - раздача собранного клиента через Express
 
-Проект пока не является полноценной учебной API-платформой. Сейчас это минимальный CRUD-прототип со списками.
+Актуально сейчас:
+- `api/v1` является основным публичным учебным API
+- старый `/api` сохранен как legacy CRUD-слой для `races`, `factions`, `characters`
+- клиент больше не является списочным demo UI, а работает как docs-first приложение
+- база данных может быть поднята из кода через `db:migrate` и `db:seed`
+- `api/v1` теперь читает из PostgreSQL, а не из in-memory набора
 
 ## Структура верхнего уровня
 
@@ -37,15 +43,21 @@
   - регистрация routes
   - подключение к PostgreSQL
   - handlers, services, repositories, models
+  - `v1Routes.js` и `content/` для публичного учебного API
+  - `contentDb.js` строит SQL-чтение для `api/v1`
 - `client/`
   - приложение на Preact
-  - простая навигация и страницы списков
-  - API wrapper-ы и MobX store
+  - публичная документация API
+  - страницы `Quick Start`, `Resources`, `Query Guide`, `Playground`, `Concurrency`
   - webpack build
-- `api/`
-  - сейчас пустая директория
+- `db/`
+  - `migrations/` с канонической схемой
+  - `seeds/` с учебным набором данных
+  - `scripts/` для запуска migrations
 - `agents.md`
   - этот файл
+- `README.md`
+  - быстрый локальный запуск и обзор scripts
 - `package.json`
   - scripts и зависимости
 
@@ -80,10 +92,22 @@ Frontend:
   - запускает webpack в режиме watch
 - `npm run build-dev`
   - собирает клиент в `client/dist`
+- `npm run db:migrate`
+  - применяет migrations
+- `npm run db:seed`
+  - перезаписывает учебные данные в PostgreSQL
+- `npm run db:setup`
+  - выполняет migrations и затем seed
 
 Что было проверено во время анализа:
 - `npm run build-dev` выполняется успешно
 - серверные модули загружаются без синтаксических ошибок
+- `npm run db:migrate` выполняется успешно
+- `npm run db:seed` выполняется успешно
+- `GET /api/v1/overview` отвечает через HTTP
+- legacy `GET /api/factions` продолжает работать после миграций
+- `GET /api/v1/factions?include=leaders,races,homeworld` отвечает из PostgreSQL
+- `GET /api/v1/characters?filter[faction]=ultramarines&include=faction,race,homeworld,events` отвечает из PostgreSQL
 
 Чего сейчас нет:
 - tests

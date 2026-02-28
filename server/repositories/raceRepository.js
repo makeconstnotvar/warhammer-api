@@ -1,5 +1,6 @@
 const db = require('../db');
 const Race = require('../models/raceModel');
+const { slugify } = require('../utils/slugify');
 
 class RaceRepository {
 	async findAll(options = {}) {
@@ -61,17 +62,25 @@ class RaceRepository {
 	}
 
 	async create(race) {
+		const slug = race.slug || slugify(race.name);
+		const summary = race.summary || race.description || '';
+		const status = race.status || 'active';
+		const alignment = race.alignment || 'unknown';
 		const result = await db.query(
-			'INSERT INTO races (name, description, image_url) VALUES ($1, $2, $3) RETURNING *',
-			[race.name, race.description, race.imageUrl]
+			'INSERT INTO races (slug, name, summary, description, status, alignment, image_url) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+			[slug, race.name, summary, race.description || '', status, alignment, race.imageUrl || null]
 		);
 		return new Race(result.rows[0]);
 	}
 
 	async update(id, race) {
+		const slug = race.slug || slugify(race.name);
+		const summary = race.summary || race.description || '';
+		const status = race.status || 'active';
+		const alignment = race.alignment || 'unknown';
 		const result = await db.query(
-			'UPDATE races SET name = $1, description = $2, image_url = $3, updated_at = NOW() WHERE id = $4 RETURNING *',
-			[race.name, race.description, race.imageUrl, id]
+			'UPDATE races SET slug = $1, name = $2, summary = $3, description = $4, status = $5, alignment = $6, image_url = $7, updated_at = NOW() WHERE id = $8 RETURNING *',
+			[slug, race.name, summary, race.description || '', status, alignment, race.imageUrl || null, id]
 		);
 		if (result.rows.length === 0) {
 			return null;

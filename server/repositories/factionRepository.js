@@ -1,5 +1,6 @@
 const db = require('../db');
 const Faction = require('../models/factionModel');
+const { slugify } = require('../utils/slugify');
 
 class FactionRepository {
 	async findAll(options = {}) {
@@ -61,17 +62,29 @@ class FactionRepository {
 	}
 
 	async create(faction) {
+		const slug = faction.slug || slugify(faction.name);
+		const summary = faction.summary || faction.description || '';
+		const status = faction.status || 'active';
+		const alignment = faction.alignment || 'unknown';
+		const powerLevel = parseInt(faction.powerLevel || 0, 10);
+		const raceId = faction.raceId || null;
 		const result = await db.query(
-			'INSERT INTO factions (name, description, image_url) VALUES ($1, $2, $3) RETURNING *',
-			[faction.name, faction.description, faction.imageUrl]
+			'INSERT INTO factions (slug, name, summary, description, status, alignment, power_level, race_id, image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+			[slug, faction.name, summary, faction.description || '', status, alignment, powerLevel, raceId, faction.imageUrl || null]
 		);
 		return new Faction(result.rows[0]);
 	}
 
 	async update(id, faction) {
+		const slug = faction.slug || slugify(faction.name);
+		const summary = faction.summary || faction.description || '';
+		const status = faction.status || 'active';
+		const alignment = faction.alignment || 'unknown';
+		const powerLevel = parseInt(faction.powerLevel || 0, 10);
+		const raceId = faction.raceId || null;
 		const result = await db.query(
-			'UPDATE factions SET name = $1, description = $2, image_url = $3, updated_at = NOW() WHERE id = $4 RETURNING *',
-			[faction.name, faction.description, faction.imageUrl, id]
+			'UPDATE factions SET slug = $1, name = $2, summary = $3, description = $4, status = $5, alignment = $6, power_level = $7, race_id = $8, image_url = $9, updated_at = NOW() WHERE id = $10 RETURNING *',
+			[slug, faction.name, summary, faction.description || '', status, alignment, powerLevel, raceId, faction.imageUrl || null, id]
 		);
 		if (result.rows.length === 0) {
 			return null;

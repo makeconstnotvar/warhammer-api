@@ -1,5 +1,6 @@
 const db = require('../db');
 const Character = require('../models/characterModel');
+const { slugify } = require('../utils/slugify');
 
 class CharacterRepository {
 	async findAll(options = {}) {
@@ -73,17 +74,54 @@ class CharacterRepository {
 	}
 
 	async create(character) {
+		const slug = character.slug || slugify(character.name);
+		const summary = character.summary || character.description || '';
+		const status = character.status || 'active';
+		const alignment = character.alignment || 'unknown';
+		const powerLevel = parseInt(character.powerLevel || 0, 10);
 		const result = await db.query(
-			'INSERT INTO characters (name, description, faction_id, race_id, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-			[character.name, character.description, character.factionId, character.raceId, character.imageUrl]
+			'INSERT INTO characters (slug, name, summary, description, status, alignment, power_level, faction_id, race_id, homeworld_id, era_id, image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
+			[
+				slug,
+				character.name,
+				summary,
+				character.description || '',
+				status,
+				alignment,
+				powerLevel,
+				character.factionId || null,
+				character.raceId || null,
+				character.homeworldId || null,
+				character.eraId || null,
+				character.imageUrl || null
+			]
 		);
 		return new Character(result.rows[0]);
 	}
 
 	async update(id, character) {
+		const slug = character.slug || slugify(character.name);
+		const summary = character.summary || character.description || '';
+		const status = character.status || 'active';
+		const alignment = character.alignment || 'unknown';
+		const powerLevel = parseInt(character.powerLevel || 0, 10);
 		const result = await db.query(
-			'UPDATE characters SET name = $1, description = $2, faction_id = $3, race_id = $4, image_url = $5, updated_at = NOW() WHERE id = $6 RETURNING *',
-			[character.name, character.description, character.factionId, character.raceId, character.imageUrl, id]
+			'UPDATE characters SET slug = $1, name = $2, summary = $3, description = $4, status = $5, alignment = $6, power_level = $7, faction_id = $8, race_id = $9, homeworld_id = $10, era_id = $11, image_url = $12, updated_at = NOW() WHERE id = $13 RETURNING *',
+			[
+				slug,
+				character.name,
+				summary,
+				character.description || '',
+				status,
+				alignment,
+				powerLevel,
+				character.factionId || null,
+				character.raceId || null,
+				character.homeworldId || null,
+				character.eraId || null,
+				character.imageUrl || null,
+				id
+			]
 		);
 		if (result.rows.length === 0) {
 			return null;
