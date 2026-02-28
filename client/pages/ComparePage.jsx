@@ -3,7 +3,7 @@ import { docsApi } from '../api/docsApi';
 import { JsonViewer } from '../components/JsonViewer';
 import { StateNotice } from '../components/StateNotice';
 import { extractError } from '../hooks/useAsyncData';
-import { buildQueryString } from '../lib/query';
+import { buildQueryString, readQueryState, replaceQueryState } from '../lib/query';
 
 const comparePresets = {
   factions: {
@@ -116,9 +116,24 @@ function IncludedSummary({ included }) {
 }
 
 function ComparePage() {
-  const [resource, setResource] = useState('factions');
-  const [ids, setIds] = useState(comparePresets.factions.ids);
-  const [include, setInclude] = useState(comparePresets.factions.include);
+  const initialQuery = useMemo(() => {
+    const queryState = readQueryState({
+      resource: 'factions',
+      ids: comparePresets.factions.ids,
+      include: comparePresets.factions.include,
+    });
+    const safeResource = comparePresets[queryState.resource] ? queryState.resource : 'factions';
+    const safePreset = comparePresets[safeResource];
+
+    return {
+      ids: queryState.ids || safePreset.ids,
+      include: queryState.include || safePreset.include,
+      resource: safeResource,
+    };
+  }, []);
+  const [resource, setResource] = useState(initialQuery.resource);
+  const [ids, setIds] = useState(initialQuery.ids);
+  const [include, setInclude] = useState(initialQuery.include);
   const [requestPath, setRequestPath] = useState('');
   const [responseData, setResponseData] = useState(null);
   const [submitError, setSubmitError] = useState('');
@@ -148,12 +163,17 @@ function ComparePage() {
       setResponseData(null);
       setRequestPath(`/api/v1/compare/${nextResource}${buildQueryString(params)}`);
     } finally {
+      replaceQueryState({
+        resource: nextResource,
+        ids: nextIds,
+        include: nextInclude,
+      });
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    runCompare('factions', comparePresets.factions.ids, comparePresets.factions.include);
+    runCompare(initialQuery.resource, initialQuery.ids, initialQuery.include);
   }, []);
 
   function handleResourceChange(event) {

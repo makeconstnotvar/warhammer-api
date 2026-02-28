@@ -61,6 +61,11 @@ const featuredQueries = [
     path: '/api/v1/stats/units/by-faction',
   },
   {
+    title: 'Организации внутри Imperium',
+    description: 'Подходит для institutional UI, codex browser и сложных relation filters.',
+    path: '/api/v1/organizations?filter[faction]=imperium-of-man&include=factions,leaders,homeworld',
+  },
+  {
     title: 'Случайный персонаж',
     description: 'Быстрая ручка для featured card, hero-блоков и экспериментов.',
     path: '/api/v1/random/character?include=faction,race,homeworld',
@@ -74,6 +79,11 @@ const featuredQueries = [
     title: 'Сравнение юнитов',
     description: 'Готовый compare endpoint для squad browser, build planner и учебных таблиц.',
     path: '/api/v1/compare/units?ids=terminator-squad,intercessor-squad&include=factions,weapons,keywords',
+  },
+  {
+    title: 'Кампании по участникам',
+    description: 'Многосторонний ресурс для dashboards, timelines и campaign explorer.',
+    path: '/api/v1/campaigns?filter[factions]=imperium-of-man,black-legion&include=planets,characters,organizations',
   },
 ];
 
@@ -138,6 +148,11 @@ const queryGuide = {
       title: 'Сводка оружия по keywords',
       description: 'Подходит для charts, legends и exploration UI вокруг weapon profiles.',
       path: '/api/v1/stats/weapons/by-keyword',
+    },
+    {
+      title: 'Реликвии с носителем',
+      description: 'Детальные карточки, inventory UI и relation-heavy detail pages.',
+      path: '/api/v1/relics?include=faction,bearer,originPlanet,keywords&sort=-powerLevel,name',
     },
   ],
 };
@@ -236,12 +251,35 @@ const dataset = {
     { id: 9, slug: 'havoc-squad', name: 'Havoc Squad', summary: 'Тяжелая огневая поддержка Chaos Space Marines.', description: 'Удобный пример heavy support unit для build planner и squad browser.', status: 'active', unitType: 'heavy-support', powerLevel: 86, eraId: 4, factionIds: [3], keywordIds: [1, 3, 6, 14], weaponIds: [5] },
     { id: 10, slug: 'primaris-librarian', name: 'Primaris Librarian', summary: 'Психически одаренный specialist отряд Space Marines.', description: 'Соединяет psychic, melee и elite-паттерны в одном объекте.', status: 'active', unitType: 'specialist', powerLevel: 88, eraId: 4, factionIds: [2], keywordIds: [2, 4, 5], weaponIds: [10] },
   ],
+  organizations: [
+    { id: 1, slug: 'inquisition', name: 'Inquisition', summary: 'Теневой надзор за угрозами Imperium.', description: 'Сильный institutional resource для relation-heavy screens и filters.', status: 'active', organizationType: 'ordo', influenceLevel: 95, homeworldId: 1, eraId: 4, factionIds: [1, 8], leaderIds: [9], keywords: ['imperium', 'faith'] },
+    { id: 2, slug: 'adeptus-mechanicus', name: 'Adeptus Mechanicus', summary: 'Культ Машины и хранители технологий.', description: 'Подходит для связок между Mars, технологиями, relics и campaigns.', status: 'active', organizationType: 'tech-priesthood', influenceLevel: 92, homeworldId: 2, eraId: 4, factionIds: [1], leaderIds: [], keywords: ['mechanicus', 'forge'] },
+    { id: 3, slug: 'ecclesiarchy', name: 'Ecclesiarchy', summary: 'Имперская церковь и политическая сила веры.', description: 'Полезна для faith-driven UI и связи между персонажами, relics и campaigns.', status: 'active', organizationType: 'state-church', influenceLevel: 88, homeworldId: 1, eraId: 4, factionIds: [1, 8], leaderIds: [9], keywords: ['faith', 'imperium'] },
+    { id: 4, slug: 'deathwatch', name: 'Deathwatch', summary: 'Элитное братство для борьбы с xenos.', description: 'Хорошо подходит для filters по organizations и военных task-force страниц.', status: 'active', organizationType: 'chamber-militant', influenceLevel: 84, homeworldId: 1, eraId: 4, factionIds: [1, 2, 10], leaderIds: [2], keywords: ['elite', 'xenos'] },
+    { id: 5, slug: 'triarch', name: 'Triarch', summary: 'Древний правящий контур династий Necrons.', description: 'Добавляет institutional слой для древних держав и campaign analytics.', status: 'active', organizationType: 'dynastic-court', influenceLevel: 86, eraId: 4, factionIds: [6], leaderIds: [7], keywords: ['dynasties', 'ancient'] },
+    { id: 6, slug: 'fire-caste-command', name: 'Fire Caste Command', summary: "Военный центр T'au Empire.", description: 'Удобный пример military command структуры для filters и compare организационного уровня.', status: 'active', organizationType: 'military-command', influenceLevel: 79, eraId: 4, factionIds: [7], leaderIds: [8], keywords: ['greater-good', 'technology'] },
+  ],
+  relics: [
+    { id: 1, slug: 'emperors-sword', name: "Emperor's Sword", summary: 'Пламенный клинок, ставший символом возвращения Guilliman.', description: 'Сильный flagship relic для detail pages и power-driven sorting.', status: 'active', relicType: 'master-crafted-weapon', powerLevel: 99, factionId: 1, bearerCharacterId: 2, originPlanetId: 1, eraId: 4, keywordIds: [2, 10] },
+    { id: 2, slug: 'armour-of-fate', name: 'Armour of Fate', summary: 'Реликтовый доспех, поддерживающий Primarch в новой эре.', description: 'Хорош для inventory UI и связок между bearer, faction и origin.', status: 'active', relicType: 'armor', powerLevel: 95, factionId: 2, bearerCharacterId: 2, originPlanetId: 4, eraId: 4, keywordIds: [2, 10] },
+    { id: 3, slug: 'talon-of-horus', name: 'Talon of Horus', summary: 'Легендарное когтевое оружие Abaddon.', description: 'Связывает Chaos, relic cards и сильные compare-сценарии персонажей.', status: 'active', relicType: 'weapon', powerLevel: 94, factionId: 3, bearerCharacterId: 4, originPlanetId: 1, eraId: 4, keywordIds: [2, 4, 10] },
+    { id: 4, slug: 'drachnyen', name: "Drach'nyen", summary: 'Пугающий демонический клинок Abaddon.', description: 'Полезен для high-stakes detail UI и темных веток search.', status: 'active', relicType: 'daemon-weapon', powerLevel: 97, factionId: 3, bearerCharacterId: 4, eraId: 4, keywordIds: [4, 10] },
+    { id: 5, slug: 'gauntlets-of-ultramar', name: 'Gauntlets of Ultramar', summary: 'Знаковые реликтовые перчатки Primarch.', description: 'Хороший пример hero relic с четкой faction identity и power sorting.', status: 'active', relicType: 'weapon-system', powerLevel: 92, factionId: 2, bearerCharacterId: 2, originPlanetId: 4, eraId: 4, keywordIds: [2, 10, 14] },
+    { id: 6, slug: 'ardent-blade', name: 'Ardent Blade', summary: 'Оружие святой войны Saint Celestine.', description: 'Соединяет faith, bearer detail и faction-tagged relic lists.', status: 'active', relicType: 'sacred-weapon', powerLevel: 88, factionId: 8, bearerCharacterId: 9, originPlanetId: 1, eraId: 4, keywordIds: [7, 10] },
+  ],
   events: [
     { id: 1, slug: 'horus-heresy', name: 'Horus Heresy', summary: 'Гражданская война, сломавшая Imperium.', description: 'Ключевой исторический узел для множества связей.', status: 'historical', eraId: 2, yearLabel: 'M31', yearOrder: 31000, planetIds: [1, 2], factionIds: [1, 2, 3], characterIds: [1, 3, 4], keywords: ['civil-war', 'primarchs'] },
     { id: 2, slug: 'battle-of-macragge', name: 'Battle of Macragge', summary: 'Оборона Macragge от Tyranids.', description: 'Эталонный пример оборонительной кампании.', status: 'historical', eraId: 3, yearLabel: '745.M41', yearOrder: 41745, planetIds: [4], factionIds: [2, 10], characterIds: [2, 11], keywords: ['defense', 'tyranids'] },
     { id: 3, slug: 'third-war-for-armageddon', name: 'Third War for Armageddon', summary: 'Большая война за Armageddon.', description: 'Удобная точка для compare Imperium и Orks.', status: 'historical', eraId: 3, yearLabel: '998.M41', yearOrder: 41998, planetIds: [5], factionIds: [5, 9], characterIds: [5, 10], keywords: ['siege', 'waaagh'] },
     { id: 4, slug: 'fall-of-cadia', name: 'Fall of Cadia', summary: 'Разрушение Cadia и слом старого баланса.', description: 'Событие с высокой ценностью для search и filters.', status: 'historical', eraId: 4, yearLabel: '999.M41', yearOrder: 41999, planetIds: [3], factionIds: [1, 3, 9], characterIds: [4, 10], keywords: ['cadia', 'chaos'] },
     { id: 5, slug: 'indomitus-crusade', name: 'Indomitus Crusade', summary: 'Контрнаступление Imperium после возвращения Guilliman.', description: 'Один из лучших modern-era examples.', status: 'active', eraId: 4, yearLabel: 'M42', yearOrder: 42000, planetIds: [1, 3, 4], factionIds: [1, 2, 8, 9, 10], characterIds: [2, 9, 10, 11, 12], keywords: ['indomitus', 'crusade'] },
+  ],
+  campaigns: [
+    { id: 1, slug: 'plague-wars', name: 'Plague Wars', summary: 'Долгая кампания за Ultramar против сил Chaos.', description: 'Многоэтапный campaign resource для screens с timelines, factions и organizations.', status: 'active', campaignType: 'crusade', eraId: 4, yearLabel: 'Early M42', yearOrder: 42001, planetIds: [4], factionIds: [1, 2, 3], characterIds: [2, 4], organizationIds: [1, 2], keywords: ['indomitus', 'siege'] },
+    { id: 2, slug: 'armageddon-defense-front', name: 'Armageddon Defense Front', summary: 'Кампания обороны Armageddon против Orks.', description: 'Хороший пример campaign explorer с planet, factions и iconic defenders.', status: 'historical', campaignType: 'defense', eraId: 3, yearLabel: '998.M41', yearOrder: 41998, planetIds: [5], factionIds: [5, 9], characterIds: [5, 10], organizationIds: [1], keywords: ['siege', 'guard'] },
+    { id: 3, slug: 'defense-of-baal', name: 'Defense of Baal', summary: 'Оборонительная кампания вокруг Baal.', description: 'Подходит для relation-rich campaign detail pages с chapter identity и faith motifs.', status: 'historical', campaignType: 'defense', eraId: 4, yearLabel: 'Transition to M42', yearOrder: 42000, planetIds: [7], factionIds: [1, 10], characterIds: [2, 11], organizationIds: [3, 4], keywords: ['defense', 'faith'] },
+    { id: 4, slug: 'pariah-nexus-containment', name: 'Pariah Nexus Containment', summary: 'Попытки сдержать давление Necron-зон подавления.', description: 'Сильный учебный пример campaign-level данных про древние угрозы и технологические ответы.', status: 'active', campaignType: 'containment', eraId: 4, yearLabel: 'Mid M42', yearOrder: 42003, planetIds: [1, 2], factionIds: [1, 6], characterIds: [2, 7], organizationIds: [1, 2, 5], keywords: ['ancient', 'psychic'] },
+    { id: 5, slug: 'cadian-gate-counteroffensive', name: 'Cadian Gate Counteroffensive', summary: 'Серия ответных операций после падения Cadia.', description: 'Полезна для dashboards по multi-faction campaign pressure и recovery efforts.', status: 'active', campaignType: 'counteroffensive', eraId: 4, yearLabel: 'Late M42', yearOrder: 42004, planetIds: [3], factionIds: [1, 3, 9], characterIds: [2, 4, 10], organizationIds: [1, 4], keywords: ['cadia', 'crusade'] },
   ],
   characters: [
     { id: 1, slug: 'emperor-of-mankind', name: 'The Emperor of Mankind', summary: 'Создатель Imperium.', description: 'Фундаментальная точка отсчета для множества ресурсов.', status: 'enthroned', factionId: 1, raceId: 1, homeworldId: 1, eraId: 3, eventIds: [1], titles: ['Master of Mankind', 'Lord of the Imperium'], keywords: ['imperium', 'psychic'], alignment: 'imperium', powerLevel: 100 },
@@ -259,7 +297,7 @@ const dataset = {
   ],
 };
 
-const resourceOrder = ['eras', 'races', 'planets', 'factions', 'keywords', 'weapons', 'units', 'events', 'characters'];
+const resourceOrder = ['eras', 'races', 'planets', 'factions', 'organizations', 'keywords', 'weapons', 'relics', 'units', 'events', 'campaigns', 'characters'];
 
 const resourceDefinitions = {
   eras: {
@@ -359,6 +397,39 @@ const resourceDefinitions = {
     ],
     sampleQueries: ['/api/v1/factions?include=leaders,races,homeworld&sort=-powerLevel,name', '/api/v1/factions?filter[alignment]=imperium'],
   },
+  organizations: {
+    label: 'Организации',
+    description: 'Институции, ордена и командные структуры для более сложных графов связей.',
+    defaultSort: '-influenceLevel,name',
+    previewParams: { limit: 6, sort: '-influenceLevel,name', include: 'factions,leaders,homeworld' },
+    searchFields: ['name', 'summary', 'description', 'organizationType', 'keywords'],
+    sortFields: ['name', 'status', 'organizationType', 'influenceLevel'],
+    filters: {
+      status: { type: 'attribute', field: 'status', label: 'Статус' },
+      type: { type: 'attribute', field: 'organizationType', label: 'Тип организации' },
+      faction: { type: 'relation', resource: 'factions', localField: 'factionIds', many: true, label: 'Фракция' },
+      leader: { type: 'relation', resource: 'characters', localField: 'leaderIds', many: true, label: 'Лидер' },
+      homeworld: { type: 'relation', resource: 'planets', localField: 'homeworldId', label: 'Родной мир' },
+      era: { type: 'relation', resource: 'eras', localField: 'eraId', label: 'Эра' },
+      keywords: { type: 'array', field: 'keywords', label: 'Keywords' },
+    },
+    includes: {
+      factions: { resource: 'factions', localField: 'factionIds', many: true, label: 'Фракции' },
+      leaders: { resource: 'characters', localField: 'leaderIds', many: true, label: 'Лидеры' },
+      homeworld: { resource: 'planets', localField: 'homeworldId', label: 'Родной мир' },
+      era: { resource: 'eras', localField: 'eraId', label: 'Эра' },
+    },
+    fields: [
+      { name: 'id', type: 'number', description: 'Числовой идентификатор.' },
+      { name: 'slug', type: 'string', description: 'Публичный slug.' },
+      { name: 'name', type: 'string', description: 'Название организации.' },
+      { name: 'organizationType', type: 'string', description: 'Вид институции или ордена.' },
+      { name: 'influenceLevel', type: 'number', description: 'Условная метрика политического или стратегического веса.' },
+      { name: 'factionIds', type: 'number[]', description: 'Связанные фракции.' },
+      { name: 'leaderIds', type: 'number[]', description: 'Лидеры или знаковые фигуры.' },
+    ],
+    sampleQueries: ['/api/v1/organizations?include=factions,leaders,homeworld&sort=-influenceLevel,name', '/api/v1/organizations?filter[faction]=imperium-of-man&filter[type]=ordo'],
+  },
   keywords: {
     label: 'Keywords',
     description: 'Нормализованные теги для units и weapons, полезные для chips, filters и legends.',
@@ -407,6 +478,40 @@ const resourceDefinitions = {
       { name: 'keywordIds', type: 'number[]', description: 'Связь с нормализованными tags.' },
     ],
     sampleQueries: ['/api/v1/weapons?include=faction,keywords&sort=-powerLevel,name', '/api/v1/weapons?filter[keywords]=bolt,rapid-fire'],
+  },
+  relics: {
+    label: 'Реликвии',
+    description: 'Артефакты и священные предметы для inventory UI, detail pages и relation-heavy данных.',
+    defaultSort: '-powerLevel,name',
+    previewParams: { limit: 6, sort: '-powerLevel,name', include: 'faction,bearer,originPlanet,keywords' },
+    searchFields: ['name', 'summary', 'description', 'relicType'],
+    sortFields: ['name', 'status', 'relicType', 'powerLevel'],
+    filters: {
+      status: { type: 'attribute', field: 'status', label: 'Статус' },
+      type: { type: 'attribute', field: 'relicType', label: 'Тип реликвии' },
+      faction: { type: 'relation', resource: 'factions', localField: 'factionId', label: 'Фракция' },
+      bearer: { type: 'relation', resource: 'characters', localField: 'bearerCharacterId', label: 'Носитель' },
+      originPlanet: { type: 'relation', resource: 'planets', localField: 'originPlanetId', label: 'Мир происхождения' },
+      era: { type: 'relation', resource: 'eras', localField: 'eraId', label: 'Эра' },
+      keywords: { type: 'relation', resource: 'keywords', localField: 'keywordIds', many: true, label: 'Keywords' },
+    },
+    includes: {
+      faction: { resource: 'factions', localField: 'factionId', label: 'Фракция' },
+      bearer: { resource: 'characters', localField: 'bearerCharacterId', label: 'Носитель' },
+      originPlanet: { resource: 'planets', localField: 'originPlanetId', label: 'Мир происхождения' },
+      era: { resource: 'eras', localField: 'eraId', label: 'Эра' },
+      keywords: { resource: 'keywords', localField: 'keywordIds', many: true, label: 'Keywords' },
+    },
+    fields: [
+      { name: 'id', type: 'number', description: 'Числовой идентификатор.' },
+      { name: 'slug', type: 'string', description: 'Публичный slug.' },
+      { name: 'name', type: 'string', description: 'Название реликвии.' },
+      { name: 'relicType', type: 'string', description: 'Тип артефакта.' },
+      { name: 'powerLevel', type: 'number', description: 'Условная учебная метрика.' },
+      { name: 'bearerCharacterId', type: 'number', description: 'Текущий носитель реликвии.' },
+      { name: 'keywordIds', type: 'number[]', description: 'Связанные нормализованные теги.' },
+    ],
+    sampleQueries: ['/api/v1/relics?include=faction,bearer,originPlanet,keywords&sort=-powerLevel,name', '/api/v1/relics?filter[bearer]=roboute-guilliman'],
   },
   units: {
     label: 'Юниты',
@@ -468,6 +573,41 @@ const resourceDefinitions = {
       { name: 'yearOrder', type: 'number', description: 'Поле сортировки.' },
     ],
     sampleQueries: ['/api/v1/events?include=era,planets,factions,characters&sort=-yearOrder,name', '/api/v1/events?filter[era]=indomitus-era'],
+  },
+  campaigns: {
+    label: 'Кампании',
+    description: 'Долгие операции и фронты для timeline explorer, dashboards и multi-resource detail pages.',
+    defaultSort: '-yearOrder,name',
+    previewParams: { limit: 5, sort: '-yearOrder,name', include: 'era,planets,factions,characters,organizations' },
+    searchFields: ['name', 'summary', 'description', 'campaignType', 'yearLabel', 'keywords'],
+    sortFields: ['name', 'status', 'campaignType', 'yearOrder'],
+    filters: {
+      status: { type: 'attribute', field: 'status', label: 'Статус' },
+      type: { type: 'attribute', field: 'campaignType', label: 'Тип кампании' },
+      era: { type: 'relation', resource: 'eras', localField: 'eraId', label: 'Эра' },
+      planets: { type: 'relation', resource: 'planets', localField: 'planetIds', many: true, label: 'Миры' },
+      factions: { type: 'relation', resource: 'factions', localField: 'factionIds', many: true, label: 'Фракции' },
+      characters: { type: 'relation', resource: 'characters', localField: 'characterIds', many: true, label: 'Персонажи' },
+      organizations: { type: 'relation', resource: 'organizations', localField: 'organizationIds', many: true, label: 'Организации' },
+      keywords: { type: 'array', field: 'keywords', label: 'Keywords' },
+    },
+    includes: {
+      era: { resource: 'eras', localField: 'eraId', label: 'Эра' },
+      planets: { resource: 'planets', localField: 'planetIds', many: true, label: 'Миры' },
+      factions: { resource: 'factions', localField: 'factionIds', many: true, label: 'Фракции' },
+      characters: { resource: 'characters', localField: 'characterIds', many: true, label: 'Персонажи' },
+      organizations: { resource: 'organizations', localField: 'organizationIds', many: true, label: 'Организации' },
+    },
+    fields: [
+      { name: 'id', type: 'number', description: 'Числовой идентификатор.' },
+      { name: 'slug', type: 'string', description: 'Публичный slug.' },
+      { name: 'name', type: 'string', description: 'Название кампании.' },
+      { name: 'campaignType', type: 'string', description: 'Категория операции.' },
+      { name: 'yearOrder', type: 'number', description: 'Поле сортировки timeline.' },
+      { name: 'planetIds', type: 'number[]', description: 'Миры, задействованные в кампании.' },
+      { name: 'organizationIds', type: 'number[]', description: 'Организации-участники.' },
+    ],
+    sampleQueries: ['/api/v1/campaigns?include=era,planets,factions,characters,organizations&sort=-yearOrder,name', '/api/v1/campaigns?filter[factions]=imperium-of-man,black-legion'],
   },
   characters: {
     label: 'Персонажи',

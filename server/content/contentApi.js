@@ -24,6 +24,8 @@ const { createApiError } = require('../lib/apiErrors');
 
 const MAX_PAGE_SIZE = 50;
 const resourceAliases = {
+  campaign: 'campaigns',
+  campaigns: 'campaigns',
   character: 'characters',
   characters: 'characters',
   era: 'eras',
@@ -34,10 +36,14 @@ const resourceAliases = {
   factions: 'factions',
   keyword: 'keywords',
   keywords: 'keywords',
+  organization: 'organizations',
+  organizations: 'organizations',
   planet: 'planets',
   planets: 'planets',
   race: 'races',
   races: 'races',
+  relic: 'relics',
+  relics: 'relics',
   unit: 'units',
   units: 'units',
   weapon: 'weapons',

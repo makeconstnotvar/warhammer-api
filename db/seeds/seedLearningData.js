@@ -196,6 +196,76 @@ async function insertUnits(client) {
   }
 }
 
+async function insertOrganizations(client) {
+  for (const organization of dataset.organizations) {
+    await client.query(
+      `INSERT INTO organizations (
+        id, slug, name, summary, description, status, organization_type, influence_level, homeworld_id, era_id, keywords, image_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+      [
+        organization.id,
+        organization.slug,
+        organization.name,
+        organization.summary,
+        organization.description,
+        organization.status,
+        organization.organizationType,
+        organization.influenceLevel,
+        organization.homeworldId || null,
+        organization.eraId || null,
+        organization.keywords,
+        null,
+      ]
+    );
+
+    for (const factionId of organization.factionIds || []) {
+      await client.query(
+        'INSERT INTO organization_factions (organization_id, faction_id, is_primary) VALUES ($1, $2, $3)',
+        [organization.id, factionId, factionId === organization.factionIds[0]]
+      );
+    }
+
+    for (const leaderId of organization.leaderIds || []) {
+      await client.query(
+        'INSERT INTO organization_leaders (organization_id, character_id) VALUES ($1, $2)',
+        [organization.id, leaderId]
+      );
+    }
+  }
+}
+
+async function insertRelics(client) {
+  for (const relic of dataset.relics) {
+    await client.query(
+      `INSERT INTO relics (
+        id, slug, name, summary, description, status, relic_type, power_level, faction_id, bearer_character_id, origin_planet_id, era_id, image_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+      [
+        relic.id,
+        relic.slug,
+        relic.name,
+        relic.summary,
+        relic.description,
+        relic.status,
+        relic.relicType,
+        relic.powerLevel,
+        relic.factionId || null,
+        relic.bearerCharacterId || null,
+        relic.originPlanetId || null,
+        relic.eraId || null,
+        null,
+      ]
+    );
+
+    for (const keywordId of relic.keywordIds || []) {
+      await client.query(
+        'INSERT INTO relic_keywords (relic_id, keyword_id) VALUES ($1, $2)',
+        [relic.id, keywordId]
+      );
+    }
+  }
+}
+
 async function insertCharacters(client) {
   for (const character of dataset.characters) {
     await client.query(
@@ -274,18 +344,73 @@ async function insertEvents(client) {
   }
 }
 
+async function insertCampaigns(client) {
+  for (const campaign of dataset.campaigns) {
+    await client.query(
+      `INSERT INTO campaigns (
+        id, slug, name, summary, description, status, campaign_type, era_id, year_label, year_order, keywords, image_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+      [
+        campaign.id,
+        campaign.slug,
+        campaign.name,
+        campaign.summary,
+        campaign.description,
+        campaign.status,
+        campaign.campaignType,
+        campaign.eraId || null,
+        campaign.yearLabel,
+        campaign.yearOrder,
+        campaign.keywords,
+        null,
+      ]
+    );
+
+    for (const planetId of campaign.planetIds || []) {
+      await client.query(
+        'INSERT INTO campaign_planets (campaign_id, planet_id, is_primary) VALUES ($1, $2, $3)',
+        [campaign.id, planetId, planetId === campaign.planetIds[0]]
+      );
+    }
+
+    for (const factionId of campaign.factionIds || []) {
+      await client.query(
+        'INSERT INTO campaign_factions (campaign_id, faction_id) VALUES ($1, $2)',
+        [campaign.id, factionId]
+      );
+    }
+
+    for (const characterId of campaign.characterIds || []) {
+      await client.query(
+        'INSERT INTO campaign_characters (campaign_id, character_id) VALUES ($1, $2)',
+        [campaign.id, characterId]
+      );
+    }
+
+    for (const organizationId of campaign.organizationIds || []) {
+      await client.query(
+        'INSERT INTO campaign_organizations (campaign_id, organization_id) VALUES ($1, $2)',
+        [campaign.id, organizationId]
+      );
+    }
+  }
+}
+
 async function resetSequences(client) {
   await client.query(`
     SELECT setval(pg_get_serial_sequence('eras', 'id'), COALESCE(MAX(id), 1), true) FROM eras;
     SELECT setval(pg_get_serial_sequence('races', 'id'), COALESCE(MAX(id), 1), true) FROM races;
     SELECT setval(pg_get_serial_sequence('planets', 'id'), COALESCE(MAX(id), 1), true) FROM planets;
     SELECT setval(pg_get_serial_sequence('factions', 'id'), COALESCE(MAX(id), 1), true) FROM factions;
+    SELECT setval(pg_get_serial_sequence('organizations', 'id'), COALESCE(MAX(id), 1), true) FROM organizations;
     SELECT setval(pg_get_serial_sequence('keywords', 'id'), COALESCE(MAX(id), 1), true) FROM keywords;
     SELECT setval(pg_get_serial_sequence('weapons', 'id'), COALESCE(MAX(id), 1), true) FROM weapons;
+    SELECT setval(pg_get_serial_sequence('relics', 'id'), COALESCE(MAX(id), 1), true) FROM relics;
     SELECT setval(pg_get_serial_sequence('units', 'id'), COALESCE(MAX(id), 1), true) FROM units;
     SELECT setval(pg_get_serial_sequence('characters', 'id'), COALESCE(MAX(id), 1), true) FROM characters;
     SELECT setval(pg_get_serial_sequence('character_titles', 'id'), COALESCE(MAX(id), 1), true) FROM character_titles;
     SELECT setval(pg_get_serial_sequence('events', 'id'), COALESCE(MAX(id), 1), true) FROM events;
+    SELECT setval(pg_get_serial_sequence('campaigns', 'id'), COALESCE(MAX(id), 1), true) FROM campaigns;
   `);
 }
 
@@ -298,9 +423,16 @@ async function run() {
     await client.query('BEGIN');
     await client.query(`
       TRUNCATE TABLE
+        campaign_organizations,
+        campaign_characters,
+        campaign_factions,
+        campaign_planets,
         event_characters,
         event_factions,
         event_planets,
+        relic_keywords,
+        organization_leaders,
+        organization_factions,
         unit_weapons,
         unit_keywords,
         unit_factions,
@@ -308,6 +440,9 @@ async function run() {
         faction_leaders,
         character_titles,
         faction_races,
+        campaigns,
+        relics,
+        organizations,
         units,
         weapons,
         keywords,
@@ -328,7 +463,10 @@ async function run() {
     await insertWeapons(client);
     await insertUnits(client);
     await insertCharacters(client);
+    await insertOrganizations(client);
+    await insertRelics(client);
     await insertEvents(client);
+    await insertCampaigns(client);
     await resetSequences(client);
     await client.query('COMMIT');
     console.log('seed complete');

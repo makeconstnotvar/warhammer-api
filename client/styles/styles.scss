@@ -259,16 +259,48 @@ pre {
   gap: 10px;
 }
 
+.control-chip-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .tag {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.04);
   color: var(--muted);
 }
 
+.control-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  cursor: pointer;
+  transition: 160ms ease;
+}
+
+.control-chip:hover {
+  border-color: rgba(209, 163, 90, 0.36);
+  color: var(--text);
+}
+
+.control-chip-active {
+  border-color: rgba(209, 163, 90, 0.45);
+  background: linear-gradient(180deg, rgba(209, 163, 90, 0.18), rgba(209, 163, 90, 0.08));
+  color: var(--text);
+}
+
 .resource-grid,
 .panel-grid,
 .preview-grid,
-.stats-hero-grid {
+.stats-hero-grid,
+.chart-grid {
   display: grid;
   gap: 18px;
 }
@@ -287,6 +319,10 @@ pre {
 
 .stats-hero-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.chart-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .resource-card,
@@ -412,6 +448,135 @@ pre {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.chart-card {
+  overflow: hidden;
+}
+
+.chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chart-svg-donut {
+  max-width: 220px;
+}
+
+.chart-gridline {
+  stroke: rgba(214, 181, 129, 0.14);
+  stroke-width: 1;
+}
+
+.chart-value-label,
+.chart-axis-label,
+.chart-axis-subtle,
+.chart-donut-total,
+.chart-donut-label {
+  fill: var(--muted);
+}
+
+.chart-value-label {
+  font-size: 12px;
+  fill: var(--gold-soft);
+}
+
+.chart-axis-label {
+  font-size: 11px;
+}
+
+.chart-axis-subtle {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.chart-split {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  align-items: center;
+}
+
+.chart-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chart-legend-item {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  color: var(--muted);
+}
+
+.chart-legend-value {
+  color: var(--gold-soft);
+}
+
+.chart-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+}
+
+.chart-ring-base {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 24;
+}
+
+.chart-donut-total {
+  font-size: 28px;
+  font-weight: 700;
+  fill: var(--text);
+}
+
+.chart-donut-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.chart-stack {
+  display: flex;
+  width: 100%;
+  min-height: 28px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.chart-stack-segment {
+  min-width: 10px;
+}
+
+.chart-line {
+  fill: none;
+  stroke-width: 3;
+}
+
+.chart-line-events {
+  stroke: rgba(195, 112, 112, 0.95);
+}
+
+.chart-area {
+  stroke: none;
+}
+
+.chart-area-events {
+  fill: rgba(195, 112, 112, 0.14);
+}
+
+.chart-point {
+  stroke: rgba(12, 9, 8, 0.9);
+  stroke-width: 3;
+}
+
+.chart-point-events {
+  fill: rgba(195, 112, 112, 0.96);
 }
 
 .step-list {
@@ -643,6 +808,7 @@ pre {
   .panel-grid,
   .preview-grid,
   .stats-hero-grid,
+  .chart-grid,
   .compare-metric-grid,
   .compare-item-grid,
   .form-grid {
@@ -680,5 +846,9 @@ pre {
   .compare-item-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .chart-split {
+    grid-template-columns: 1fr;
   }
 }

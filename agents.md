@@ -36,9 +36,12 @@
 - база данных может быть поднята из кода через `db:migrate` и `db:seed`
 - `api/v1` теперь читает из PostgreSQL, а не из in-memory набора
 - домен расширен ресурсами `keywords`, `weapons`, `units`
+- домен расширен ресурсами `organizations`, `relics`, `campaigns`
 - `search` ранжирует результаты по релевантности
 - `compare` поддерживает `factions`, `characters`, `units`
 - `stats` поддерживает `factions/by-race`, `events/by-era`, `units/by-faction`, `weapons/by-keyword`
+- docs-клиент поддерживает deep-linking через query params для `Stats`, `Compare`, `Playground`
+- страница `Stats` содержит реальные SVG charts, а не только JSON и списки
 
 ## Структура верхнего уровня
 
@@ -116,11 +119,14 @@ Frontend:
 - `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion` отвечает из PostgreSQL
 - `GET /api/v1/stats/factions/by-race` и `GET /api/v1/stats/events/by-era` отвечают из PostgreSQL
 - `GET /api/v1/keywords`, `GET /api/v1/weapons`, `GET /api/v1/units` отвечают из PostgreSQL
+- `GET /api/v1/organizations`, `GET /api/v1/relics`, `GET /api/v1/campaigns` отвечают из PostgreSQL
 - `GET /api/v1/random/unit` отвечает из PostgreSQL
 - `GET /api/v1/compare/units?ids=terminator-squad,intercessor-squad` отвечает из PostgreSQL
 - `GET /api/v1/search?search=cadia` сортирует результаты по релевантности
 - `GET /api/v1/stats/units/by-faction` отвечает из PostgreSQL
 - `GET /api/v1/stats/weapons/by-keyword` отвечает из PostgreSQL
+- клиентская сборка проходит после добавления query-param deep-linking для `Stats`, `Compare`, `Playground`
+- `GET /api/v1/stats/events/by-era` теперь отдает `yearLabel` и `yearOrder` для timeline charts
 
 Чего сейчас нет:
 - tests
