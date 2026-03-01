@@ -7,17 +7,21 @@ import { readQueryState, replaceQueryState } from '../lib/query';
 
 const chartPalette = ['#d1a35a', '#78a7c5', '#9f70c7', '#c37070', '#7fb381', '#d69255'];
 const accentColorMap = {
+  battlefields: '#cf7f55',
   campaigns: '#7fb381',
   events: '#c37070',
   factions: '#9f70c7',
   relics: '#d69255',
+  'star-systems': '#5aa7a0',
   units: '#d1a35a',
   weapons: '#78a7c5',
 };
 
 const statsFocusOptions = [
   { id: 'all', label: 'Все секции' },
+  { id: 'battlefields-by-faction', label: 'Поля битв' },
   { id: 'campaigns-by-organization', label: 'Кампании' },
+  { id: 'star-systems-by-segmentum', label: 'Системы' },
   { id: 'relics-by-faction', label: 'Реликвии' },
   { id: 'units-by-faction', label: 'Юниты' },
   { id: 'weapons-by-keyword', label: 'Оружие' },
@@ -366,17 +370,30 @@ function Stats() {
   );
   const { data, loading, error } = useAsyncData(
     () => Promise.all([
+      docsApi.getStats('battlefields', 'by-faction'),
       docsApi.getStats('campaigns', 'by-organization'),
       docsApi.getStats('factions', 'by-race'),
       docsApi.getStats('events', 'by-era'),
       docsApi.getStats('relics', 'by-faction'),
+      docsApi.getStats('star-systems', 'by-segmentum'),
       docsApi.getStats('units', 'by-faction'),
       docsApi.getStats('weapons', 'by-keyword'),
-    ]).then(([campaignsByOrganization, factionsByRace, eventsByEra, relicsByFaction, unitsByFaction, weaponsByKeyword]) => ({
+    ]).then(([
+      battlefieldsByFaction,
+      campaignsByOrganization,
+      factionsByRace,
+      eventsByEra,
+      relicsByFaction,
+      starSystemsBySegmentum,
+      unitsByFaction,
+      weaponsByKeyword,
+    ]) => ({
+      battlefieldsByFaction,
       campaignsByOrganization,
       eventsByEra,
       factionsByRace,
       relicsByFaction,
+      starSystemsBySegmentum,
       unitsByFaction,
       weaponsByKeyword,
     })),
@@ -392,21 +409,36 @@ function Stats() {
   }
 
   const stats = data;
+  const topBattlefieldFaction = getTopRow(stats.battlefieldsByFaction.data, 'count');
   const topCampaignOrganization = getTopRow(stats.campaignsByOrganization.data, 'count');
+  const topSegmentum = getTopRow(stats.starSystemsBySegmentum.data, 'count');
   const topFactionUnit = getTopRow(stats.unitsByFaction.data, 'count');
   const topWeaponKeyword = getTopRow(stats.weaponsByKeyword.data, 'count');
   const busiestEra = getTopRow(stats.eventsByEra.data, 'count');
   const dominantRace = getTopRow(stats.factionsByRace.data, 'count');
   const topRelicFaction = getTopRow(stats.relicsByFaction.data, 'count');
   const payloadByFocus = {
+    'battlefields-by-faction': stats.battlefieldsByFaction,
     'campaigns-by-organization': stats.campaignsByOrganization,
     'events-by-era': stats.eventsByEra,
     'factions-by-race': stats.factionsByRace,
     'relics-by-faction': stats.relicsByFaction,
+    'star-systems-by-segmentum': stats.starSystemsBySegmentum,
     'units-by-faction': stats.unitsByFaction,
     'weapons-by-keyword': stats.weaponsByKeyword,
   };
   const sections = [
+    {
+      id: 'battlefields-by-faction',
+      rows: stats.battlefieldsByFaction.data,
+      metricKey: 'count',
+      metricLabel: 'battlefields',
+      secondaryLabel: { key: 'averageIntensityLevel', label: 'avg intensity' },
+      endpoint: '/api/v1/stats/battlefields/by-faction',
+      title: 'Поля битв по фракциям',
+      description: 'Показывает, какие фракции уже сильнее всего представлены в tactical warzone-слое.',
+      accent: 'battlefields',
+    },
     {
       id: 'campaigns-by-organization',
       rows: stats.campaignsByOrganization.data,
@@ -428,6 +460,17 @@ function Stats() {
       title: 'Реликвии по фракциям',
       description: 'Полезно для inventory dashboards, faction identity UI и power-driven sorting.',
       accent: 'relics',
+    },
+    {
+      id: 'star-systems-by-segmentum',
+      rows: stats.starSystemsBySegmentum.data,
+      metricKey: 'count',
+      metricLabel: 'systems',
+      secondaryLabel: { key: 'planetCount', label: 'planets' },
+      endpoint: '/api/v1/stats/star-systems/by-segmentum',
+      title: 'Звездные системы по segmentum',
+      description: 'Системный обзор полезен для maps, route planners и sector-level dashboards.',
+      accent: 'star-systems',
     },
     {
       id: 'units-by-faction',
@@ -477,15 +520,30 @@ function Stats() {
     : sections.filter((section) => section.id === focus);
   const visiblePayload = focus === 'all'
     ? {
+      battlefieldsByFaction: stats.battlefieldsByFaction,
       campaignsByOrganization: stats.campaignsByOrganization,
       factionsByRace: stats.factionsByRace,
       eventsByEra: stats.eventsByEra,
       relicsByFaction: stats.relicsByFaction,
+      starSystemsBySegmentum: stats.starSystemsBySegmentum,
       unitsByFaction: stats.unitsByFaction,
       weaponsByKeyword: stats.weaponsByKeyword,
     }
     : { [focus]: payloadByFocus[focus] };
   const chartSections = [
+    {
+      id: 'battlefields-by-faction',
+      node: (
+        <ColumnChart
+          rows={stats.battlefieldsByFaction.data}
+          title="Battlefield density по фракциям"
+          description="Показывает, какие factions уже дают наибольшую tactical глубину для warzone screens."
+          endpoint="/api/v1/stats/battlefields/by-faction"
+          accent="battlefields"
+          subLabelRenderer={(row) => `avg ${formatNumber(row.averageIntensityLevel)}`}
+        />
+      ),
+    },
     {
       id: 'campaigns-by-organization',
       node: (
@@ -509,6 +567,17 @@ function Stats() {
           endpoint="/api/v1/stats/relics/by-faction"
           accent="relics"
           subLabelRenderer={(row) => `avg ${formatNumber(row.averagePowerLevel)}`}
+        />
+      ),
+    },
+    {
+      id: 'star-systems-by-segmentum',
+      node: (
+        <DonutChart
+          rows={stats.starSystemsBySegmentum.data}
+          title="Segmentum share среди systems"
+          description="Donut помогает быстро понять, как распределен системный слой домена по крупным секторам."
+          endpoint="/api/v1/stats/star-systems/by-segmentum"
         />
       ),
     },
@@ -586,7 +655,7 @@ function Stats() {
           </div>
         </div>
         <div className="hero-side">
-          <div className="metric-chip">6 stats endpoint-ов</div>
+          <div className="metric-chip">8 stats endpoint-ов</div>
           <div className="metric-chip">PostgreSQL aggregation</div>
           <div className="metric-chip">SVG charts</div>
         </div>
@@ -617,9 +686,19 @@ function Stats() {
 
       <section className="stats-hero-grid">
         <StatHeroCard
+          label="Топ battlefield faction"
+          value={topBattlefieldFaction ? topBattlefieldFaction.name : 'Нет данных'}
+          detail={topBattlefieldFaction ? `${topBattlefieldFaction.count} полей битв, avg intensity ${topBattlefieldFaction.averageIntensityLevel}` : 'Пока нет записей'}
+        />
+        <StatHeroCard
           label="Топ organization"
           value={topCampaignOrganization ? topCampaignOrganization.name : 'Нет данных'}
           detail={topCampaignOrganization ? `${topCampaignOrganization.count} campaigns, active ${topCampaignOrganization.activeCount}` : 'Пока нет записей'}
+        />
+        <StatHeroCard
+          label="Топ segmentum"
+          value={topSegmentum ? topSegmentum.name : 'Нет данных'}
+          detail={topSegmentum ? `${topSegmentum.count} systems, ${topSegmentum.planetCount} planets` : 'Пока нет записей'}
         />
         <StatHeroCard
           label="Топ relic faction"

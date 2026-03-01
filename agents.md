@@ -37,14 +37,16 @@
 - `api/v1` теперь читает из PostgreSQL, а не из in-memory набора
 - домен расширен ресурсами `keywords`, `weapons`, `units`
 - домен расширен ресурсами `organizations`, `relics`, `campaigns`
+- домен расширен ресурсами `star-systems`, `battlefields`
 - `search` ранжирует результаты по релевантности
-- `compare` поддерживает `factions`, `characters`, `units`, `organizations`, `relics`, `campaigns`
+- `compare` поддерживает `factions`, `characters`, `units`, `organizations`, `relics`, `campaigns`, `star-systems`, `battlefields`
 - `explore/graph` поддерживает `resource`, `identifier`, `depth`, `limitPerRelation`, `backlinks`, `resources`
 - `explore/path` поддерживает `fromResource`, `fromIdentifier`, `toResource`, `toIdentifier`, `maxDepth`, `limitPerRelation`, `backlinks`, `resources`
-- `stats` поддерживает `factions/by-race`, `events/by-era`, `units/by-faction`, `weapons/by-keyword`
-- `stats` поддерживает `factions/by-race`, `events/by-era`, `units/by-faction`, `weapons/by-keyword`, `relics/by-faction`, `campaigns/by-organization`
+- `stats` поддерживает `factions/by-race`, `events/by-era`, `units/by-faction`, `weapons/by-keyword`, `relics/by-faction`, `campaigns/by-organization`, `battlefields/by-faction`, `star-systems/by-segmentum`
 - docs-клиент поддерживает deep-linking через query params для `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Resources/:resource`
 - страница `Stats` содержит реальные SVG charts, а не только JSON и списки
+- страница `Compare` содержит visual bars, shared overlaps и быстрые переходы в `detail` и `graph`
+- страница `Compare` умеет открывать `Path` между двумя сравниваемыми сущностями с готовым whitelist ресурсов
 - страница `Graph` показывает SVG-схему узлов и связей поверх `explore/graph`
 - страница `Graph` поддерживает selection узлов, фокус на edges и переход в `Compare` для двух совместимых узлов
 - страницы `Graph` и `Path` поддерживают whitelist типов ресурсов через `resources=...`
@@ -109,7 +111,7 @@ Frontend:
 - `npm run build-dev`
   - собирает клиент в `client/dist`
 - `npm test`
-  - запускает HTTP integration tests для `explore/graph` и `explore/path`
+  - запускает HTTP integration tests для `explore/graph`, `explore/path`, `compare`, `stats` и новых доменных ресурсов
 - `npm run db:migrate`
   - применяет migrations
 - `npm run db:seed`
@@ -131,22 +133,31 @@ Frontend:
 - `GET /api/v1/stats/factions/by-race` и `GET /api/v1/stats/events/by-era` отвечают из PostgreSQL
 - `GET /api/v1/keywords`, `GET /api/v1/weapons`, `GET /api/v1/units` отвечают из PostgreSQL
 - `GET /api/v1/organizations`, `GET /api/v1/relics`, `GET /api/v1/campaigns` отвечают из PostgreSQL
+- `GET /api/v1/star-systems` и `GET /api/v1/battlefields` отвечают из PostgreSQL
 - `GET /api/v1/random/unit` отвечает из PostgreSQL
 - `GET /api/v1/compare/units?ids=terminator-squad,intercessor-squad` отвечает из PostgreSQL
 - `GET /api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus` отвечает из PostgreSQL
 - `GET /api/v1/compare/relics?ids=emperors-sword,talon-of-horus` отвечает из PostgreSQL
 - `GET /api/v1/compare/campaigns?ids=plague-wars,cadian-gate-counteroffensive` отвечает из PostgreSQL
+- `GET /api/v1/compare/star-systems?ids=sol-system,macragge-system` отвечает из PostgreSQL
+- `GET /api/v1/compare/battlefields?ids=hesperon-void-line,kasr-partox-ruins` отвечает из PostgreSQL
 - `GET /api/v1/search?search=cadia` сортирует результаты по релевантности
 - `GET /api/v1/stats/units/by-faction` отвечает из PostgreSQL
 - `GET /api/v1/stats/weapons/by-keyword` отвечает из PostgreSQL
 - `GET /api/v1/stats/relics/by-faction` отвечает из PostgreSQL
 - `GET /api/v1/stats/campaigns/by-organization` отвечает из PostgreSQL
+- `GET /api/v1/stats/battlefields/by-faction` отвечает из PostgreSQL
+- `GET /api/v1/stats/star-systems/by-segmentum` отвечает из PostgreSQL
 - `GET /api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4` отвечает из PostgreSQL
 - `GET /api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4&resources=campaigns,characters` отвечает и возвращает только `factions`, `campaigns`, `characters`
 - `GET /api/v1/explore/path?fromResource=characters&fromIdentifier=roboute-guilliman&toResource=relics&toIdentifier=emperors-sword&maxDepth=3&limitPerRelation=6&backlinks=true` отвечает из PostgreSQL
 - `GET /api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=factions` отвечает и строит путь только через `factions`
 - `GET /api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=organizations` отвечает с `found=false`
 - `npm test` проходит и проверяет whitelist, shortest path и error envelope для `explore/graph` и `explore/path`
+- `GET /api/v1/star-systems?include=planets,era&sort=name` отвечает и возвращает `included` с `planets` и `eras`
+- `GET /api/v1/battlefields?filter[campaigns]=plague-wars&include=planet,starSystem,factions,characters,campaigns` отвечает и возвращает rich include-набор
+- `GET /api/v1/campaigns/plague-wars?include=planets,battlefields` отвечает и отдает связанное battlefield
+- `npm test` проходит и дополнительно проверяет `compare`, `stats`, `star-systems`, `battlefields` и `campaigns -> battlefields`
 - клиентская сборка проходит после добавления query-param deep-linking для `Stats`, `Compare`, `Graph`, `Playground`, `Resources/:resource`
 - `GET /api/v1/stats/events/by-era` теперь отдает `yearLabel` и `yearOrder` для timeline charts
 - клиентская сборка проходит после добавления workbench, node selection и compare-bridge на страницу `Graph`

@@ -8,6 +8,7 @@ const {
   resourceOrder,
 } = require('./warhammerContent');
 const {
+  getBattlefieldStatsByFaction,
   getCampaignStatsByOrganization,
   getEventStatsByEra,
   getFactionStatsByRace,
@@ -15,6 +16,7 @@ const {
   getRelicStatsByFaction,
   getResourceCount,
   getResourceRow,
+  getStarSystemStatsBySegmentum,
   getUnitStatsByFaction,
   getWeaponStatsByKeyword,
   loadResourcesByIdentifiers,
@@ -47,8 +49,12 @@ const resourceAliases = {
   planets: 'planets',
   race: 'races',
   races: 'races',
+  'star-system': 'star-systems',
+  'star-systems': 'star-systems',
   relic: 'relics',
   relics: 'relics',
+  battlefield: 'battlefields',
+  battlefields: 'battlefields',
   unit: 'units',
   units: 'units',
   weapon: 'weapons',
@@ -1064,6 +1070,57 @@ function buildCampaignComparison(items) {
   };
 }
 
+function buildBattlefieldComparison(items) {
+  const rankedItems = items
+    .map((item) => ({
+      id: item.id,
+      intensityLevel: item.intensityLevel ?? 0,
+      name: item.name,
+    }))
+    .sort((left, right) => right.intensityLevel - left.intensityLevel);
+  const mostIntense = rankedItems[0] || null;
+  const leastIntense = rankedItems[rankedItems.length - 1] || null;
+
+  return {
+    battlefieldTypes: uniqueValues(items.map((item) => item.battlefieldType)),
+    eraIds: uniqueValues(items.map((item) => item.eraId)),
+    intensitySpread: mostIntense && leastIntense ? mostIntense.intensityLevel - leastIntense.intensityLevel : 0,
+    mostIntense,
+    leastIntense,
+    planetIds: uniqueValues(items.map((item) => item.planetId)),
+    sharedCampaignIds: intersectArrays(items.map((item) => item.campaignIds || [])),
+    sharedCharacterIds: intersectArrays(items.map((item) => item.characterIds || [])),
+    sharedFactionIds: intersectArrays(items.map((item) => item.factionIds || [])),
+    sharedKeywords: intersectArrays(items.map((item) => item.keywords || [])),
+    starSystemIds: uniqueValues(items.map((item) => item.starSystemId)),
+    statuses: uniqueValues(items.map((item) => item.status)),
+    terrains: uniqueValues(items.map((item) => item.terrain)),
+  };
+}
+
+function buildStarSystemComparison(items) {
+  const rankedItems = items
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      planetCount: (item.planetIds || []).length,
+    }))
+    .sort((left, right) => right.planetCount - left.planetCount);
+  const largest = rankedItems[0] || null;
+  const smallest = rankedItems[rankedItems.length - 1] || null;
+
+  return {
+    eraIds: uniqueValues(items.map((item) => item.eraId)),
+    largest,
+    planetSpread: largest && smallest ? largest.planetCount - smallest.planetCount : 0,
+    segmentums: uniqueValues(items.map((item) => item.segmentum)),
+    sharedKeywords: intersectArrays(items.map((item) => item.keywords || [])),
+    sharedPlanetIds: intersectArrays(items.map((item) => item.planetIds || [])),
+    smallest,
+    statuses: uniqueValues(items.map((item) => item.status)),
+  };
+}
+
 async function compareResources(resourceKey, query) {
   const parsed = parseListQuery(resourceKey, query);
   const identifiers = query.ids || query.items || query.values;
@@ -1074,11 +1131,13 @@ async function compareResources(resourceKey, query) {
   }
 
   const comparisonBuilders = {
+    battlefields: buildBattlefieldComparison,
     campaigns: buildCampaignComparison,
     factions: buildFactionComparison,
     characters: buildCharacterComparison,
     organizations: buildOrganizationComparison,
     relics: buildRelicComparison,
+    'star-systems': buildStarSystemComparison,
     units: buildUnitComparison,
   };
 
@@ -1290,6 +1349,30 @@ async function getStats(resourceKey, groupKey) {
       meta: {
         groupBy: 'organization',
         resource: 'campaigns',
+        total: rows.reduce((sum, row) => sum + row.count, 0),
+      },
+    };
+  }
+
+  if (normalizedResourceKey === 'battlefields' && groupKey === 'by-faction') {
+    const rows = await getBattlefieldStatsByFaction();
+    return {
+      data: rows,
+      meta: {
+        groupBy: 'faction',
+        resource: 'battlefields',
+        total: rows.reduce((sum, row) => sum + row.count, 0),
+      },
+    };
+  }
+
+  if (normalizedResourceKey === 'star-systems' && groupKey === 'by-segmentum') {
+    const rows = await getStarSystemStatsBySegmentum();
+    return {
+      data: rows,
+      meta: {
+        groupBy: 'segmentum',
+        resource: 'star-systems',
         total: rows.reduce((sum, row) => sum + row.count, 0),
       },
     };

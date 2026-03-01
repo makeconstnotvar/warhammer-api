@@ -66,9 +66,24 @@ const featuredQueries = [
     path: '/api/v1/stats/campaigns/by-organization',
   },
   {
+    title: 'Статистика полей битв по фракциям',
+    description: 'Тactical analytics для warzone dashboards, filters и compare сценариев.',
+    path: '/api/v1/stats/battlefields/by-faction',
+  },
+  {
+    title: 'Статистика систем по segmentum',
+    description: 'Sector-level обзор для системной навигации и galactic map UI.',
+    path: '/api/v1/stats/star-systems/by-segmentum',
+  },
+  {
     title: 'Организации внутри Imperium',
     description: 'Подходит для institutional UI, codex browser и сложных relation filters.',
     path: '/api/v1/organizations?filter[faction]=imperium-of-man&include=factions,leaders,homeworld',
+  },
+  {
+    title: 'Звездные системы с мирами',
+    description: 'Системный слой для sector maps, route planners и planet navigation UI.',
+    path: '/api/v1/star-systems?include=planets,era&sort=name',
   },
   {
     title: 'Случайный персонаж',
@@ -91,6 +106,11 @@ const featuredQueries = [
     path: '/api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus&include=factions,leaders,homeworld,era',
   },
   {
+    title: 'Сравнение систем',
+    description: 'Полезно для galactic map UI, sector navigation и system-level compare.',
+    path: '/api/v1/compare/star-systems?ids=sol-system,macragge-system&include=planets,era',
+  },
+  {
     title: 'Graph explorer для фракции',
     description: 'Готовый graph endpoint для relation maps, connected detail screen и explorer UI.',
     path: '/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4',
@@ -104,6 +124,16 @@ const featuredQueries = [
     title: 'Path finder от героя к реликвии',
     description: 'Кратчайший путь между двумя сущностями для lore explorer и connected UI.',
     path: '/api/v1/explore/path?fromResource=characters&fromIdentifier=roboute-guilliman&toResource=relics&toIdentifier=emperors-sword&maxDepth=3&limitPerRelation=6&backlinks=true',
+  },
+  {
+    title: 'Поля битв по кампании',
+    description: 'Тактический слой для campaign drill-down и graph-heavy docs сценариев.',
+    path: '/api/v1/battlefields?filter[campaigns]=plague-wars&include=planet,starSystem,factions,characters,campaigns',
+  },
+  {
+    title: 'Сравнение полей битв',
+    description: 'Готовый tactical compare для warzone cards, map overlays и campaign drill-down.',
+    path: '/api/v1/compare/battlefields?ids=hesperon-void-line,kasr-partox-ruins&include=planet,starSystem,era,factions,characters,campaigns',
   },
   {
     title: 'Кампании по участникам',
@@ -176,6 +206,16 @@ const queryGuide = {
       path: '/api/v1/compare/relics?ids=emperors-sword,talon-of-horus&include=faction,bearer,originPlanet,keywords',
     },
     {
+      title: 'Сравнение двух систем',
+      description: 'Показывает, как compare работает и для system-level сущностей без power-метрики.',
+      path: '/api/v1/compare/star-systems?ids=sol-system,macragge-system&include=planets,era',
+    },
+    {
+      title: 'Сравнение двух полей битв',
+      description: 'Удобно для tactical cards, battlefield browser и campaign drill-down UI.',
+      path: '/api/v1/compare/battlefields?ids=hesperon-void-line,kasr-partox-ruins&include=planet,starSystem,era,factions,characters,campaigns',
+    },
+    {
       title: 'Graph explorer',
       description: 'Один endpoint возвращает nodes и edges для relation-aware detail screen.',
       path: '/api/v1/explore/graph?resource=characters&identifier=roboute-guilliman&depth=2&limitPerRelation=4',
@@ -196,6 +236,16 @@ const queryGuide = {
       path: '/api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=factions',
     },
     {
+      title: 'Системная карта миров',
+      description: 'Показывает star-systems как отдельный уровень навигации над planets.',
+      path: '/api/v1/star-systems?include=planets,era&sort=name',
+    },
+    {
+      title: 'Поля битв кампании',
+      description: 'Дает tactical drill-down для campaign pages, graph traversal и search-driven exploration.',
+      path: '/api/v1/battlefields?filter[campaigns]=plague-wars&include=planet,starSystem,factions,characters,campaigns&sort=-intensityLevel,name',
+    },
+    {
       title: 'Агрегация для диаграммы',
       description: 'Подготовленные данные для bar chart без ручной агрегации на клиенте.',
       path: '/api/v1/stats/events/by-era',
@@ -209,6 +259,16 @@ const queryGuide = {
       title: 'Кампании по организациям',
       description: 'Агрегация для institutional dashboards и campaign participation charts.',
       path: '/api/v1/stats/campaigns/by-organization',
+    },
+    {
+      title: 'Поля битв по фракциям',
+      description: 'Готовый tactical aggregate для warzone charts и faction pressure overlays.',
+      path: '/api/v1/stats/battlefields/by-faction',
+    },
+    {
+      title: 'Системы по segmentum',
+      description: 'Сводка системного слоя для sector maps и multi-level navigation UI.',
+      path: '/api/v1/stats/star-systems/by-segmentum',
     },
     {
       title: 'Реликвии с носителем',
@@ -249,13 +309,21 @@ const dataset = {
     { id: 6, slug: 'tau', name: "T'au", summary: 'Молодая технологичная цивилизация.', description: "T'au Empire сочетает экспансию и технологическое превосходство.", status: 'active', alignment: 'xenos', keywords: ['greater-good', 'technology'] },
   ],
   planets: [
-    { id: 1, slug: 'terra', name: 'Terra', summary: 'Тронный мир человечества.', description: 'Политическое сердце Imperium.', status: 'active', type: 'throneworld', sector: 'Sol', eraId: 4, keywords: ['imperium', 'throneworld'] },
-    { id: 2, slug: 'mars', name: 'Mars', summary: 'Кузница Mechanicus.', description: 'Источник технологий и верфей.', status: 'active', type: 'forge-world', sector: 'Sol', eraId: 4, keywords: ['mechanicus', 'forge'] },
-    { id: 3, slug: 'cadia', name: 'Cadia', summary: 'Легендарный мир-крепость.', description: 'Символ стойкости Imperium.', status: 'fallen', type: 'fortress-world', sector: 'Cadian Gate', eraId: 4, keywords: ['imperium', 'fortress'] },
-    { id: 4, slug: 'macragge', name: 'Macragge', summary: 'Домашний мир Ultramarines.', description: 'Центр Ultramar и пример дисциплины.', status: 'active', type: 'civilized-world', sector: 'Ultramar', eraId: 4, keywords: ['ultramarines', 'ultramar'] },
-    { id: 5, slug: 'armageddon', name: 'Armageddon', summary: 'Индустриальный мир бесконечных войн.', description: 'Хороший пример многостороннего конфликта.', status: 'active', type: 'hive-world', sector: 'Armageddon Sector', eraId: 4, keywords: ['industrial', 'warzone'] },
-    { id: 6, slug: 'fenris', name: 'Fenris', summary: 'Суровый ледяной мир.', description: 'Показывает роль homeworld в идентичности фракции.', status: 'active', type: 'death-world', sector: 'Fenris System', eraId: 4, keywords: ['space-wolves', 'death-world'] },
-    { id: 7, slug: 'baal', name: 'Baal', summary: 'Родной мир Blood Angels.', description: 'Мир выживания и наследия.', status: 'active', type: 'radiated-world', sector: 'Baal System', eraId: 4, keywords: ['blood-angels', 'imperium'] },
+    { id: 1, slug: 'terra', name: 'Terra', summary: 'Тронный мир человечества.', description: 'Политическое сердце Imperium.', status: 'active', type: 'throneworld', sector: 'Sol', eraId: 4, starSystemId: 1, keywords: ['imperium', 'throneworld'] },
+    { id: 2, slug: 'mars', name: 'Mars', summary: 'Кузница Mechanicus.', description: 'Источник технологий и верфей.', status: 'active', type: 'forge-world', sector: 'Sol', eraId: 4, starSystemId: 1, keywords: ['mechanicus', 'forge'] },
+    { id: 3, slug: 'cadia', name: 'Cadia', summary: 'Легендарный мир-крепость.', description: 'Символ стойкости Imperium.', status: 'fallen', type: 'fortress-world', sector: 'Cadian Gate', eraId: 4, starSystemId: 2, keywords: ['imperium', 'fortress'] },
+    { id: 4, slug: 'macragge', name: 'Macragge', summary: 'Домашний мир Ultramarines.', description: 'Центр Ultramar и пример дисциплины.', status: 'active', type: 'civilized-world', sector: 'Ultramar', eraId: 4, starSystemId: 3, keywords: ['ultramarines', 'ultramar'] },
+    { id: 5, slug: 'armageddon', name: 'Armageddon', summary: 'Индустриальный мир бесконечных войн.', description: 'Хороший пример многостороннего конфликта.', status: 'active', type: 'hive-world', sector: 'Armageddon Sector', eraId: 4, starSystemId: 4, keywords: ['industrial', 'warzone'] },
+    { id: 6, slug: 'fenris', name: 'Fenris', summary: 'Суровый ледяной мир.', description: 'Показывает роль homeworld в идентичности фракции.', status: 'active', type: 'death-world', sector: 'Fenris System', eraId: 4, starSystemId: 5, keywords: ['space-wolves', 'death-world'] },
+    { id: 7, slug: 'baal', name: 'Baal', summary: 'Родной мир Blood Angels.', description: 'Мир выживания и наследия.', status: 'active', type: 'radiated-world', sector: 'Baal System', eraId: 4, starSystemId: 6, keywords: ['blood-angels', 'imperium'] },
+  ],
+  starSystems: [
+    { id: 1, slug: 'sol-system', name: 'Sol System', summary: 'Сердце Imperium и ядро Segmentum Solar.', description: 'Вмещает Terra, Mars и главный политический узел человечества.', status: 'active', segmentum: 'Segmentum Solar', eraId: 4, keywords: ['imperium', 'core-worlds'] },
+    { id: 2, slug: 'cadian-gate-system', name: 'Cadian Gate System', summary: 'Ключевой проход у Великого Разлома.', description: 'Связан с Cadia, обороной прохода и множеством контрнаступлений.', status: 'contested', segmentum: 'Segmentum Obscurus', eraId: 4, keywords: ['cadia', 'gate'] },
+    { id: 3, slug: 'macragge-system', name: 'Macragge System', summary: 'Система, задающая ритм Ultramar.', description: 'Удобна для учебных экранов про governance, defense и systems map.', status: 'active', segmentum: 'Ultima Segmentum', eraId: 4, keywords: ['ultramar', 'governance'] },
+    { id: 4, slug: 'armageddon-system', name: 'Armageddon System', summary: 'Тяжелая индустриальная система бесконечной войны.', description: 'Подходит для конфликтных dashboards и defense-driven API экспериментов.', status: 'active', segmentum: 'Segmentum Solar', eraId: 4, keywords: ['warzone', 'industrial'] },
+    { id: 5, slug: 'fenris-system', name: 'Fenris System', summary: 'Суровая пограничная система Space Wolves.', description: 'Хорошо показывает связь chapter identity и локального окружения.', status: 'active', segmentum: 'Segmentum Obscurus', eraId: 4, keywords: ['space-wolves', 'frontier'] },
+    { id: 6, slug: 'baal-system', name: 'Baal System', summary: 'Кроваво-красная система Blood Angels.', description: 'Сильная опора для campaign detail и homeworld-driven navigation.', status: 'scarred', segmentum: 'Ultima Segmentum', eraId: 4, keywords: ['blood-angels', 'defense'] },
   ],
   factions: [
     { id: 1, slug: 'imperium-of-man', name: 'Imperium of Man', summary: 'Гигантская человеческая империя.', description: 'Объединяет бесчисленные миры и армии.', status: 'active', alignment: 'imperium', raceIds: [1], homeworldId: 1, eraId: 4, leaderIds: [1, 2], keywords: ['imperium', 'empire'], powerLevel: 99 },
@@ -342,6 +410,14 @@ const dataset = {
     { id: 4, slug: 'pariah-nexus-containment', name: 'Pariah Nexus Containment', summary: 'Попытки сдержать давление Necron-зон подавления.', description: 'Сильный учебный пример campaign-level данных про древние угрозы и технологические ответы.', status: 'active', campaignType: 'containment', eraId: 4, yearLabel: 'Mid M42', yearOrder: 42003, planetIds: [1, 2], factionIds: [1, 6], characterIds: [2, 7], organizationIds: [1, 2, 5], keywords: ['ancient', 'psychic'] },
     { id: 5, slug: 'cadian-gate-counteroffensive', name: 'Cadian Gate Counteroffensive', summary: 'Серия ответных операций после падения Cadia.', description: 'Полезна для dashboards по multi-faction campaign pressure и recovery efforts.', status: 'active', campaignType: 'counteroffensive', eraId: 4, yearLabel: 'Late M42', yearOrder: 42004, planetIds: [3], factionIds: [1, 3, 9], characterIds: [2, 4, 10], organizationIds: [1, 4], keywords: ['cadia', 'crusade'] },
   ],
+  battlefields: [
+    { id: 1, slug: 'hesperon-void-line', name: 'Hesperon Void Line', summary: 'Космический рубеж кампании Plague Wars.', description: 'Связывает Macragge System, Ultramar и контратаки против Black Legion.', status: 'active', battlefieldType: 'void-front', terrain: 'orbital-bastions', intensityLevel: 94, planetId: 4, starSystemId: 3, eraId: 4, factionIds: [1, 2, 3], characterIds: [2, 4], campaignIds: [1], keywords: ['void-war', 'siege'] },
+    { id: 2, slug: 'hades-hive-bulwark', name: 'Hades Hive Bulwark', summary: 'Главный оборонительный пояс Armageddon.', description: 'Учебный пример battlefield detail для defense campaign, Ork pressure и urban war.', status: 'historical', battlefieldType: 'fortress-line', terrain: 'ash-hive', intensityLevel: 91, planetId: 5, starSystemId: 4, eraId: 3, factionIds: [5, 9], characterIds: [5, 10], campaignIds: [2], keywords: ['hive-war', 'defense'] },
+    { id: 3, slug: 'angelic-redoubts', name: 'Angelic Redoubts', summary: 'Оборонительные бастионы вокруг Baal.', description: 'Подходит для path и graph между Blood Angels, campaign и system-level навигацией.', status: 'historical', battlefieldType: 'redoubt-network', terrain: 'radiated-desert', intensityLevel: 96, planetId: 7, starSystemId: 6, eraId: 4, factionIds: [1, 10], characterIds: [2, 11], campaignIds: [3], keywords: ['defense', 'redoubts'] },
+    { id: 4, slug: 'null-bastion-corridor', name: 'Null Bastion Corridor', summary: 'Полоса подавления в зоне Pariah Nexus.', description: 'Дает graph-связь между Necrons, containment campaign и star-system scope без обязательного planet detail.', status: 'active', battlefieldType: 'suppression-zone', terrain: 'null-field', intensityLevel: 93, starSystemId: 2, eraId: 4, factionIds: [1, 6], characterIds: [2, 7], campaignIds: [4], keywords: ['null-zone', 'ancient'] },
+    { id: 5, slug: 'kasr-partox-ruins', name: 'Kasr Partox Ruins', summary: 'Поле боев после падения Cadia.', description: 'Сильная точка для search, compare и campaign-driven battlefield lists.', status: 'active', battlefieldType: 'ruined-fortress', terrain: 'fortress-ruins', intensityLevel: 92, planetId: 3, starSystemId: 2, eraId: 4, factionIds: [1, 3, 9], characterIds: [4, 10], campaignIds: [5], keywords: ['cadia', 'counteroffensive'] },
+    { id: 6, slug: 'eternity-gate-approach', name: 'Eternity Gate Approach', summary: 'Последний рубеж обороны Терры во времена Ереси.', description: 'Исторический battlefield для связки Emperor, Horus Heresy и core-world graph.', status: 'historical', battlefieldType: 'siege-gate', terrain: 'palace-fortress', intensityLevel: 100, planetId: 1, starSystemId: 1, eraId: 2, factionIds: [1, 3], characterIds: [1, 3], campaignIds: [], keywords: ['terra', 'siege'] },
+  ],
   characters: [
     { id: 1, slug: 'emperor-of-mankind', name: 'The Emperor of Mankind', summary: 'Создатель Imperium.', description: 'Фундаментальная точка отсчета для множества ресурсов.', status: 'enthroned', factionId: 1, raceId: 1, homeworldId: 1, eraId: 3, eventIds: [1], titles: ['Master of Mankind', 'Lord of the Imperium'], keywords: ['imperium', 'psychic'], alignment: 'imperium', powerLevel: 100 },
     { id: 2, slug: 'roboute-guilliman', name: 'Roboute Guilliman', summary: 'Primarch Ultramarines и лицо современного Imperium.', description: 'Подходит для details page с include и timeline.', status: 'active', factionId: 2, raceId: 1, homeworldId: 4, eraId: 4, eventIds: [2, 5], titles: ['Primarch of the Ultramarines', 'Lord Commander of the Imperium'], keywords: ['primarch', 'ultramar'], alignment: 'imperium', powerLevel: 98 },
@@ -358,7 +434,7 @@ const dataset = {
   ],
 };
 
-const resourceOrder = ['eras', 'races', 'planets', 'factions', 'organizations', 'keywords', 'weapons', 'relics', 'units', 'events', 'campaigns', 'characters'];
+const resourceOrder = ['eras', 'races', 'star-systems', 'planets', 'factions', 'organizations', 'keywords', 'weapons', 'relics', 'units', 'events', 'campaigns', 'battlefields', 'characters'];
 
 const resourceDefinitions = {
   eras: {
@@ -403,21 +479,50 @@ const resourceDefinitions = {
     ],
     sampleQueries: ['/api/v1/races?sort=name', '/api/v1/races?filter[alignment]=xenos'],
   },
+  'star-systems': {
+    label: 'Звездные системы',
+    description: 'Слой системного масштаба для maps, graph traversal и навигации между мирами.',
+    defaultSort: 'name',
+    previewParams: { limit: 6, sort: 'name', include: 'planets,era' },
+    searchFields: ['name', 'summary', 'description', 'segmentum', 'keywords'],
+    sortFields: ['name', 'status', 'segmentum'],
+    filters: {
+      status: { type: 'attribute', field: 'status', label: 'Статус' },
+      segmentum: { type: 'attribute', field: 'segmentum', label: 'Сегментум' },
+      era: { type: 'relation', resource: 'eras', localField: 'eraId', label: 'Эра' },
+      planets: { type: 'relation', resource: 'planets', localField: 'planetIds', many: true, label: 'Миры' },
+      keywords: { type: 'array', field: 'keywords', label: 'Keywords' },
+    },
+    includes: {
+      planets: { resource: 'planets', localField: 'planetIds', many: true, label: 'Миры' },
+      era: { resource: 'eras', localField: 'eraId', label: 'Эра' },
+    },
+    fields: [
+      { name: 'id', type: 'number', description: 'Числовой идентификатор.' },
+      { name: 'slug', type: 'string', description: 'Публичный slug.' },
+      { name: 'name', type: 'string', description: 'Название системы.' },
+      { name: 'segmentum', type: 'string', description: 'Имперский макрорегион.' },
+      { name: 'planetIds', type: 'number[]', description: 'Миры, входящие в систему.' },
+    ],
+    sampleQueries: ['/api/v1/star-systems?include=planets,era&sort=name', '/api/v1/star-systems?filter[planets]=terra,mars'],
+  },
   planets: {
     label: 'Миры',
     description: 'Миры для homeworld, осад и кампаний.',
     defaultSort: 'name',
-    previewParams: { limit: 6, sort: 'name' },
+    previewParams: { limit: 6, sort: 'name', include: 'era,starSystem' },
     searchFields: ['name', 'summary', 'description', 'sector', 'keywords'],
     sortFields: ['name', 'status', 'type', 'sector'],
     filters: {
       status: { type: 'attribute', field: 'status', label: 'Статус' },
       type: { type: 'attribute', field: 'type', label: 'Тип мира' },
       era: { type: 'relation', resource: 'eras', localField: 'eraId', label: 'Эра' },
+      starSystem: { type: 'relation', resource: 'star-systems', localField: 'starSystemId', label: 'Звездная система' },
       keywords: { type: 'array', field: 'keywords', label: 'Keywords' },
     },
     includes: {
       era: { resource: 'eras', localField: 'eraId', label: 'Эра' },
+      starSystem: { resource: 'star-systems', localField: 'starSystemId', label: 'Звездная система' },
     },
     fields: [
       { name: 'id', type: 'number', description: 'Числовой идентификатор.' },
@@ -425,8 +530,9 @@ const resourceDefinitions = {
       { name: 'name', type: 'string', description: 'Название мира.' },
       { name: 'type', type: 'string', description: 'Категория мира.' },
       { name: 'sector', type: 'string', description: 'Сектор или регион.' },
+      { name: 'starSystemId', type: 'number', description: 'Связь с системой.' },
     ],
-    sampleQueries: ['/api/v1/planets?include=era&sort=name', '/api/v1/planets?filter[type]=hive-world,fortress-world'],
+    sampleQueries: ['/api/v1/planets?include=era,starSystem&sort=name', '/api/v1/planets?filter[starSystem]=sol-system'],
   },
   factions: {
     label: 'Фракции',
@@ -639,7 +745,7 @@ const resourceDefinitions = {
     label: 'Кампании',
     description: 'Долгие операции и фронты для timeline explorer, dashboards и multi-resource detail pages.',
     defaultSort: '-yearOrder,name',
-    previewParams: { limit: 5, sort: '-yearOrder,name', include: 'era,planets,factions,characters,organizations' },
+    previewParams: { limit: 5, sort: '-yearOrder,name', include: 'era,planets,factions,characters,organizations,battlefields' },
     searchFields: ['name', 'summary', 'description', 'campaignType', 'yearLabel', 'keywords'],
     sortFields: ['name', 'status', 'campaignType', 'yearOrder'],
     filters: {
@@ -650,6 +756,7 @@ const resourceDefinitions = {
       factions: { type: 'relation', resource: 'factions', localField: 'factionIds', many: true, label: 'Фракции' },
       characters: { type: 'relation', resource: 'characters', localField: 'characterIds', many: true, label: 'Персонажи' },
       organizations: { type: 'relation', resource: 'organizations', localField: 'organizationIds', many: true, label: 'Организации' },
+      battlefields: { type: 'relation', resource: 'battlefields', localField: 'battlefieldIds', many: true, label: 'Поля битв' },
       keywords: { type: 'array', field: 'keywords', label: 'Keywords' },
     },
     includes: {
@@ -658,6 +765,7 @@ const resourceDefinitions = {
       factions: { resource: 'factions', localField: 'factionIds', many: true, label: 'Фракции' },
       characters: { resource: 'characters', localField: 'characterIds', many: true, label: 'Персонажи' },
       organizations: { resource: 'organizations', localField: 'organizationIds', many: true, label: 'Организации' },
+      battlefields: { resource: 'battlefields', localField: 'battlefieldIds', many: true, label: 'Поля битв' },
     },
     fields: [
       { name: 'id', type: 'number', description: 'Числовой идентификатор.' },
@@ -667,8 +775,47 @@ const resourceDefinitions = {
       { name: 'yearOrder', type: 'number', description: 'Поле сортировки timeline.' },
       { name: 'planetIds', type: 'number[]', description: 'Миры, задействованные в кампании.' },
       { name: 'organizationIds', type: 'number[]', description: 'Организации-участники.' },
+      { name: 'battlefieldIds', type: 'number[]', description: 'Связанные поля битв.' },
     ],
-    sampleQueries: ['/api/v1/campaigns?include=era,planets,factions,characters,organizations&sort=-yearOrder,name', '/api/v1/campaigns?filter[factions]=imperium-of-man,black-legion'],
+    sampleQueries: ['/api/v1/campaigns?include=era,planets,factions,characters,organizations,battlefields&sort=-yearOrder,name', '/api/v1/campaigns?filter[battlefields]=hesperon-void-line'],
+  },
+  battlefields: {
+    label: 'Поля битв',
+    description: 'Тактический слой для warzone maps, campaign drill-down и relation-heavy battlefield detail pages.',
+    defaultSort: '-intensityLevel,name',
+    previewParams: { limit: 6, sort: '-intensityLevel,name', include: 'planet,starSystem,era,factions,characters,campaigns' },
+    searchFields: ['name', 'summary', 'description', 'battlefieldType', 'terrain', 'keywords'],
+    sortFields: ['name', 'status', 'battlefieldType', 'terrain', 'intensityLevel'],
+    filters: {
+      status: { type: 'attribute', field: 'status', label: 'Статус' },
+      type: { type: 'attribute', field: 'battlefieldType', label: 'Тип поля битвы' },
+      terrain: { type: 'attribute', field: 'terrain', label: 'Местность' },
+      era: { type: 'relation', resource: 'eras', localField: 'eraId', label: 'Эра' },
+      planet: { type: 'relation', resource: 'planets', localField: 'planetId', label: 'Мир' },
+      starSystem: { type: 'relation', resource: 'star-systems', localField: 'starSystemId', label: 'Звездная система' },
+      factions: { type: 'relation', resource: 'factions', localField: 'factionIds', many: true, label: 'Фракции' },
+      characters: { type: 'relation', resource: 'characters', localField: 'characterIds', many: true, label: 'Персонажи' },
+      campaigns: { type: 'relation', resource: 'campaigns', localField: 'campaignIds', many: true, label: 'Кампании' },
+      keywords: { type: 'array', field: 'keywords', label: 'Keywords' },
+    },
+    includes: {
+      planet: { resource: 'planets', localField: 'planetId', label: 'Мир' },
+      starSystem: { resource: 'star-systems', localField: 'starSystemId', label: 'Звездная система' },
+      era: { resource: 'eras', localField: 'eraId', label: 'Эра' },
+      factions: { resource: 'factions', localField: 'factionIds', many: true, label: 'Фракции' },
+      characters: { resource: 'characters', localField: 'characterIds', many: true, label: 'Персонажи' },
+      campaigns: { resource: 'campaigns', localField: 'campaignIds', many: true, label: 'Кампании' },
+    },
+    fields: [
+      { name: 'id', type: 'number', description: 'Числовой идентификатор.' },
+      { name: 'slug', type: 'string', description: 'Публичный slug.' },
+      { name: 'name', type: 'string', description: 'Название поля битвы.' },
+      { name: 'battlefieldType', type: 'string', description: 'Категория боевой зоны.' },
+      { name: 'terrain', type: 'string', description: 'Тип местности.' },
+      { name: 'intensityLevel', type: 'number', description: 'Условная метрика давления и масштаба.' },
+      { name: 'campaignIds', type: 'number[]', description: 'Кампании, проходящие через это поле битвы.' },
+    ],
+    sampleQueries: ['/api/v1/battlefields?include=planet,starSystem,era,factions,characters,campaigns&sort=-intensityLevel,name', '/api/v1/battlefields?filter[campaigns]=plague-wars,cadian-gate-counteroffensive'],
   },
   characters: {
     label: 'Персонажи',

@@ -5,6 +5,8 @@ require('dotenv').config({ path: path.join(__dirname, '../server/.env') });
 
 const pool = require('../server/db');
 const { createApp } = require('../server/app');
+const { runCompareStatsApiTests } = require('./api/compareStatsApiTests');
+const { runDomainApiTests } = require('./api/domainApiTests');
 const { runExploreApiTests } = require('./api/exploreApiTests');
 
 async function main() {
@@ -16,6 +18,8 @@ async function main() {
 
   try {
     failures.push(...await runExploreApiTests(baseUrl));
+    failures.push(...await runCompareStatsApiTests(baseUrl));
+    failures.push(...await runDomainApiTests(baseUrl));
   } finally {
     await new Promise((resolve, reject) => {
       server.close((error) => {

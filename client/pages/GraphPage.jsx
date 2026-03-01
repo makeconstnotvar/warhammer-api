@@ -6,6 +6,14 @@ import { extractError, useAsyncData } from '../hooks/useAsyncData';
 import { buildQueryString, parseCsvParam, readQueryState, replaceQueryState, toCsvParam } from '../lib/query';
 
 const graphPresets = {
+  battlefields: {
+    depth: '2',
+    description: 'Тактический graph: campaign, planet, star-system, factions и key characters вокруг одного battlefield.',
+    identifier: 'hesperon-void-line',
+    label: 'Поле битвы',
+    limitPerRelation: '4',
+    resource: 'battlefields',
+  },
   campaigns: {
     depth: '2',
     description: 'Кампания как точка входа в planets, factions, characters и organizations.',
@@ -30,6 +38,14 @@ const graphPresets = {
     limitPerRelation: '4',
     resource: 'factions',
   },
+  'star-systems': {
+    depth: '2',
+    description: 'Системный graph связывает worlds, campaigns и battlefields в одном космическом контексте.',
+    identifier: 'sol-system',
+    label: 'Система',
+    limitPerRelation: '4',
+    resource: 'star-systems',
+  },
   organizations: {
     depth: '2',
     description: 'Institutional graph для dashboards и political-map UI.',
@@ -49,6 +65,7 @@ const graphPresets = {
 };
 
 const graphResourceColors = {
+  battlefields: '#cf7f55',
   campaigns: '#6fbf86',
   characters: '#d1a35a',
   eras: '#8f7ed2',
@@ -59,16 +76,19 @@ const graphResourceColors = {
   planets: '#87b38a',
   races: '#af8cdd',
   relics: '#d69255',
+  'star-systems': '#5aa7a0',
   units: '#b2b45e',
   weapons: '#78a7c5',
 };
 
 const compareIncludePresets = {
-  campaigns: 'era,planets,factions,characters,organizations',
+  battlefields: 'planet,starSystem,era,factions,characters,campaigns',
+  campaigns: 'era,planets,factions,characters,organizations,battlefields',
   characters: 'faction,race,homeworld,events',
   factions: 'races,leaders,homeworld',
   organizations: 'factions,leaders,homeworld,era',
   relics: 'faction,bearer,originPlanet,era,keywords',
+  'star-systems': 'planets,era',
   units: 'factions,weapons,keywords',
 };
 

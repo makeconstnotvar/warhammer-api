@@ -36,8 +36,8 @@ function Home() {
         <div className="hero-side">
           <div className="metric-chip">{overview.resources.length} ресурсов</div>
           <div className="metric-chip">{overview.featuredQueries.length} готовых сценария</div>
-          <div className="metric-chip">6 stats endpoint-ов</div>
-          <div className="metric-chip">6 compare ресурсов</div>
+          <div className="metric-chip">8 stats endpoint-ов</div>
+          <div className="metric-chip">8 compare ресурсов</div>
           <div className="metric-chip">graph explorer</div>
           <div className="metric-chip">path finder</div>
           <div className="metric-chip">{overview.api.basePath}</div>

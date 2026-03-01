@@ -1,10 +1,5 @@
 const assert = require('node:assert/strict');
-
-async function getJson(baseUrl, pathname) {
-  const response = await fetch(`${baseUrl}${pathname}`);
-  const json = await response.json();
-  return { json, response };
-}
+const { getJson, runTestCases } = require('./testUtils');
 
 async function runExploreApiTests(baseUrl) {
   const cases = [
@@ -78,20 +73,7 @@ async function runExploreApiTests(baseUrl) {
     },
   ];
 
-  const failures = [];
-
-  for (const testCase of cases) {
-    try {
-      await testCase.run();
-      console.log(`PASS ${testCase.name}`);
-    } catch (error) {
-      failures.push({ error, name: testCase.name });
-      console.error(`FAIL ${testCase.name}`);
-      console.error(error.stack || error.message || error);
-    }
-  }
-
-  return failures;
+  return runTestCases(cases);
 }
 
 module.exports = {

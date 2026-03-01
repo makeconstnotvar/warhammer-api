@@ -165,6 +165,72 @@ const resourceDbConfigs = {
       };
     },
   },
+  'star-systems': {
+    alias: 'ss',
+    fromClause: 'FROM star_systems ss',
+    selectClause: `
+      ss.id,
+      ss.slug,
+      ss.name,
+      ss.summary,
+      ss.description,
+      ss.status,
+      ss.segmentum,
+      ss.era_id,
+      COALESCE(ss.keywords, ARRAY[]::text[]) AS keywords,
+      COALESCE(ARRAY(
+        SELECT p.id
+        FROM planets p
+        WHERE p.star_system_id = ss.id
+        ORDER BY p.name ASC, p.id ASC
+      ), ARRAY[]::bigint[]) AS planet_ids
+    `,
+    sortMap: {
+      name: 'ss.name',
+      status: 'ss.status',
+      segmentum: 'ss.segmentum',
+    },
+    searchExpression: `CONCAT_WS(' ', ss.name, ss.summary, ss.description, ss.segmentum, array_to_string(COALESCE(ss.keywords, ARRAY[]::text[]), ' '))`,
+    filterBuilders: {
+      status: (context, rawValue) => addAttributeFilter(context, 'ss.status', rawValue),
+      segmentum: (context, rawValue) => addAttributeFilter(context, 'ss.segmentum', rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, 'ss.keywords', rawValue),
+      era: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM eras era_filter
+          WHERE era_filter.id = ss.era_id
+            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+        )`
+      ),
+      planets: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM planets planet_filter
+          WHERE planet_filter.star_system_id = ss.id
+            AND ${buildIdentityMatch('planet_filter.id', 'planet_filter.slug', 'planet_filter.name', placeholder)}
+        )`
+      ),
+    },
+    serialize(row) {
+      return {
+        id: toNumber(row.id),
+        slug: row.slug,
+        name: row.name,
+        summary: row.summary,
+        description: row.description,
+        status: row.status,
+        segmentum: row.segmentum,
+        eraId: toNumber(row.era_id),
+        planetIds: toNumberArray(row.planet_ids),
+        keywords: row.keywords || [],
+      };
+    },
+  },
   planets: {
     alias: 'p',
     fromClause: 'FROM planets p',
@@ -178,6 +244,7 @@ const resourceDbConfigs = {
       p.type,
       p.sector,
       p.era_id,
+      p.star_system_id,
       COALESCE(p.keywords, ARRAY[]::text[]) AS keywords
     `,
     sortMap: {
@@ -201,6 +268,16 @@ const resourceDbConfigs = {
             AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
         )`
       ),
+      starSystem: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM star_systems system_filter
+          WHERE system_filter.id = p.star_system_id
+            AND ${buildIdentityMatch('system_filter.id', 'system_filter.slug', 'system_filter.name', placeholder)}
+        )`
+      ),
     },
     serialize(row) {
       return {
@@ -213,6 +290,7 @@ const resourceDbConfigs = {
         type: row.type,
         sector: row.sector,
         eraId: toNumber(row.era_id),
+        starSystemId: toNumber(row.star_system_id),
         keywords: row.keywords || [],
       };
     },
@@ -858,7 +936,13 @@ const resourceDbConfigs = {
         FROM campaign_organizations cor
         WHERE cor.campaign_id = cp.id
         ORDER BY cor.organization_id ASC
-      ), ARRAY[]::bigint[]) AS organization_ids
+      ), ARRAY[]::bigint[]) AS organization_ids,
+      COALESCE(ARRAY(
+        SELECT bc.battlefield_id
+        FROM battlefield_campaigns bc
+        WHERE bc.campaign_id = cp.id
+        ORDER BY bc.battlefield_id ASC
+      ), ARRAY[]::bigint[]) AS battlefield_ids
     `,
     sortMap: {
       name: 'cp.name',
@@ -925,6 +1009,17 @@ const resourceDbConfigs = {
             AND ${buildIdentityMatch('organization_filter.id', 'organization_filter.slug', 'organization_filter.name', placeholder)}
         )`
       ),
+      battlefields: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM battlefield_campaigns bc
+          JOIN battlefields battlefield_filter ON battlefield_filter.id = bc.battlefield_id
+          WHERE bc.campaign_id = cp.id
+            AND ${buildIdentityMatch('battlefield_filter.id', 'battlefield_filter.slug', 'battlefield_filter.name', placeholder)}
+        )`
+      ),
     },
     serialize(row) {
       return {
@@ -942,6 +1037,141 @@ const resourceDbConfigs = {
         factionIds: toNumberArray(row.faction_ids),
         characterIds: toNumberArray(row.character_ids),
         organizationIds: toNumberArray(row.organization_ids),
+        battlefieldIds: toNumberArray(row.battlefield_ids),
+        keywords: row.keywords || [],
+      };
+    },
+  },
+  battlefields: {
+    alias: 'bf',
+    fromClause: 'FROM battlefields bf',
+    selectClause: `
+      bf.id,
+      bf.slug,
+      bf.name,
+      bf.summary,
+      bf.description,
+      bf.status,
+      bf.battlefield_type,
+      bf.terrain,
+      bf.intensity_level,
+      bf.planet_id,
+      bf.star_system_id,
+      bf.era_id,
+      COALESCE(bf.keywords, ARRAY[]::text[]) AS keywords,
+      COALESCE(ARRAY(
+        SELECT bff.faction_id
+        FROM battlefield_factions bff
+        WHERE bff.battlefield_id = bf.id
+        ORDER BY bff.faction_id ASC
+      ), ARRAY[]::bigint[]) AS faction_ids,
+      COALESCE(ARRAY(
+        SELECT bfc.character_id
+        FROM battlefield_characters bfc
+        WHERE bfc.battlefield_id = bf.id
+        ORDER BY bfc.character_id ASC
+      ), ARRAY[]::bigint[]) AS character_ids,
+      COALESCE(ARRAY(
+        SELECT bcp.campaign_id
+        FROM battlefield_campaigns bcp
+        WHERE bcp.battlefield_id = bf.id
+        ORDER BY bcp.campaign_id ASC
+      ), ARRAY[]::bigint[]) AS campaign_ids
+    `,
+    sortMap: {
+      name: 'bf.name',
+      status: 'bf.status',
+      battlefieldType: 'bf.battlefield_type',
+      terrain: 'bf.terrain',
+      intensityLevel: 'bf.intensity_level',
+    },
+    searchExpression: `CONCAT_WS(' ', bf.name, bf.summary, bf.description, bf.battlefield_type, bf.terrain, array_to_string(COALESCE(bf.keywords, ARRAY[]::text[]), ' '))`,
+    filterBuilders: {
+      status: (context, rawValue) => addAttributeFilter(context, 'bf.status', rawValue),
+      type: (context, rawValue) => addAttributeFilter(context, 'bf.battlefield_type', rawValue),
+      terrain: (context, rawValue) => addAttributeFilter(context, 'bf.terrain', rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, 'bf.keywords', rawValue),
+      era: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM eras era_filter
+          WHERE era_filter.id = bf.era_id
+            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+        )`
+      ),
+      planet: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM planets planet_filter
+          WHERE planet_filter.id = bf.planet_id
+            AND ${buildIdentityMatch('planet_filter.id', 'planet_filter.slug', 'planet_filter.name', placeholder)}
+        )`
+      ),
+      starSystem: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM star_systems system_filter
+          WHERE system_filter.id = bf.star_system_id
+            AND ${buildIdentityMatch('system_filter.id', 'system_filter.slug', 'system_filter.name', placeholder)}
+        )`
+      ),
+      factions: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM battlefield_factions bff
+          JOIN factions faction_filter ON faction_filter.id = bff.faction_id
+          WHERE bff.battlefield_id = bf.id
+            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+        )`
+      ),
+      characters: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM battlefield_characters bfc
+          JOIN characters character_filter ON character_filter.id = bfc.character_id
+          WHERE bfc.battlefield_id = bf.id
+            AND ${buildIdentityMatch('character_filter.id', 'character_filter.slug', 'character_filter.name', placeholder)}
+        )`
+      ),
+      campaigns: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM battlefield_campaigns bcp
+          JOIN campaigns campaign_filter ON campaign_filter.id = bcp.campaign_id
+          WHERE bcp.battlefield_id = bf.id
+            AND ${buildIdentityMatch('campaign_filter.id', 'campaign_filter.slug', 'campaign_filter.name', placeholder)}
+        )`
+      ),
+    },
+    serialize(row) {
+      return {
+        id: toNumber(row.id),
+        slug: row.slug,
+        name: row.name,
+        summary: row.summary,
+        description: row.description,
+        status: row.status,
+        battlefieldType: row.battlefield_type,
+        terrain: row.terrain,
+        intensityLevel: toNumber(row.intensity_level),
+        planetId: toNumber(row.planet_id),
+        starSystemId: toNumber(row.star_system_id),
+        eraId: toNumber(row.era_id),
+        factionIds: toNumberArray(row.faction_ids),
+        characterIds: toNumberArray(row.character_ids),
+        campaignIds: toNumberArray(row.campaign_ids),
         keywords: row.keywords || [],
       };
     },
@@ -1444,7 +1674,60 @@ async function getCampaignStatsByOrganization() {
   }));
 }
 
+async function getBattlefieldStatsByFaction() {
+  const query = `
+    SELECT
+      f.id,
+      f.slug,
+      f.name,
+      COUNT(DISTINCT bf.id)::int AS count,
+      COALESCE(ROUND(AVG(bf.intensity_level))::int, 0) AS average_intensity_level,
+      COALESCE(MAX(bf.intensity_level), 0)::int AS max_intensity_level
+    FROM factions f
+    LEFT JOIN battlefield_factions bff ON bff.faction_id = f.id
+    LEFT JOIN battlefields bf ON bf.id = bff.battlefield_id
+    GROUP BY f.id, f.slug, f.name
+    ORDER BY count DESC, average_intensity_level DESC, f.name ASC
+  `;
+
+  const result = await db.query(query);
+  return result.rows.map((row) => ({
+    averageIntensityLevel: toNumber(row.average_intensity_level),
+    count: toNumber(row.count),
+    id: toNumber(row.id),
+    maxIntensityLevel: toNumber(row.max_intensity_level),
+    name: row.name,
+    slug: row.slug,
+  }));
+}
+
+async function getStarSystemStatsBySegmentum() {
+  const query = `
+    SELECT
+      LOWER(REGEXP_REPLACE(ss.segmentum, '[^a-zA-Z0-9]+', '-', 'g')) AS slug,
+      ss.segmentum AS name,
+      COUNT(DISTINCT ss.id)::int AS count,
+      COUNT(DISTINCT p.id)::int AS planet_count,
+      COUNT(DISTINCT CASE WHEN ss.status = 'active' THEN ss.id END)::int AS active_count
+    FROM star_systems ss
+    LEFT JOIN planets p ON p.star_system_id = ss.id
+    GROUP BY ss.segmentum
+    ORDER BY count DESC, planet_count DESC, ss.segmentum ASC
+  `;
+
+  const result = await db.query(query);
+  return result.rows.map((row, index) => ({
+    activeCount: toNumber(row.active_count),
+    count: toNumber(row.count),
+    id: index + 1,
+    name: row.name,
+    planetCount: toNumber(row.planet_count),
+    slug: row.slug,
+  }));
+}
+
 module.exports = {
+  getBattlefieldStatsByFaction,
   getCampaignStatsByOrganization,
   getEventStatsByEra,
   getFactionStatsByRace,
@@ -1452,6 +1735,7 @@ module.exports = {
   getRelicStatsByFaction,
   getResourceCount,
   getResourceRow,
+  getStarSystemStatsBySegmentum,
   getUnitStatsByFaction,
   getWeaponStatsByKeyword,
   loadResourcesByIdentifiers,

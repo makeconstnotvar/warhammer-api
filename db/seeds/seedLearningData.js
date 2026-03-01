@@ -52,8 +52,8 @@ async function insertPlanets(client) {
   for (const planet of dataset.planets) {
     await client.query(
       `INSERT INTO planets (
-        id, slug, name, summary, description, status, type, sector, era_id, keywords, image_url
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        id, slug, name, summary, description, status, type, sector, era_id, star_system_id, keywords, image_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [
         planet.id,
         planet.slug,
@@ -64,7 +64,30 @@ async function insertPlanets(client) {
         planet.type,
         planet.sector,
         planet.eraId || null,
+        planet.starSystemId || null,
         planet.keywords,
+        null,
+      ]
+    );
+  }
+}
+
+async function insertStarSystems(client) {
+  for (const starSystem of dataset.starSystems) {
+    await client.query(
+      `INSERT INTO star_systems (
+        id, slug, name, summary, description, status, segmentum, era_id, keywords, image_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        starSystem.id,
+        starSystem.slug,
+        starSystem.name,
+        starSystem.summary,
+        starSystem.description,
+        starSystem.status,
+        starSystem.segmentum,
+        starSystem.eraId || null,
+        starSystem.keywords,
         null,
       ]
     );
@@ -396,10 +419,58 @@ async function insertCampaigns(client) {
   }
 }
 
+async function insertBattlefields(client) {
+  for (const battlefield of dataset.battlefields) {
+    await client.query(
+      `INSERT INTO battlefields (
+        id, slug, name, summary, description, status, battlefield_type, terrain, intensity_level, planet_id, star_system_id, era_id, keywords, image_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+      [
+        battlefield.id,
+        battlefield.slug,
+        battlefield.name,
+        battlefield.summary,
+        battlefield.description,
+        battlefield.status,
+        battlefield.battlefieldType,
+        battlefield.terrain,
+        battlefield.intensityLevel,
+        battlefield.planetId || null,
+        battlefield.starSystemId || null,
+        battlefield.eraId || null,
+        battlefield.keywords,
+        null,
+      ]
+    );
+
+    for (const factionId of battlefield.factionIds || []) {
+      await client.query(
+        'INSERT INTO battlefield_factions (battlefield_id, faction_id) VALUES ($1, $2)',
+        [battlefield.id, factionId]
+      );
+    }
+
+    for (const characterId of battlefield.characterIds || []) {
+      await client.query(
+        'INSERT INTO battlefield_characters (battlefield_id, character_id) VALUES ($1, $2)',
+        [battlefield.id, characterId]
+      );
+    }
+
+    for (const campaignId of battlefield.campaignIds || []) {
+      await client.query(
+        'INSERT INTO battlefield_campaigns (battlefield_id, campaign_id) VALUES ($1, $2)',
+        [battlefield.id, campaignId]
+      );
+    }
+  }
+}
+
 async function resetSequences(client) {
   await client.query(`
     SELECT setval(pg_get_serial_sequence('eras', 'id'), COALESCE(MAX(id), 1), true) FROM eras;
     SELECT setval(pg_get_serial_sequence('races', 'id'), COALESCE(MAX(id), 1), true) FROM races;
+    SELECT setval(pg_get_serial_sequence('star_systems', 'id'), COALESCE(MAX(id), 1), true) FROM star_systems;
     SELECT setval(pg_get_serial_sequence('planets', 'id'), COALESCE(MAX(id), 1), true) FROM planets;
     SELECT setval(pg_get_serial_sequence('factions', 'id'), COALESCE(MAX(id), 1), true) FROM factions;
     SELECT setval(pg_get_serial_sequence('organizations', 'id'), COALESCE(MAX(id), 1), true) FROM organizations;
@@ -411,6 +482,7 @@ async function resetSequences(client) {
     SELECT setval(pg_get_serial_sequence('character_titles', 'id'), COALESCE(MAX(id), 1), true) FROM character_titles;
     SELECT setval(pg_get_serial_sequence('events', 'id'), COALESCE(MAX(id), 1), true) FROM events;
     SELECT setval(pg_get_serial_sequence('campaigns', 'id'), COALESCE(MAX(id), 1), true) FROM campaigns;
+    SELECT setval(pg_get_serial_sequence('battlefields', 'id'), COALESCE(MAX(id), 1), true) FROM battlefields;
   `);
 }
 
@@ -427,6 +499,9 @@ async function run() {
         campaign_characters,
         campaign_factions,
         campaign_planets,
+        battlefield_campaigns,
+        battlefield_characters,
+        battlefield_factions,
         event_characters,
         event_factions,
         event_planets,
@@ -441,6 +516,7 @@ async function run() {
         character_titles,
         faction_races,
         campaigns,
+        battlefields,
         relics,
         organizations,
         units,
@@ -450,6 +526,7 @@ async function run() {
         characters,
         factions,
         planets,
+        star_systems,
         races,
         eras
       RESTART IDENTITY CASCADE
@@ -457,6 +534,7 @@ async function run() {
 
     await insertEras(client);
     await insertRaces(client);
+    await insertStarSystems(client);
     await insertPlanets(client);
     await insertFactions(client);
     await insertKeywords(client);
@@ -467,6 +545,7 @@ async function run() {
     await insertRelics(client);
     await insertEvents(client);
     await insertCampaigns(client);
+    await insertBattlefields(client);
     await resetSequences(client);
     await client.query('COMMIT');
     console.log('seed complete');

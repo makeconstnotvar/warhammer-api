@@ -1,0 +1,6 @@
+Error: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string
+    at C:\Github\warhammer-api\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async getCampaignStatsByOrganization (C:\Github\warhammer-api\server\content\contentDb.js:1434:18)
+    at async Object.getStats (C:\Github\warhammer-api\server\content\contentApi.js:1287:18)
+    at async C:\Github\warhammer-api\server\v1Routes.js:73:14

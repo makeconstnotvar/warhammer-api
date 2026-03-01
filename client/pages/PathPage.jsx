@@ -17,6 +17,17 @@ const pathPresets = {
     toIdentifier: 'roboute-guilliman',
     toResource: 'characters',
   },
+  campaignToBattlefield: {
+    backlinks: 'true',
+    description: 'Прямой путь от кампании к tactical battlefield через новую доменную связь.',
+    fromIdentifier: 'plague-wars',
+    fromResource: 'campaigns',
+    label: 'Campaign -> Battlefield',
+    limitPerRelation: '6',
+    maxDepth: '2',
+    toIdentifier: 'hesperon-void-line',
+    toResource: 'battlefields',
+  },
   heroToRelic: {
     backlinks: 'true',
     description: 'Короткая цепочка от персонажа к его реликвии через backlink relations.',

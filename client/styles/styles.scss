@@ -441,12 +441,20 @@ pre {
   background: linear-gradient(90deg, rgba(127, 179, 129, 0.38), rgba(127, 179, 129, 0.9));
 }
 
+.stats-fill-battlefields {
+  background: linear-gradient(90deg, rgba(207, 127, 85, 0.38), rgba(207, 127, 85, 0.92));
+}
+
 .stats-fill-weapons {
   background: linear-gradient(90deg, rgba(120, 167, 197, 0.38), rgba(120, 167, 197, 0.92));
 }
 
 .stats-fill-relics {
   background: linear-gradient(90deg, rgba(214, 146, 85, 0.38), rgba(214, 146, 85, 0.92));
+}
+
+.stats-fill-star-systems {
+  background: linear-gradient(90deg, rgba(90, 167, 160, 0.38), rgba(90, 167, 160, 0.9));
 }
 
 .stats-fill-factions {
@@ -1071,11 +1079,125 @@ pre {
   gap: 14px;
 }
 
+.compare-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .compare-item-head {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
+}
+
+.compare-visual-grid,
+.compare-pill-grid,
+.compare-bridge-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.compare-visual-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.compare-pill-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.compare-bridge-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.compare-visual-card,
+.compare-pill-card,
+.compare-bridge-card {
+  padding: 18px;
+  border: 1px solid rgba(214, 181, 129, 0.12);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(120, 167, 197, 0.12), transparent 42%),
+    rgba(255, 255, 255, 0.03);
+}
+
+.compare-visual-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.compare-visual-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.compare-visual-head h3,
+.compare-pill-card h3 {
+  margin: 0;
+}
+
+.compare-visual-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.compare-visual-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.compare-visual-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  color: var(--text);
+}
+
+.compare-visual-meta strong {
+  font-size: 0.95rem;
+}
+
+.compare-visual-track {
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.compare-visual-fill {
+  height: 100%;
+  border-radius: inherit;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+}
+
+.compare-pill-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.compare-bridge-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.compare-bridge-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.compare-pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .form-grid {
@@ -1134,6 +1256,9 @@ pre {
   .stats-hero-grid,
   .chart-grid,
   .compare-metric-grid,
+  .compare-visual-grid,
+  .compare-bridge-grid,
+  .compare-pill-grid,
   .compare-item-grid,
   .form-grid {
     grid-template-columns: 1fr;
@@ -1168,7 +1293,8 @@ pre {
 
   .compare-form-foot,
   .resource-preview-foot,
-  .compare-item-head {
+  .compare-item-head,
+  .compare-visual-meta {
     flex-direction: column;
     align-items: flex-start;
   }
