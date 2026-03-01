@@ -94,6 +94,46 @@ async function insertStarSystems(client) {
   }
 }
 
+async function insertWarpRoutes(client) {
+  for (const warpRoute of dataset.warpRoutes) {
+    await client.query(
+      `INSERT INTO warp_routes (
+        id, slug, name, summary, description, status, route_type, stability_level, transit_time_rating, from_star_system_id, to_star_system_id, era_id, keywords, image_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+      [
+        warpRoute.id,
+        warpRoute.slug,
+        warpRoute.name,
+        warpRoute.summary,
+        warpRoute.description,
+        warpRoute.status,
+        warpRoute.routeType,
+        warpRoute.stabilityLevel,
+        warpRoute.transitTimeRating,
+        warpRoute.fromStarSystemId || null,
+        warpRoute.toStarSystemId || null,
+        warpRoute.eraId || null,
+        warpRoute.keywords,
+        null,
+      ]
+    );
+
+    for (const factionId of warpRoute.factionIds || []) {
+      await client.query(
+        'INSERT INTO warp_route_factions (warp_route_id, faction_id) VALUES ($1, $2)',
+        [warpRoute.id, factionId]
+      );
+    }
+
+    for (const campaignId of warpRoute.campaignIds || []) {
+      await client.query(
+        'INSERT INTO warp_route_campaigns (warp_route_id, campaign_id) VALUES ($1, $2)',
+        [warpRoute.id, campaignId]
+      );
+    }
+  }
+}
+
 async function insertFactions(client) {
   for (const faction of dataset.factions) {
     await client.query(
@@ -419,6 +459,53 @@ async function insertCampaigns(client) {
   }
 }
 
+async function insertFleets(client) {
+  for (const fleet of dataset.fleets) {
+    await client.query(
+      `INSERT INTO fleets (
+        id, slug, name, summary, description, status, fleet_type, mobility_class, strength_rating, current_star_system_id, home_port_planet_id, era_id, keywords, image_url
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+      [
+        fleet.id,
+        fleet.slug,
+        fleet.name,
+        fleet.summary,
+        fleet.description,
+        fleet.status,
+        fleet.fleetType,
+        fleet.mobilityClass,
+        fleet.strengthRating,
+        fleet.currentStarSystemId || null,
+        fleet.homePortPlanetId || null,
+        fleet.eraId || null,
+        fleet.keywords,
+        null,
+      ]
+    );
+
+    for (const factionId of fleet.factionIds || []) {
+      await client.query(
+        'INSERT INTO fleet_factions (fleet_id, faction_id, is_primary) VALUES ($1, $2, $3)',
+        [fleet.id, factionId, factionId === fleet.factionIds[0]]
+      );
+    }
+
+    for (const commanderId of fleet.commanderIds || []) {
+      await client.query(
+        'INSERT INTO fleet_commanders (fleet_id, character_id) VALUES ($1, $2)',
+        [fleet.id, commanderId]
+      );
+    }
+
+    for (const campaignId of fleet.campaignIds || []) {
+      await client.query(
+        'INSERT INTO fleet_campaigns (fleet_id, campaign_id) VALUES ($1, $2)',
+        [fleet.id, campaignId]
+      );
+    }
+  }
+}
+
 async function insertBattlefields(client) {
   for (const battlefield of dataset.battlefields) {
     await client.query(
@@ -471,8 +558,10 @@ async function resetSequences(client) {
     SELECT setval(pg_get_serial_sequence('eras', 'id'), COALESCE(MAX(id), 1), true) FROM eras;
     SELECT setval(pg_get_serial_sequence('races', 'id'), COALESCE(MAX(id), 1), true) FROM races;
     SELECT setval(pg_get_serial_sequence('star_systems', 'id'), COALESCE(MAX(id), 1), true) FROM star_systems;
+    SELECT setval(pg_get_serial_sequence('warp_routes', 'id'), COALESCE(MAX(id), 1), true) FROM warp_routes;
     SELECT setval(pg_get_serial_sequence('planets', 'id'), COALESCE(MAX(id), 1), true) FROM planets;
     SELECT setval(pg_get_serial_sequence('factions', 'id'), COALESCE(MAX(id), 1), true) FROM factions;
+    SELECT setval(pg_get_serial_sequence('fleets', 'id'), COALESCE(MAX(id), 1), true) FROM fleets;
     SELECT setval(pg_get_serial_sequence('organizations', 'id'), COALESCE(MAX(id), 1), true) FROM organizations;
     SELECT setval(pg_get_serial_sequence('keywords', 'id'), COALESCE(MAX(id), 1), true) FROM keywords;
     SELECT setval(pg_get_serial_sequence('weapons', 'id'), COALESCE(MAX(id), 1), true) FROM weapons;
@@ -495,6 +584,11 @@ async function run() {
     await client.query('BEGIN');
     await client.query(`
       TRUNCATE TABLE
+        warp_route_campaigns,
+        warp_route_factions,
+        fleet_campaigns,
+        fleet_commanders,
+        fleet_factions,
         campaign_organizations,
         campaign_characters,
         campaign_factions,
@@ -515,6 +609,8 @@ async function run() {
         faction_leaders,
         character_titles,
         faction_races,
+        warp_routes,
+        fleets,
         campaigns,
         battlefields,
         relics,
@@ -545,6 +641,8 @@ async function run() {
     await insertRelics(client);
     await insertEvents(client);
     await insertCampaigns(client);
+    await insertWarpRoutes(client);
+    await insertFleets(client);
     await insertBattlefields(client);
     await resetSequences(client);
     await client.query('COMMIT');

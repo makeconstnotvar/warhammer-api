@@ -86,6 +86,11 @@ const featuredQueries = [
     path: '/api/v1/star-systems?include=planets,era&sort=name',
   },
   {
+    title: 'Флоты в активных кампаниях',
+    description: 'Подходит для naval dashboards, operation browser и screens про перемещение сил.',
+    path: '/api/v1/fleets?include=factions,commanders,campaigns,currentStarSystem&sort=-strengthRating,name',
+  },
+  {
     title: 'Случайный персонаж',
     description: 'Быстрая ручка для featured card, hero-блоков и экспериментов.',
     path: '/api/v1/random/character?include=faction,race,homeworld',
@@ -129,6 +134,11 @@ const featuredQueries = [
     title: 'Поля битв по кампании',
     description: 'Тактический слой для campaign drill-down и graph-heavy docs сценариев.',
     path: '/api/v1/battlefields?filter[campaigns]=plague-wars&include=planet,starSystem,factions,characters,campaigns',
+  },
+  {
+    title: 'Варп-маршруты через Cadian Gate',
+    description: 'Хороший сценарий для map UI, route planner и graph traversal между системами.',
+    path: '/api/v1/warp-routes?filter[starSystems]=sol-system,cadian-gate-system&include=fromStarSystem,toStarSystem,factions,campaigns',
   },
   {
     title: 'Сравнение полей битв',
@@ -241,6 +251,16 @@ const queryGuide = {
       path: '/api/v1/star-systems?include=planets,era&sort=name',
     },
     {
+      title: 'Маршруты между системами',
+      description: 'Показывает, как строить route list, sector map и travel-aware UI поверх отдельных систем.',
+      path: '/api/v1/warp-routes?include=fromStarSystem,toStarSystem,factions,campaigns&sort=-stabilityLevel,name',
+    },
+    {
+      title: 'Флоты на театре войны',
+      description: 'Даёт naval слой поверх campaigns, commanders и current star systems.',
+      path: '/api/v1/fleets?include=factions,commanders,campaigns,currentStarSystem&sort=-strengthRating,name',
+    },
+    {
       title: 'Поля битв кампании',
       description: 'Дает tactical drill-down для campaign pages, graph traversal и search-driven exploration.',
       path: '/api/v1/battlefields?filter[campaigns]=plague-wars&include=planet,starSystem,factions,characters,campaigns&sort=-intensityLevel,name',
@@ -324,6 +344,13 @@ const dataset = {
     { id: 4, slug: 'armageddon-system', name: 'Armageddon System', summary: 'Тяжелая индустриальная система бесконечной войны.', description: 'Подходит для конфликтных dashboards и defense-driven API экспериментов.', status: 'active', segmentum: 'Segmentum Solar', eraId: 4, keywords: ['warzone', 'industrial'] },
     { id: 5, slug: 'fenris-system', name: 'Fenris System', summary: 'Суровая пограничная система Space Wolves.', description: 'Хорошо показывает связь chapter identity и локального окружения.', status: 'active', segmentum: 'Segmentum Obscurus', eraId: 4, keywords: ['space-wolves', 'frontier'] },
     { id: 6, slug: 'baal-system', name: 'Baal System', summary: 'Кроваво-красная система Blood Angels.', description: 'Сильная опора для campaign detail и homeworld-driven navigation.', status: 'scarred', segmentum: 'Ultima Segmentum', eraId: 4, keywords: ['blood-angels', 'defense'] },
+  ],
+  warpRoutes: [
+    { id: 1, slug: 'sol-macragge-corridor', name: 'Sol-Macragge Corridor', summary: 'Основной защищенный маршрут между Terra и Ultramar.', description: 'Полезен для логистических экранов, route planners и movement-aware dashboards.', status: 'active', routeType: 'secured-corridor', stabilityLevel: 88, transitTimeRating: 74, fromStarSystemId: 1, toStarSystemId: 3, eraId: 4, factionIds: [1, 2], campaignIds: [1], keywords: ['indomitus', 'logistics'] },
+    { id: 2, slug: 'cadian-breach-lane', name: 'Cadian Breach Lane', summary: 'Опасный маршрут через разрушенный Cadian Gate.', description: 'Дает сильный сценарий для map UI, danger overlays и chaos-heavy traversal.', status: 'contested', routeType: 'breach-lane', stabilityLevel: 41, transitTimeRating: 58, fromStarSystemId: 1, toStarSystemId: 2, eraId: 4, factionIds: [1, 3, 9], campaignIds: [5], keywords: ['cadia', 'chaos'] },
+    { id: 3, slug: 'armageddon-supply-run', name: 'Armageddon Supply Run', summary: 'Стабильный маршрут снабжения к Armageddon.', description: 'Подходит для defense dashboards, convoy concepts и campaign-focused route screens.', status: 'active', routeType: 'supply-line', stabilityLevel: 76, transitTimeRating: 69, fromStarSystemId: 1, toStarSystemId: 4, eraId: 3, factionIds: [1, 9], campaignIds: [2], keywords: ['supply', 'guard'] },
+    { id: 4, slug: 'baal-relief-passage', name: 'Baal Relief Passage', summary: 'Экстренный путь подкреплений к Baal.', description: 'Поддерживает UI про relief operations, fleet movement и crisis response.', status: 'strained', routeType: 'relief-lane', stabilityLevel: 63, transitTimeRating: 62, fromStarSystemId: 1, toStarSystemId: 6, eraId: 4, factionIds: [1, 10], campaignIds: [3], keywords: ['defense', 'relief'] },
+    { id: 5, slug: 'pariah-shadow-route', name: 'Pariah Shadow Route', summary: 'Ненадежный путь вблизи Pariah Nexus.', description: 'Хороший edge-case ресурс для filters по stability и null-zone traversal.', status: 'unstable', routeType: 'null-zone-passage', stabilityLevel: 29, transitTimeRating: 35, fromStarSystemId: 2, toStarSystemId: 3, eraId: 4, factionIds: [1, 6], campaignIds: [4], keywords: ['ancient', 'null-zone'] },
   ],
   factions: [
     { id: 1, slug: 'imperium-of-man', name: 'Imperium of Man', summary: 'Гигантская человеческая империя.', description: 'Объединяет бесчисленные миры и армии.', status: 'active', alignment: 'imperium', raceIds: [1], homeworldId: 1, eraId: 4, leaderIds: [1, 2], keywords: ['imperium', 'empire'], powerLevel: 99 },
@@ -410,6 +437,13 @@ const dataset = {
     { id: 4, slug: 'pariah-nexus-containment', name: 'Pariah Nexus Containment', summary: 'Попытки сдержать давление Necron-зон подавления.', description: 'Сильный учебный пример campaign-level данных про древние угрозы и технологические ответы.', status: 'active', campaignType: 'containment', eraId: 4, yearLabel: 'Mid M42', yearOrder: 42003, planetIds: [1, 2], factionIds: [1, 6], characterIds: [2, 7], organizationIds: [1, 2, 5], keywords: ['ancient', 'psychic'] },
     { id: 5, slug: 'cadian-gate-counteroffensive', name: 'Cadian Gate Counteroffensive', summary: 'Серия ответных операций после падения Cadia.', description: 'Полезна для dashboards по multi-faction campaign pressure и recovery efforts.', status: 'active', campaignType: 'counteroffensive', eraId: 4, yearLabel: 'Late M42', yearOrder: 42004, planetIds: [3], factionIds: [1, 3, 9], characterIds: [2, 4, 10], organizationIds: [1, 4], keywords: ['cadia', 'crusade'] },
   ],
+  fleets: [
+    { id: 1, slug: 'indomitus-battlegroup', name: 'Indomitus Battlegroup', summary: 'Ударное соединение флотов периода Indomitus.', description: 'Связывает fleets, campaigns и system-level movement вокруг Ultramar.', status: 'active', fleetType: 'expeditionary-battlegroup', mobilityClass: 'rapid-response', strengthRating: 95, currentStarSystemId: 3, homePortPlanetId: 4, eraId: 4, factionIds: [1, 2], commanderIds: [2], campaignIds: [1, 5], keywords: ['indomitus', 'void-war'] },
+    { id: 2, slug: 'black-crusade-armada', name: 'Black Crusade Armada', summary: 'Флот вторжения Black Legion.', description: 'Опорный naval ресурс для chaos traversal, route pressure и campaign-heavy UI.', status: 'active', fleetType: 'invasion-armada', mobilityClass: 'assault-wave', strengthRating: 94, currentStarSystemId: 2, eraId: 4, factionIds: [3], commanderIds: [4], campaignIds: [5], keywords: ['chaos', 'crusade'] },
+    { id: 3, slug: 'armageddon-defense-flotilla', name: 'Armageddon Defense Flotilla', summary: 'Оборонительное соединение вокруг Armageddon.', description: 'Подходит для defense dashboards и combined-arms examples с campaign drill-down.', status: 'active', fleetType: 'defense-flotilla', mobilityClass: 'sector-guard', strengthRating: 82, currentStarSystemId: 4, homePortPlanetId: 5, eraId: 3, factionIds: [1, 9], commanderIds: [10], campaignIds: [2], keywords: ['defense', 'guard'] },
+    { id: 4, slug: 'baal-relief-fleet', name: 'Baal Relief Fleet', summary: 'Флот поддержки Blood Angels во время кризиса Baal.', description: 'Даёт понятный пример relief operations и связки fleet -> campaign -> battlefield.', status: 'active', fleetType: 'relief-fleet', mobilityClass: 'strike-cruiser', strengthRating: 87, currentStarSystemId: 6, homePortPlanetId: 7, eraId: 4, factionIds: [1, 10], commanderIds: [2, 11], campaignIds: [3], keywords: ['defense', 'relief'] },
+    { id: 5, slug: 'sautekh-harvest-armada', name: 'Sautekh Harvest Armada', summary: 'Неcron флот экспансии в contested systems.', description: 'Расширяет xenos naval слой и позволяет строить graphs вокруг древних династий.', status: 'active', fleetType: 'dynastic-armada', mobilityClass: 'harvest-wave', strengthRating: 90, currentStarSystemId: 2, eraId: 4, factionIds: [6], commanderIds: [7], campaignIds: [4], keywords: ['ancient', 'dynasty'] },
+  ],
   battlefields: [
     { id: 1, slug: 'hesperon-void-line', name: 'Hesperon Void Line', summary: 'Космический рубеж кампании Plague Wars.', description: 'Связывает Macragge System, Ultramar и контратаки против Black Legion.', status: 'active', battlefieldType: 'void-front', terrain: 'orbital-bastions', intensityLevel: 94, planetId: 4, starSystemId: 3, eraId: 4, factionIds: [1, 2, 3], characterIds: [2, 4], campaignIds: [1], keywords: ['void-war', 'siege'] },
     { id: 2, slug: 'hades-hive-bulwark', name: 'Hades Hive Bulwark', summary: 'Главный оборонительный пояс Armageddon.', description: 'Учебный пример battlefield detail для defense campaign, Ork pressure и urban war.', status: 'historical', battlefieldType: 'fortress-line', terrain: 'ash-hive', intensityLevel: 91, planetId: 5, starSystemId: 4, eraId: 3, factionIds: [5, 9], characterIds: [5, 10], campaignIds: [2], keywords: ['hive-war', 'defense'] },
@@ -434,7 +468,7 @@ const dataset = {
   ],
 };
 
-const resourceOrder = ['eras', 'races', 'star-systems', 'planets', 'factions', 'organizations', 'keywords', 'weapons', 'relics', 'units', 'events', 'campaigns', 'battlefields', 'characters'];
+const resourceOrder = ['eras', 'races', 'star-systems', 'warp-routes', 'planets', 'factions', 'fleets', 'organizations', 'keywords', 'weapons', 'relics', 'units', 'events', 'campaigns', 'battlefields', 'characters'];
 
 const resourceDefinitions = {
   eras: {
@@ -506,6 +540,43 @@ const resourceDefinitions = {
     ],
     sampleQueries: ['/api/v1/star-systems?include=planets,era&sort=name', '/api/v1/star-systems?filter[planets]=terra,mars'],
   },
+  'warp-routes': {
+    label: 'Варп-маршруты',
+    description: 'Маршруты между системами для maps, route planners и movement-aware API сценариев.',
+    defaultSort: '-stabilityLevel,name',
+    previewParams: { limit: 6, sort: '-stabilityLevel,name', include: 'fromStarSystem,toStarSystem,factions,campaigns,era' },
+    searchFields: ['name', 'summary', 'description', 'routeType', 'keywords'],
+    sortFields: ['name', 'status', 'routeType', 'stabilityLevel', 'transitTimeRating'],
+    filters: {
+      status: { type: 'attribute', field: 'status', label: 'Статус' },
+      type: { type: 'attribute', field: 'routeType', label: 'Тип маршрута' },
+      era: { type: 'relation', resource: 'eras', localField: 'eraId', label: 'Эра' },
+      fromStarSystem: { type: 'relation', resource: 'star-systems', localField: 'fromStarSystemId', label: 'Система отправления' },
+      toStarSystem: { type: 'relation', resource: 'star-systems', localField: 'toStarSystemId', label: 'Система назначения' },
+      starSystems: { type: 'relation', resource: 'star-systems', localField: 'starSystemIds', many: true, label: 'Любая из систем маршрута' },
+      factions: { type: 'relation', resource: 'factions', localField: 'factionIds', many: true, label: 'Фракции' },
+      campaigns: { type: 'relation', resource: 'campaigns', localField: 'campaignIds', many: true, label: 'Кампании' },
+      keywords: { type: 'array', field: 'keywords', label: 'Keywords' },
+    },
+    includes: {
+      fromStarSystem: { resource: 'star-systems', localField: 'fromStarSystemId', label: 'Система отправления' },
+      toStarSystem: { resource: 'star-systems', localField: 'toStarSystemId', label: 'Система назначения' },
+      factions: { resource: 'factions', localField: 'factionIds', many: true, label: 'Фракции' },
+      campaigns: { resource: 'campaigns', localField: 'campaignIds', many: true, label: 'Кампании' },
+      era: { resource: 'eras', localField: 'eraId', label: 'Эра' },
+    },
+    fields: [
+      { name: 'id', type: 'number', description: 'Числовой идентификатор.' },
+      { name: 'slug', type: 'string', description: 'Публичный slug.' },
+      { name: 'name', type: 'string', description: 'Название маршрута.' },
+      { name: 'routeType', type: 'string', description: 'Тип варп-маршрута.' },
+      { name: 'stabilityLevel', type: 'number', description: 'Условная метрика стабильности.' },
+      { name: 'transitTimeRating', type: 'number', description: 'Условная метрика скорости перехода.' },
+      { name: 'fromStarSystemId', type: 'number', description: 'Система отправления.' },
+      { name: 'toStarSystemId', type: 'number', description: 'Система назначения.' },
+    ],
+    sampleQueries: ['/api/v1/warp-routes?include=fromStarSystem,toStarSystem,factions,campaigns&sort=-stabilityLevel,name', '/api/v1/warp-routes?filter[starSystems]=sol-system,cadian-gate-system'],
+  },
   planets: {
     label: 'Миры',
     description: 'Миры для homeworld, осад и кампаний.',
@@ -563,6 +634,45 @@ const resourceDefinitions = {
       { name: 'powerLevel', type: 'number', description: 'Условная учебная метрика.' },
     ],
     sampleQueries: ['/api/v1/factions?include=leaders,races,homeworld&sort=-powerLevel,name', '/api/v1/factions?filter[alignment]=imperium'],
+  },
+  fleets: {
+    label: 'Флоты',
+    description: 'Навигационный и военный слой для naval dashboards, campaign logistics и graph traversal.',
+    defaultSort: '-strengthRating,name',
+    previewParams: { limit: 6, sort: '-strengthRating,name', include: 'factions,commanders,campaigns,currentStarSystem,homePort,era' },
+    searchFields: ['name', 'summary', 'description', 'fleetType', 'mobilityClass', 'keywords'],
+    sortFields: ['name', 'status', 'fleetType', 'mobilityClass', 'strengthRating'],
+    filters: {
+      status: { type: 'attribute', field: 'status', label: 'Статус' },
+      type: { type: 'attribute', field: 'fleetType', label: 'Тип флота' },
+      mobility: { type: 'attribute', field: 'mobilityClass', label: 'Класс мобильности' },
+      era: { type: 'relation', resource: 'eras', localField: 'eraId', label: 'Эра' },
+      factions: { type: 'relation', resource: 'factions', localField: 'factionIds', many: true, label: 'Фракции' },
+      commanders: { type: 'relation', resource: 'characters', localField: 'commanderIds', many: true, label: 'Командующие' },
+      campaigns: { type: 'relation', resource: 'campaigns', localField: 'campaignIds', many: true, label: 'Кампании' },
+      currentStarSystem: { type: 'relation', resource: 'star-systems', localField: 'currentStarSystemId', label: 'Текущая система' },
+      homePort: { type: 'relation', resource: 'planets', localField: 'homePortPlanetId', label: 'Порт базирования' },
+      keywords: { type: 'array', field: 'keywords', label: 'Keywords' },
+    },
+    includes: {
+      factions: { resource: 'factions', localField: 'factionIds', many: true, label: 'Фракции' },
+      commanders: { resource: 'characters', localField: 'commanderIds', many: true, label: 'Командующие' },
+      campaigns: { resource: 'campaigns', localField: 'campaignIds', many: true, label: 'Кампании' },
+      currentStarSystem: { resource: 'star-systems', localField: 'currentStarSystemId', label: 'Текущая система' },
+      homePort: { resource: 'planets', localField: 'homePortPlanetId', label: 'Порт базирования' },
+      era: { resource: 'eras', localField: 'eraId', label: 'Эра' },
+    },
+    fields: [
+      { name: 'id', type: 'number', description: 'Числовой идентификатор.' },
+      { name: 'slug', type: 'string', description: 'Публичный slug.' },
+      { name: 'name', type: 'string', description: 'Название флота.' },
+      { name: 'fleetType', type: 'string', description: 'Роль или тип флотского соединения.' },
+      { name: 'mobilityClass', type: 'string', description: 'Характер движения и реакции.' },
+      { name: 'strengthRating', type: 'number', description: 'Условная учебная метрика силы.' },
+      { name: 'currentStarSystemId', type: 'number', description: 'Текущая система нахождения.' },
+      { name: 'homePortPlanetId', type: 'number', description: 'Мир базирования.' },
+    ],
+    sampleQueries: ['/api/v1/fleets?include=factions,commanders,campaigns,currentStarSystem&sort=-strengthRating,name', '/api/v1/fleets?filter[campaigns]=plague-wars&filter[factions]=imperium-of-man'],
   },
   organizations: {
     label: 'Организации',

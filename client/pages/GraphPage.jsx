@@ -22,6 +22,14 @@ const graphPresets = {
     limitPerRelation: '4',
     resource: 'campaigns',
   },
+  fleets: {
+    depth: '2',
+    description: 'Флот связывает commanders, campaigns, factions и текущую star-system в одном naval graph.',
+    identifier: 'indomitus-battlegroup',
+    label: 'Флот',
+    limitPerRelation: '4',
+    resource: 'fleets',
+  },
   characters: {
     depth: '2',
     description: 'Классический detail graph: faction, race, homeworld, events и обратные связи через relics и organizations.',
@@ -62,6 +70,14 @@ const graphPresets = {
     limitPerRelation: '4',
     resource: 'relics',
   },
+  'warp-routes': {
+    depth: '2',
+    description: 'Route graph показывает обе системы, campaigns и factions, завязанные на конкретный варп-маршрут.',
+    identifier: 'sol-macragge-corridor',
+    label: 'Варп-маршрут',
+    limitPerRelation: '4',
+    resource: 'warp-routes',
+  },
 };
 
 const graphResourceColors = {
@@ -71,6 +87,7 @@ const graphResourceColors = {
   eras: '#8f7ed2',
   events: '#d46f6f',
   factions: '#c95a5a',
+  fleets: '#87a8d8',
   keywords: '#6d88d9',
   organizations: '#6caed6',
   planets: '#87b38a',
@@ -78,6 +95,7 @@ const graphResourceColors = {
   relics: '#d69255',
   'star-systems': '#5aa7a0',
   units: '#b2b45e',
+  'warp-routes': '#4e8fbe',
   weapons: '#78a7c5',
 };
 

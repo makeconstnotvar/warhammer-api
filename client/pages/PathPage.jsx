@@ -25,6 +25,19 @@ const pathPresets = {
     label: 'Campaign -> Battlefield',
     limitPerRelation: '6',
     maxDepth: '2',
+    resourceFilterKeys: ['battlefields'],
+    toIdentifier: 'hesperon-void-line',
+    toResource: 'battlefields',
+  },
+  fleetToBattlefield: {
+    backlinks: 'true',
+    description: 'Флот к полю битвы через campaign participation без шумных альтернативных веток.',
+    fromIdentifier: 'indomitus-battlegroup',
+    fromResource: 'fleets',
+    label: 'Fleet -> Battlefield',
+    limitPerRelation: '6',
+    maxDepth: '3',
+    resourceFilterKeys: ['campaigns', 'battlefields'],
     toIdentifier: 'hesperon-void-line',
     toResource: 'battlefields',
   },
@@ -48,6 +61,18 @@ const pathPresets = {
     limitPerRelation: '6',
     maxDepth: '4',
     toIdentifier: 'plague-wars',
+    toResource: 'campaigns',
+  },
+  routeToCampaign: {
+    backlinks: 'true',
+    description: 'Варп-маршрут к кампании через shared operational context.',
+    fromIdentifier: 'cadian-breach-lane',
+    fromResource: 'warp-routes',
+    label: 'Route -> Campaign',
+    limitPerRelation: '6',
+    maxDepth: '2',
+    resourceFilterKeys: ['campaigns', 'star-systems'],
+    toIdentifier: 'cadian-gate-counteroffensive',
     toResource: 'campaigns',
   },
 };
@@ -201,6 +226,7 @@ function PathPage() {
     setFromResource(preset.fromResource);
     setLimitPerRelation(preset.limitPerRelation);
     setMaxDepth(preset.maxDepth);
+    setResourceFilterKeys(preset.resourceFilterKeys || []);
     setToIdentifier(preset.toIdentifier);
     setToResource(preset.toResource);
     runPath(preset);

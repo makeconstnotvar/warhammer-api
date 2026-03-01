@@ -11,7 +11,7 @@
 - `api/v1` с `overview`, `catalog/resources`, `query-guide`, `search`, `explore/graph`, `explore/path`, `examples/concurrency`
 - docs-клиент со страницами `Quick Start`, `Resources`, `Query Guide`, `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Concurrency`
 - каноническая схема PostgreSQL для `eras`, `races`, `planets`, `factions`, `characters`, `events`
-- домен расширен ресурсами `organizations`, `relics`, `campaigns`, `star-systems`, `battlefields`
+- домен расширен ресурсами `organizations`, `relics`, `campaigns`, `star-systems`, `battlefields`, `fleets`, `warp-routes`
 - seed-набор данных по известным сущностям Warhammer 40k
 - `api/v1` читает данные из PostgreSQL, а `server/content/warhammerContent.js` используется как источник сидов и docs-метаданных
 - `Stats`, `Compare`, `Graph`, `Path`, `Playground` и `Resources/:resource` поддерживают deep-linking через query params
@@ -59,9 +59,11 @@ npm run client-watch
 - `GET /api/v1/units?include=factions,weapons,keywords`
 - `GET /api/v1/organizations?include=factions,leaders,homeworld`
 - `GET /api/v1/star-systems?include=planets,era`
+- `GET /api/v1/warp-routes?include=fromStarSystem,toStarSystem,factions,campaigns`
 - `GET /api/v1/weapons?include=faction,era,keywords`
 - `GET /api/v1/relics?include=faction,bearer,originPlanet,keywords`
 - `GET /api/v1/keywords?filter[category]=weapon-profile`
+- `GET /api/v1/fleets?include=factions,commanders,campaigns,currentStarSystem,homePort`
 - `GET /api/v1/campaigns?include=era,planets,factions,characters,organizations`
 - `GET /api/v1/battlefields?include=planet,starSystem,era,factions,characters,campaigns`
 - `GET /api/v1/examples/concurrency`
@@ -89,7 +91,7 @@ npm run client-watch
 
 Поиск `GET /api/v1/search` сейчас ранжирует результаты по релевантности: точный `slug` и `name` выше частичных совпадений по `summary` и `description`.
 `GET /api/v1/stats/events/by-era` теперь также возвращает `yearLabel` и `yearOrder`, чтобы клиент мог строить timeline charts по эрам.
-`npm test` поднимает приложение на временном порту и прогоняет HTTP integration tests для `explore/graph`, `explore/path`, `compare`, `stats`, `star-systems`, `battlefields` и `campaigns -> battlefields` на реальной PostgreSQL.
+`npm test` поднимает приложение на временном порту и прогоняет HTTP integration tests для `explore/graph`, `explore/path`, `compare`, `stats`, `star-systems`, `battlefields`, `fleets`, `warp-routes` и `campaigns -> battlefields` на реальной PostgreSQL.
 
 ## Shareable docs links
 
@@ -99,8 +101,10 @@ npm run client-watch
 - `/compare?resource=battlefields&ids=hesperon-void-line,kasr-partox-ruins&include=planet,starSystem,era,factions,characters,campaigns`
 - `/explore/graph?resource=characters&identifier=roboute-guilliman&depth=2&limitPerRelation=4&backlinks=true`
 - `/explore/graph?resource=star-systems&identifier=sol-system&depth=2&limitPerRelation=4&backlinks=true`
+- `/explore/graph?resource=fleets&identifier=indomitus-battlegroup&depth=2&limitPerRelation=4&backlinks=true`
 - `/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4&resources=campaigns,characters&selected=factions:1,characters:2&focus=characters:2`
 - `/explore/path?fromResource=campaigns&fromIdentifier=plague-wars&toResource=battlefields&toIdentifier=hesperon-void-line&maxDepth=2&limitPerRelation=6&backlinks=true`
+- `/explore/path?fromResource=fleets&fromIdentifier=indomitus-battlegroup&toResource=battlefields&toIdentifier=hesperon-void-line&maxDepth=3&limitPerRelation=6&backlinks=true&resources=campaigns,battlefields`
 - `/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=factions`
 - `/playground?resource=characters&search=guilliman&limit=6&sort=-powerLevel,name&include=faction,race&filterKey=faction&filterValue=ultramarines`
 - `/resources/relics?mode=list&limit=5&sort=-powerLevel,name&include=faction,bearer,originPlanet,keywords`

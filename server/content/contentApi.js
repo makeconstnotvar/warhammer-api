@@ -41,6 +41,8 @@ const resourceAliases = {
   events: 'events',
   faction: 'factions',
   factions: 'factions',
+  fleet: 'fleets',
+  fleets: 'fleets',
   keyword: 'keywords',
   keywords: 'keywords',
   organization: 'organizations',
@@ -57,6 +59,8 @@ const resourceAliases = {
   battlefields: 'battlefields',
   unit: 'units',
   units: 'units',
+  'warp-route': 'warp-routes',
+  'warp-routes': 'warp-routes',
   weapon: 'weapons',
   weapons: 'weapons',
 };

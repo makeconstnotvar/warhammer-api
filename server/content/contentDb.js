@@ -231,6 +231,135 @@ const resourceDbConfigs = {
       };
     },
   },
+  'warp-routes': {
+    alias: 'wr',
+    fromClause: 'FROM warp_routes wr',
+    selectClause: `
+      wr.id,
+      wr.slug,
+      wr.name,
+      wr.summary,
+      wr.description,
+      wr.status,
+      wr.route_type,
+      wr.stability_level,
+      wr.transit_time_rating,
+      wr.from_star_system_id,
+      wr.to_star_system_id,
+      wr.era_id,
+      COALESCE(wr.keywords, ARRAY[]::text[]) AS keywords,
+      COALESCE(ARRAY(
+        SELECT wrf.faction_id
+        FROM warp_route_factions wrf
+        WHERE wrf.warp_route_id = wr.id
+        ORDER BY wrf.faction_id ASC
+      ), ARRAY[]::bigint[]) AS faction_ids,
+      COALESCE(ARRAY(
+        SELECT wrc.campaign_id
+        FROM warp_route_campaigns wrc
+        WHERE wrc.warp_route_id = wr.id
+        ORDER BY wrc.campaign_id ASC
+      ), ARRAY[]::bigint[]) AS campaign_ids
+    `,
+    sortMap: {
+      name: 'wr.name',
+      status: 'wr.status',
+      routeType: 'wr.route_type',
+      stabilityLevel: 'wr.stability_level',
+      transitTimeRating: 'wr.transit_time_rating',
+    },
+    searchExpression: `CONCAT_WS(' ', wr.name, wr.summary, wr.description, wr.route_type, array_to_string(COALESCE(wr.keywords, ARRAY[]::text[]), ' '))`,
+    filterBuilders: {
+      status: (context, rawValue) => addAttributeFilter(context, 'wr.status', rawValue),
+      type: (context, rawValue) => addAttributeFilter(context, 'wr.route_type', rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, 'wr.keywords', rawValue),
+      era: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM eras era_filter
+          WHERE era_filter.id = wr.era_id
+            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+        )`
+      ),
+      fromStarSystem: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM star_systems system_filter
+          WHERE system_filter.id = wr.from_star_system_id
+            AND ${buildIdentityMatch('system_filter.id', 'system_filter.slug', 'system_filter.name', placeholder)}
+        )`
+      ),
+      toStarSystem: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM star_systems system_filter
+          WHERE system_filter.id = wr.to_star_system_id
+            AND ${buildIdentityMatch('system_filter.id', 'system_filter.slug', 'system_filter.name', placeholder)}
+        )`
+      ),
+      starSystems: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM star_systems system_filter
+          WHERE (system_filter.id = wr.from_star_system_id OR system_filter.id = wr.to_star_system_id)
+            AND ${buildIdentityMatch('system_filter.id', 'system_filter.slug', 'system_filter.name', placeholder)}
+        )`
+      ),
+      factions: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM warp_route_factions wrf
+          JOIN factions faction_filter ON faction_filter.id = wrf.faction_id
+          WHERE wrf.warp_route_id = wr.id
+            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+        )`
+      ),
+      campaigns: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM warp_route_campaigns wrc
+          JOIN campaigns campaign_filter ON campaign_filter.id = wrc.campaign_id
+          WHERE wrc.warp_route_id = wr.id
+            AND ${buildIdentityMatch('campaign_filter.id', 'campaign_filter.slug', 'campaign_filter.name', placeholder)}
+        )`
+      ),
+    },
+    serialize(row) {
+      const fromStarSystemId = toNumber(row.from_star_system_id);
+      const toStarSystemId = toNumber(row.to_star_system_id);
+
+      return {
+        id: toNumber(row.id),
+        slug: row.slug,
+        name: row.name,
+        summary: row.summary,
+        description: row.description,
+        status: row.status,
+        routeType: row.route_type,
+        stabilityLevel: toNumber(row.stability_level),
+        transitTimeRating: toNumber(row.transit_time_rating),
+        fromStarSystemId,
+        toStarSystemId,
+        starSystemIds: [fromStarSystemId, toStarSystemId].filter((value, index, values) => value !== null && values.indexOf(value) === index),
+        eraId: toNumber(row.era_id),
+        factionIds: toNumberArray(row.faction_ids),
+        campaignIds: toNumberArray(row.campaign_ids),
+        keywords: row.keywords || [],
+      };
+    },
+  },
   planets: {
     alias: 'p',
     fromClause: 'FROM planets p',
@@ -389,6 +518,140 @@ const resourceDbConfigs = {
         eraId: toNumber(row.era_id),
         keywords: row.keywords || [],
         powerLevel: toNumber(row.power_level),
+      };
+    },
+  },
+  fleets: {
+    alias: 'flt',
+    fromClause: 'FROM fleets flt',
+    selectClause: `
+      flt.id,
+      flt.slug,
+      flt.name,
+      flt.summary,
+      flt.description,
+      flt.status,
+      flt.fleet_type,
+      flt.mobility_class,
+      flt.strength_rating,
+      flt.current_star_system_id,
+      flt.home_port_planet_id,
+      flt.era_id,
+      COALESCE(flt.keywords, ARRAY[]::text[]) AS keywords,
+      COALESCE(ARRAY(
+        SELECT ff.faction_id
+        FROM fleet_factions ff
+        WHERE ff.fleet_id = flt.id
+        ORDER BY ff.is_primary DESC, ff.faction_id ASC
+      ), ARRAY[]::bigint[]) AS faction_ids,
+      COALESCE(ARRAY(
+        SELECT fc.character_id
+        FROM fleet_commanders fc
+        WHERE fc.fleet_id = flt.id
+        ORDER BY fc.character_id ASC
+      ), ARRAY[]::bigint[]) AS commander_ids,
+      COALESCE(ARRAY(
+        SELECT fcp.campaign_id
+        FROM fleet_campaigns fcp
+        WHERE fcp.fleet_id = flt.id
+        ORDER BY fcp.campaign_id ASC
+      ), ARRAY[]::bigint[]) AS campaign_ids
+    `,
+    sortMap: {
+      name: 'flt.name',
+      status: 'flt.status',
+      fleetType: 'flt.fleet_type',
+      mobilityClass: 'flt.mobility_class',
+      strengthRating: 'flt.strength_rating',
+    },
+    searchExpression: `CONCAT_WS(' ', flt.name, flt.summary, flt.description, flt.fleet_type, flt.mobility_class, array_to_string(COALESCE(flt.keywords, ARRAY[]::text[]), ' '))`,
+    filterBuilders: {
+      status: (context, rawValue) => addAttributeFilter(context, 'flt.status', rawValue),
+      type: (context, rawValue) => addAttributeFilter(context, 'flt.fleet_type', rawValue),
+      mobility: (context, rawValue) => addAttributeFilter(context, 'flt.mobility_class', rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, 'flt.keywords', rawValue),
+      era: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM eras era_filter
+          WHERE era_filter.id = flt.era_id
+            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+        )`
+      ),
+      factions: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM fleet_factions ff
+          JOIN factions faction_filter ON faction_filter.id = ff.faction_id
+          WHERE ff.fleet_id = flt.id
+            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+        )`
+      ),
+      commanders: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM fleet_commanders fc
+          JOIN characters character_filter ON character_filter.id = fc.character_id
+          WHERE fc.fleet_id = flt.id
+            AND ${buildIdentityMatch('character_filter.id', 'character_filter.slug', 'character_filter.name', placeholder)}
+        )`
+      ),
+      campaigns: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM fleet_campaigns fcp
+          JOIN campaigns campaign_filter ON campaign_filter.id = fcp.campaign_id
+          WHERE fcp.fleet_id = flt.id
+            AND ${buildIdentityMatch('campaign_filter.id', 'campaign_filter.slug', 'campaign_filter.name', placeholder)}
+        )`
+      ),
+      currentStarSystem: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM star_systems system_filter
+          WHERE system_filter.id = flt.current_star_system_id
+            AND ${buildIdentityMatch('system_filter.id', 'system_filter.slug', 'system_filter.name', placeholder)}
+        )`
+      ),
+      homePort: (context, rawValue) => addRelationFilter(
+        context,
+        rawValue,
+        (placeholder) => `EXISTS (
+          SELECT 1
+          FROM planets planet_filter
+          WHERE planet_filter.id = flt.home_port_planet_id
+            AND ${buildIdentityMatch('planet_filter.id', 'planet_filter.slug', 'planet_filter.name', placeholder)}
+        )`
+      ),
+    },
+    serialize(row) {
+      return {
+        id: toNumber(row.id),
+        slug: row.slug,
+        name: row.name,
+        summary: row.summary,
+        description: row.description,
+        status: row.status,
+        fleetType: row.fleet_type,
+        mobilityClass: row.mobility_class,
+        strengthRating: toNumber(row.strength_rating),
+        currentStarSystemId: toNumber(row.current_star_system_id),
+        homePortPlanetId: toNumber(row.home_port_planet_id),
+        eraId: toNumber(row.era_id),
+        factionIds: toNumberArray(row.faction_ids),
+        commanderIds: toNumberArray(row.commander_ids),
+        campaignIds: toNumberArray(row.campaign_ids),
+        keywords: row.keywords || [],
       };
     },
   },

@@ -38,6 +38,7 @@
 - домен расширен ресурсами `keywords`, `weapons`, `units`
 - домен расширен ресурсами `organizations`, `relics`, `campaigns`
 - домен расширен ресурсами `star-systems`, `battlefields`
+- домен расширен ресурсами `fleets`, `warp-routes`
 - `search` ранжирует результаты по релевантности
 - `compare` поддерживает `factions`, `characters`, `units`, `organizations`, `relics`, `campaigns`, `star-systems`, `battlefields`
 - `explore/graph` поддерживает `resource`, `identifier`, `depth`, `limitPerRelation`, `backlinks`, `resources`
@@ -134,6 +135,7 @@ Frontend:
 - `GET /api/v1/keywords`, `GET /api/v1/weapons`, `GET /api/v1/units` отвечают из PostgreSQL
 - `GET /api/v1/organizations`, `GET /api/v1/relics`, `GET /api/v1/campaigns` отвечают из PostgreSQL
 - `GET /api/v1/star-systems` и `GET /api/v1/battlefields` отвечают из PostgreSQL
+- `GET /api/v1/fleets` и `GET /api/v1/warp-routes` отвечают из PostgreSQL
 - `GET /api/v1/random/unit` отвечает из PostgreSQL
 - `GET /api/v1/compare/units?ids=terminator-squad,intercessor-squad` отвечает из PostgreSQL
 - `GET /api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus` отвечает из PostgreSQL
@@ -157,7 +159,10 @@ Frontend:
 - `GET /api/v1/star-systems?include=planets,era&sort=name` отвечает и возвращает `included` с `planets` и `eras`
 - `GET /api/v1/battlefields?filter[campaigns]=plague-wars&include=planet,starSystem,factions,characters,campaigns` отвечает и возвращает rich include-набор
 - `GET /api/v1/campaigns/plague-wars?include=planets,battlefields` отвечает и отдает связанное battlefield
-- `npm test` проходит и дополнительно проверяет `compare`, `stats`, `star-systems`, `battlefields` и `campaigns -> battlefields`
+- `npm test` проходит и дополнительно проверяет `compare`, `stats`, `star-systems`, `battlefields`, `fleets`, `warp-routes` и `campaigns -> battlefields`
+- `GET /api/v1/fleets?include=factions,commanders,campaigns,currentStarSystem,homePort&sort=-strengthRating,name` отвечает и возвращает rich include-набор
+- `GET /api/v1/warp-routes?filter[starSystems]=sol-system,baal-system&include=fromStarSystem,toStarSystem,factions,campaigns` отвечает и отдает связанный route-layer
+- `GET /api/v1/explore/path?fromResource=fleets&fromIdentifier=indomitus-battlegroup&toResource=battlefields&toIdentifier=hesperon-void-line&resources=campaigns,battlefields` отвечает и строит path через campaign graph
 - клиентская сборка проходит после добавления query-param deep-linking для `Stats`, `Compare`, `Graph`, `Playground`, `Resources/:resource`
 - `GET /api/v1/stats/events/by-era` теперь отдает `yearLabel` и `yearOrder` для timeline charts
 - клиентская сборка проходит после добавления workbench, node selection и compare-bridge на страницу `Graph`
@@ -1098,6 +1103,38 @@ Raw SQL здесь допустим, если:
 - продвинутый разработчик может собирать dashboard и explorer связей
 - docs client объясняет использование API без внешних пояснений
 - набор данных богатый, узнаваемый и юридически безопаснее, потому что строится на структурированных фактах, а не на копировании длинных текстов
+
+## Точка продолжения
+
+Последняя завершенная итерация:
+- добавлены новые ресурсы `fleets` и `warp-routes`
+- добавлена migration `db/migrations/006_fleets_warp_routes.sql`
+- seed обновлен под `fleets` и `warp-routes`
+- `api/v1` читает `fleets` и `warp-routes` из PostgreSQL
+- `Graph` получил presets для `fleets` и `warp-routes`
+- `Path` получил presets `Fleet -> Battlefield` и `Route -> Campaign`
+- `Compare` уже умеет строить bridge в `Path` и `Graph`
+
+Что подтверждено последней проверкой:
+- `npm run db:migrate` проходит
+- `npm run db:seed` проходит
+- `npm test` проходит
+- `npm run build-dev` проходит
+- `GET /api/v1/fleets?include=factions,commanders,campaigns,currentStarSystem,homePort&sort=-strengthRating,name` отвечает
+- `GET /api/v1/warp-routes?filter[starSystems]=sol-system,baal-system&include=fromStarSystem,toStarSystem,factions,campaigns` отвечает
+- `GET /api/v1/explore/path?fromResource=fleets&fromIdentifier=indomitus-battlegroup&toResource=battlefields&toIdentifier=hesperon-void-line&maxDepth=3&limitPerRelation=6&backlinks=true&resources=campaigns,battlefields` отвечает и строит путь через `campaigns`
+
+С какого места продолжать:
+1. добавить `compare/fleets`
+2. добавить `compare/warp-routes`
+3. затем добавить `stats/fleets/by-faction`
+4. затем добавить `stats/warp-routes/by-status`
+5. после этого вывести новые compare/stats сценарии в docs-клиент
+
+Если нужно быстро восстановить рабочее состояние локально:
+- `npm run db:setup`
+- `npm test`
+- `npm run build-dev`
 
 
 
