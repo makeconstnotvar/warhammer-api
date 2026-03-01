@@ -61,6 +61,11 @@ const featuredQueries = [
     path: '/api/v1/stats/units/by-faction',
   },
   {
+    title: 'Статистика кампаний по организациям',
+    description: 'Показывает institutional participation для campaign dashboards и timeline analytics.',
+    path: '/api/v1/stats/campaigns/by-organization',
+  },
+  {
     title: 'Организации внутри Imperium',
     description: 'Подходит для institutional UI, codex browser и сложных relation filters.',
     path: '/api/v1/organizations?filter[faction]=imperium-of-man&include=factions,leaders,homeworld',
@@ -81,9 +86,34 @@ const featuredQueries = [
     path: '/api/v1/compare/units?ids=terminator-squad,intercessor-squad&include=factions,weapons,keywords',
   },
   {
+    title: 'Сравнение организаций',
+    description: 'Institutional compare для codex browser, dashboards и political-map UI.',
+    path: '/api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus&include=factions,leaders,homeworld,era',
+  },
+  {
+    title: 'Graph explorer для фракции',
+    description: 'Готовый graph endpoint для relation maps, connected detail screen и explorer UI.',
+    path: '/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4',
+  },
+  {
+    title: 'Graph explorer с whitelist ресурсов',
+    description: 'Ограничивает graph только нужными типами ресурсов и упрощает connected UI.',
+    path: '/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4&resources=campaigns,characters',
+  },
+  {
+    title: 'Path finder от героя к реликвии',
+    description: 'Кратчайший путь между двумя сущностями для lore explorer и connected UI.',
+    path: '/api/v1/explore/path?fromResource=characters&fromIdentifier=roboute-guilliman&toResource=relics&toIdentifier=emperors-sword&maxDepth=3&limitPerRelation=6&backlinks=true',
+  },
+  {
     title: 'Кампании по участникам',
     description: 'Многосторонний ресурс для dashboards, timelines и campaign explorer.',
     path: '/api/v1/campaigns?filter[factions]=imperium-of-man,black-legion&include=planets,characters,organizations',
+  },
+  {
+    title: 'Статистика реликвий по фракциям',
+    description: 'Готовая сводка для inventory dashboards и faction identity screens.',
+    path: '/api/v1/stats/relics/by-faction',
   },
 ];
 
@@ -96,6 +126,7 @@ const queryGuide = {
     { name: 'filter[...]', example: 'filter[faction]=ultramarines', description: 'Структурированные фильтры.' },
     { name: 'include', example: 'include=faction,race,events', description: 'Связанные сущности в блоке included.' },
     { name: 'fields[...]', example: 'fields[characters]=id,name,slug', description: 'Выборка только нужных полей.' },
+    { name: 'resources', example: 'resources=campaigns,characters', description: 'Whitelist типов ресурсов для `search`, `explore/graph` и `explore/path`.' },
   ],
   responseShapes: {
     list: {
@@ -140,6 +171,31 @@ const queryGuide = {
       path: '/api/v1/compare/units?ids=terminator-squad,intercessor-squad&include=factions,weapons,keywords',
     },
     {
+      title: 'Сравнение двух реликвий',
+      description: 'Полезно для hero-item UI, inventory compare и detail screen patterns.',
+      path: '/api/v1/compare/relics?ids=emperors-sword,talon-of-horus&include=faction,bearer,originPlanet,keywords',
+    },
+    {
+      title: 'Graph explorer',
+      description: 'Один endpoint возвращает nodes и edges для relation-aware detail screen.',
+      path: '/api/v1/explore/graph?resource=characters&identifier=roboute-guilliman&depth=2&limitPerRelation=4',
+    },
+    {
+      title: 'Graph explorer с фильтром ресурсов',
+      description: 'Оставляет в графе только выбранные типы ресурсов плюс обязательный root.',
+      path: '/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4&resources=campaigns,characters',
+    },
+    {
+      title: 'Path finder',
+      description: 'Возвращает кратчайшую цепочку между двумя сущностями по текущему relation graph.',
+      path: '/api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true',
+    },
+    {
+      title: 'Path finder с whitelist ресурсов',
+      description: 'Позволяет ограничить traversal только нужными промежуточными типами ресурсов.',
+      path: '/api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=factions',
+    },
+    {
       title: 'Агрегация для диаграммы',
       description: 'Подготовленные данные для bar chart без ручной агрегации на клиенте.',
       path: '/api/v1/stats/events/by-era',
@@ -148,6 +204,11 @@ const queryGuide = {
       title: 'Сводка оружия по keywords',
       description: 'Подходит для charts, legends и exploration UI вокруг weapon profiles.',
       path: '/api/v1/stats/weapons/by-keyword',
+    },
+    {
+      title: 'Кампании по организациям',
+      description: 'Агрегация для institutional dashboards и campaign participation charts.',
+      path: '/api/v1/stats/campaigns/by-organization',
     },
     {
       title: 'Реликвии с носителем',

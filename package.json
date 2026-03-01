@@ -18,6 +18,7 @@
     "server-watch": "nodemon server/index.js",
     "client-watch": "webpack --watch --config client/webpack.config.js",
     "build-dev": "webpack --config client/webpack.config.js",
+    "test": "node tests/runApiTests.js",
     "db:migrate": "node db/scripts/runMigrations.js",
     "db:seed": "node db/seeds/seedLearningData.js",
     "db:setup": "npm run db:migrate && npm run db:seed"

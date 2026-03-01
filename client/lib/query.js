@@ -55,4 +55,17 @@ function replaceQueryState(params = {}) {
   window.history.replaceState({}, '', nextUrl);
 }
 
-export { buildQueryString, hasSearchParams, readQueryState, replaceQueryState };
+function parseCsvParam(value) {
+  return [...new Set(
+    String(value || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  )];
+}
+
+function toCsvParam(values = []) {
+  return [...new Set((values || []).map((item) => String(item).trim()).filter(Boolean))].join(',');
+}
+
+export { buildQueryString, hasSearchParams, parseCsvParam, readQueryState, replaceQueryState, toCsvParam };

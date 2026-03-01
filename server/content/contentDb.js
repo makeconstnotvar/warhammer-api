@@ -1382,10 +1382,74 @@ async function getWeaponStatsByKeyword() {
   }));
 }
 
+async function getRelicStatsByFaction() {
+  const query = `
+    SELECT
+      f.id,
+      f.slug,
+      f.name,
+      COUNT(DISTINCT rl.id)::int AS count,
+      COALESCE(ROUND(AVG(rl.power_level))::int, 0) AS average_power_level,
+      COALESCE(MAX(rl.power_level), 0)::int AS max_power_level
+    FROM factions f
+    LEFT JOIN relics rl ON rl.faction_id = f.id
+    GROUP BY f.id, f.slug, f.name
+    ORDER BY count DESC, average_power_level DESC, f.name ASC
+  `;
+
+  const result = await db.query(query);
+  return result.rows.map((row) => ({
+    averagePowerLevel: toNumber(row.average_power_level),
+    count: toNumber(row.count),
+    id: toNumber(row.id),
+    maxPowerLevel: toNumber(row.max_power_level),
+    name: row.name,
+    slug: row.slug,
+  }));
+}
+
+async function getCampaignStatsByOrganization() {
+  const query = `
+    SELECT
+      o.id,
+      o.slug,
+      o.name,
+      o.organization_type,
+      COUNT(DISTINCT co.campaign_id)::int AS count,
+      COUNT(DISTINCT CASE WHEN cp.status = 'active' THEN cp.id END)::int AS active_count,
+      COALESCE(MAX(cp.year_order), 0)::int AS latest_year_order,
+      COALESCE((
+        ARRAY_REMOVE(
+          ARRAY_AGG(cp.year_label ORDER BY cp.year_order DESC NULLS LAST),
+          NULL
+        )
+      )[1], '') AS latest_year_label
+    FROM organizations o
+    LEFT JOIN campaign_organizations co ON co.organization_id = o.id
+    LEFT JOIN campaigns cp ON cp.id = co.campaign_id
+    GROUP BY o.id, o.slug, o.name, o.organization_type
+    ORDER BY count DESC, active_count DESC, latest_year_order DESC, o.name ASC
+  `;
+
+  const result = await db.query(query);
+  return result.rows.map((row) => ({
+    activeCount: toNumber(row.active_count),
+    count: toNumber(row.count),
+    id: toNumber(row.id),
+    latestYearLabel: row.latest_year_label,
+    latestYearOrder: toNumber(row.latest_year_order),
+    name: row.name,
+    organizationType: row.organization_type,
+    slug: row.slug,
+  }));
+}
+
 module.exports = {
+  getCampaignStatsByOrganization,
   getEventStatsByEra,
   getFactionStatsByRace,
   getRandomResourceRow,
+  getRelicStatsByFaction,
   getResourceCount,
   getResourceRow,
   getUnitStatsByFaction,

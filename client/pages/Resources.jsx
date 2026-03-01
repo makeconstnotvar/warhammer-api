@@ -1,6 +1,7 @@
 import { docsApi } from '../api/docsApi';
 import { StateNotice } from '../components/StateNotice';
 import { useAsyncData } from '../hooks/useAsyncData';
+import { buildQueryString } from '../lib/query';
 
 function Resources() {
   const { data, loading, error } = useAsyncData(() => docsApi.getCatalog(), []);
@@ -43,7 +44,20 @@ function Resources() {
                 <span key={filter.id} className="tag">{filter.id}</span>
               ))}
             </div>
-            <a className="action-link" href={`/resources/${resource.id}`}>Открыть документацию</a>
+            <div className="resource-card-actions">
+              <a className="action-link" href={`/resources/${resource.id}`}>Открыть документацию</a>
+              <a
+                className="action-link action-link-muted"
+                href={`/resources/${resource.id}${buildQueryString({
+                  mode: 'list',
+                  limit: resource.previewParams?.limit || 5,
+                  sort: resource.previewParams?.sort || '',
+                  include: resource.previewParams?.include || '',
+                })}`}
+              >
+                Открыть live preview
+              </a>
+            </div>
           </article>
         ))}
       </section>

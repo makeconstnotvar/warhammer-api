@@ -6,6 +6,12 @@ import { extractError } from '../hooks/useAsyncData';
 import { buildQueryString, readQueryState, replaceQueryState } from '../lib/query';
 
 const comparePresets = {
+  campaigns: {
+    description: 'Сравни campaign-level данные по time span, planets, factions, organizations и общим участникам.',
+    ids: 'plague-wars,cadian-gate-counteroffensive',
+    include: 'era,planets,factions,characters,organizations',
+    label: 'Кампании',
+  },
   factions: {
     description: 'Сравни большие доменные блоки по alignment, races, leaders, homeworld и power spread.',
     ids: 'imperium-of-man,black-legion',
@@ -17,6 +23,18 @@ const comparePresets = {
     ids: 'roboute-guilliman,abaddon-the-despoiler',
     include: 'faction,race,homeworld,events',
     label: 'Персонажи',
+  },
+  organizations: {
+    description: 'Сравни институции по influence level, faction ties, leaders и homeworld.',
+    ids: 'inquisition,adeptus-mechanicus',
+    include: 'factions,leaders,homeworld,era',
+    label: 'Организации',
+  },
+  relics: {
+    description: 'Сравни реликвии по bearer, faction, origin и power spread.',
+    ids: 'emperors-sword,talon-of-horus',
+    include: 'faction,bearer,originPlanet,era,keywords',
+    label: 'Реликвии',
   },
   units: {
     description: 'Сравни squad-ы и specialist units по faction, weapons, keywords и power spread.',
@@ -44,6 +62,14 @@ function formatValue(value) {
       return `${value.name} (${value.powerLevel})`;
     }
 
+    if (value.name && value.influenceLevel !== undefined) {
+      return `${value.name} (${value.influenceLevel})`;
+    }
+
+    if (value.name && value.yearLabel) {
+      return `${value.name} (${value.yearLabel})`;
+    }
+
     return JSON.stringify(value);
   }
 
@@ -51,7 +77,12 @@ function formatValue(value) {
 }
 
 function getMetricTone(metricKey) {
-  if (metricKey.toLowerCase().includes('power') || metricKey === 'strongest') {
+  if (
+    metricKey.toLowerCase().includes('power') ||
+    metricKey.toLowerCase().includes('influence') ||
+    metricKey === 'strongest' ||
+    metricKey === 'mostInfluential'
+  ) {
     return 'power';
   }
 
@@ -59,7 +90,13 @@ function getMetricTone(metricKey) {
     return 'shared';
   }
 
-  if (metricKey.toLowerCase().includes('type') || metricKey.toLowerCase().includes('status')) {
+  if (
+    metricKey.toLowerCase().includes('type') ||
+    metricKey.toLowerCase().includes('status') ||
+    metricKey.toLowerCase().includes('year') ||
+    metricKey === 'latest' ||
+    metricKey === 'earliest'
+  ) {
     return 'type';
   }
 
@@ -87,13 +124,20 @@ function CompareItemCard({ item }) {
           <div className="resource-kicker">{item.slug}</div>
           <h3>{item.name}</h3>
         </div>
-        {item.powerLevel !== undefined && <span className="metric-chip">power {item.powerLevel}</span>}
+        <div className="tag-list">
+          {item.powerLevel !== undefined && <span className="metric-chip">power {item.powerLevel}</span>}
+          {item.influenceLevel !== undefined && <span className="metric-chip">influence {item.influenceLevel}</span>}
+          {item.yearLabel && <span className="metric-chip">{item.yearLabel}</span>}
+        </div>
       </div>
       {item.summary && <p>{item.summary}</p>}
       <div className="tag-list">
         {item.status && <span className="tag">{item.status}</span>}
         {item.alignment && <span className="tag">{item.alignment}</span>}
         {item.unitType && <span className="tag">{item.unitType}</span>}
+        {item.organizationType && <span className="tag">{item.organizationType}</span>}
+        {item.relicType && <span className="tag">{item.relicType}</span>}
+        {item.campaignType && <span className="tag">{item.campaignType}</span>}
       </div>
     </article>
   );
@@ -204,7 +248,7 @@ function ComparePage() {
           </p>
         </div>
         <div className="hero-side">
-          <div className="metric-chip">3 compare ресурса</div>
+          <div className="metric-chip">6 compare ресурсов</div>
           <div className="metric-chip">live request builder</div>
           <div className="metric-chip">summary + included</div>
         </div>

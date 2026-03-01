@@ -9,6 +9,8 @@ import { Playground } from "./pages/Playground";
 import { ConcurrencyPage } from "./pages/ConcurrencyPage";
 import { Stats } from "./pages/Stats";
 import { ComparePage } from "./pages/ComparePage";
+import { GraphPage } from "./pages/GraphPage";
+import { PathPage } from "./pages/PathPage";
 
 const Routes = () => (
   <LocationProvider>
@@ -21,6 +23,8 @@ const Routes = () => (
         <QueryGuide path="/query-guide"/>
         <Stats path="/stats"/>
         <ComparePage path="/compare"/>
+        <GraphPage path="/explore/graph"/>
+        <PathPage path="/explore/path"/>
         <Playground path="/playground"/>
         <ConcurrencyPage path="/examples/concurrency"/>
         <NotFound default/>

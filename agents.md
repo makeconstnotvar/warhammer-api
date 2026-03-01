@@ -38,10 +38,17 @@
 - домен расширен ресурсами `keywords`, `weapons`, `units`
 - домен расширен ресурсами `organizations`, `relics`, `campaigns`
 - `search` ранжирует результаты по релевантности
-- `compare` поддерживает `factions`, `characters`, `units`
+- `compare` поддерживает `factions`, `characters`, `units`, `organizations`, `relics`, `campaigns`
+- `explore/graph` поддерживает `resource`, `identifier`, `depth`, `limitPerRelation`, `backlinks`, `resources`
+- `explore/path` поддерживает `fromResource`, `fromIdentifier`, `toResource`, `toIdentifier`, `maxDepth`, `limitPerRelation`, `backlinks`, `resources`
 - `stats` поддерживает `factions/by-race`, `events/by-era`, `units/by-faction`, `weapons/by-keyword`
-- docs-клиент поддерживает deep-linking через query params для `Stats`, `Compare`, `Playground`
+- `stats` поддерживает `factions/by-race`, `events/by-era`, `units/by-faction`, `weapons/by-keyword`, `relics/by-faction`, `campaigns/by-organization`
+- docs-клиент поддерживает deep-linking через query params для `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Resources/:resource`
 - страница `Stats` содержит реальные SVG charts, а не только JSON и списки
+- страница `Graph` показывает SVG-схему узлов и связей поверх `explore/graph`
+- страница `Graph` поддерживает selection узлов, фокус на edges и переход в `Compare` для двух совместимых узлов
+- страницы `Graph` и `Path` поддерживают whitelist типов ресурсов через `resources=...`
+- страница `Path` показывает кратчайшую цепочку между двумя сущностями и маршрут по relation graph
 
 ## Структура верхнего уровня
 
@@ -55,12 +62,14 @@
 - `client/`
   - приложение на Preact
   - публичная документация API
-  - страницы `Quick Start`, `Resources`, `Query Guide`, `Stats`, `Compare`, `Playground`, `Concurrency`
+  - страницы `Quick Start`, `Resources`, `Query Guide`, `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Concurrency`
   - webpack build
 - `db/`
   - `migrations/` с канонической схемой
   - `seeds/` с учебным набором данных
   - `scripts/` для запуска migrations
+- `tests/`
+  - integration tests для публичного `api/v1`
 - `agents.md`
   - этот файл
 - `README.md`
@@ -99,6 +108,8 @@ Frontend:
   - запускает webpack в режиме watch
 - `npm run build-dev`
   - собирает клиент в `client/dist`
+- `npm test`
+  - запускает HTTP integration tests для `explore/graph` и `explore/path`
 - `npm run db:migrate`
   - применяет migrations
 - `npm run db:seed`
@@ -122,14 +133,27 @@ Frontend:
 - `GET /api/v1/organizations`, `GET /api/v1/relics`, `GET /api/v1/campaigns` отвечают из PostgreSQL
 - `GET /api/v1/random/unit` отвечает из PostgreSQL
 - `GET /api/v1/compare/units?ids=terminator-squad,intercessor-squad` отвечает из PostgreSQL
+- `GET /api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus` отвечает из PostgreSQL
+- `GET /api/v1/compare/relics?ids=emperors-sword,talon-of-horus` отвечает из PostgreSQL
+- `GET /api/v1/compare/campaigns?ids=plague-wars,cadian-gate-counteroffensive` отвечает из PostgreSQL
 - `GET /api/v1/search?search=cadia` сортирует результаты по релевантности
 - `GET /api/v1/stats/units/by-faction` отвечает из PostgreSQL
 - `GET /api/v1/stats/weapons/by-keyword` отвечает из PostgreSQL
-- клиентская сборка проходит после добавления query-param deep-linking для `Stats`, `Compare`, `Playground`
+- `GET /api/v1/stats/relics/by-faction` отвечает из PostgreSQL
+- `GET /api/v1/stats/campaigns/by-organization` отвечает из PostgreSQL
+- `GET /api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4` отвечает из PostgreSQL
+- `GET /api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4&resources=campaigns,characters` отвечает и возвращает только `factions`, `campaigns`, `characters`
+- `GET /api/v1/explore/path?fromResource=characters&fromIdentifier=roboute-guilliman&toResource=relics&toIdentifier=emperors-sword&maxDepth=3&limitPerRelation=6&backlinks=true` отвечает из PostgreSQL
+- `GET /api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=factions` отвечает и строит путь только через `factions`
+- `GET /api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=organizations` отвечает с `found=false`
+- `npm test` проходит и проверяет whitelist, shortest path и error envelope для `explore/graph` и `explore/path`
+- клиентская сборка проходит после добавления query-param deep-linking для `Stats`, `Compare`, `Graph`, `Playground`, `Resources/:resource`
 - `GET /api/v1/stats/events/by-era` теперь отдает `yearLabel` и `yearOrder` для timeline charts
+- клиентская сборка проходит после добавления workbench, node selection и compare-bridge на страницу `Graph`
+- клиентская сборка проходит после добавления страницы `Path` и path traversal UI
+- клиентская сборка проходит после добавления resource whitelist filters на страницы `Graph` и `Path`
 
 Чего сейчас нет:
-- tests
 - linting
 - formatting scripts
 - OpenAPI или Swagger
@@ -141,19 +165,25 @@ Frontend:
 
 `server/index.js`
 
+Рядом есть `server/app.js`, где собирается Express-приложение. Это позволяет использовать один и тот же app и для runtime, и для integration tests.
+
 Зона ответственности:
-- загружает env из `server/.env`
-- настраивает `cors()`
-- настраивает `helmet()`
-- включает разбор JSON-тела запроса
-- монтирует API routes под `/api`
-- раздает static-файлы из `client/dist`
-- использует SPA fallback на `client/dist/index.html`
-- использует общий 500 обработчик ошибок
+- `server/app.js`
+  - загружает env из `server/.env`
+  - настраивает `cors()`
+  - настраивает `helmet()`
+  - включает разбор JSON-тела запроса
+  - монтирует API routes под `/api` и `/api/v1`
+  - раздает static-файлы из `client/dist`
+  - использует SPA fallback на `client/dist/index.html`
+  - использует общий обработчик ошибок
+- `server/index.js`
+  - создает app через `createApp()`
+  - поднимает HTTP server на `config.server.port`
 
 Примечания:
-- `morgan` импортирован, но сейчас отключен
-- нет отдельного 404 обработчика для API
+- `morgan` включен
+- для `api/v1` есть отдельный 404 обработчик неизвестных endpoint-ов в `server/v1Routes.js`
 - нет middleware для валидации входных данных
 - нет rate limit
 - нет auth
@@ -411,29 +441,28 @@ Decorator-ы в `client/stores/utils/createDecorator.js` дают переисп
 
 ### Поведение backend
 
-- слой service в основном просто пробрасывает вызовы
-- 404 обрабатывается непоследовательно, потому что services бросают общую ошибку
-- character handler может превращать отсутствие сущности в общий 500
-- handlers для factions и races пытаются вернуть 404, но текущее поведение services делает эту ветку ненадежной
-- request logging фактически выключен, потому что `morgan` отключен
-- нет доменной бизнес-логики
+- legacy service-слой под `/api` в основном просто пробрасывает вызовы
+- основная доменная логика публичного API живет в `contentApi.js` и `contentDb.js`
+- `api/v1` использует единый error envelope, но legacy `/api` все еще менее консистентен
+- request logging включен через `morgan`
+- слой валидации query/body по-прежнему точечный, а не системный
 
 ### Поведение клиента
 
-- клиент пока только показывает списки, а не документацию
-- нет endpoint playground
-- нет примеров на cURL / fetch / axios
-- нет filter UI, кроме пагинации
-- нет страницы деталей сущностей
-- нет environment-based API config
+- клиент работает как docs-first приложение, а не как list demo
+- есть страницы `Quick Start`, `Resources`, `Query Guide`, `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Concurrency`
+- есть live preview для `Resources/:resource`
+- есть deep-linking для документационных сценариев
+- docs API использует относительный `/api/v1`, а webpack dev server проксирует `/api`
+- отдельного SSR, auth и role-based поведения нет
 
 ### Delivery и DX
 
-- нет tests
+- есть integration tests для `explore/graph` и `explore/path`
 - нет linting
 - нет CI
-- нет локальной bootstrap-документации
-- `git status` не удалось проверить во время анализа, потому что для текущего системного пользователя репозиторий помечен как dubious ownership
+- нет форматтера и автоматического style enforcement
+- нет OpenAPI-generated client SDK
 
 ## Направление продукта
 
@@ -762,7 +791,7 @@ API нужно проектировать так, чтобы frontend-разра
 - добавить version prefix `/api/v1`
 - стандартизировать работу с env для сервера и клиента
 - задокументировать локальные команды
-- добавить базовые tests для repositories и routes
+- расширить test coverage на repositories, legacy routes и client-side сценарии
 
 Критерии успеха:
 - fresh clone можно запустить без скрытого состояния в IDE

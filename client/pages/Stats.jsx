@@ -7,14 +7,18 @@ import { readQueryState, replaceQueryState } from '../lib/query';
 
 const chartPalette = ['#d1a35a', '#78a7c5', '#9f70c7', '#c37070', '#7fb381', '#d69255'];
 const accentColorMap = {
+  campaigns: '#7fb381',
   events: '#c37070',
   factions: '#9f70c7',
+  relics: '#d69255',
   units: '#d1a35a',
   weapons: '#78a7c5',
 };
 
 const statsFocusOptions = [
   { id: 'all', label: 'Все секции' },
+  { id: 'campaigns-by-organization', label: 'Кампании' },
+  { id: 'relics-by-faction', label: 'Реликвии' },
   { id: 'units-by-faction', label: 'Юниты' },
   { id: 'weapons-by-keyword', label: 'Оружие' },
   { id: 'factions-by-race', label: 'Фракции' },
@@ -136,7 +140,7 @@ function ChartCard({ children, endpoint, title, description }) {
   );
 }
 
-function ColumnChart({ rows, title, description, endpoint, accent }) {
+function ColumnChart({ rows, title, description, endpoint, accent, subLabelRenderer }) {
   const positiveRows = getPositiveRows(rows).slice(0, 6);
   const width = 520;
   const height = 260;
@@ -190,9 +194,11 @@ function ColumnChart({ rows, title, description, endpoint, accent }) {
               <text className="chart-axis-label" x={labelX} y={height - 28} textAnchor="middle">
                 {shortenLabel(row.name, 14)}
               </text>
-              <text className="chart-axis-subtle" x={labelX} y={height - 12} textAnchor="middle">
-                avg {formatNumber(row.averagePowerLevel)}
-              </text>
+              {subLabelRenderer && (
+                <text className="chart-axis-subtle" x={labelX} y={height - 12} textAnchor="middle">
+                  {subLabelRenderer(row)}
+                </text>
+              )}
             </g>
           );
         })}
@@ -360,13 +366,17 @@ function Stats() {
   );
   const { data, loading, error } = useAsyncData(
     () => Promise.all([
+      docsApi.getStats('campaigns', 'by-organization'),
       docsApi.getStats('factions', 'by-race'),
       docsApi.getStats('events', 'by-era'),
+      docsApi.getStats('relics', 'by-faction'),
       docsApi.getStats('units', 'by-faction'),
       docsApi.getStats('weapons', 'by-keyword'),
-    ]).then(([factionsByRace, eventsByEra, unitsByFaction, weaponsByKeyword]) => ({
+    ]).then(([campaignsByOrganization, factionsByRace, eventsByEra, relicsByFaction, unitsByFaction, weaponsByKeyword]) => ({
+      campaignsByOrganization,
       eventsByEra,
       factionsByRace,
+      relicsByFaction,
       unitsByFaction,
       weaponsByKeyword,
     })),
@@ -382,17 +392,43 @@ function Stats() {
   }
 
   const stats = data;
+  const topCampaignOrganization = getTopRow(stats.campaignsByOrganization.data, 'count');
   const topFactionUnit = getTopRow(stats.unitsByFaction.data, 'count');
   const topWeaponKeyword = getTopRow(stats.weaponsByKeyword.data, 'count');
   const busiestEra = getTopRow(stats.eventsByEra.data, 'count');
   const dominantRace = getTopRow(stats.factionsByRace.data, 'count');
+  const topRelicFaction = getTopRow(stats.relicsByFaction.data, 'count');
   const payloadByFocus = {
+    'campaigns-by-organization': stats.campaignsByOrganization,
     'events-by-era': stats.eventsByEra,
     'factions-by-race': stats.factionsByRace,
+    'relics-by-faction': stats.relicsByFaction,
     'units-by-faction': stats.unitsByFaction,
     'weapons-by-keyword': stats.weaponsByKeyword,
   };
   const sections = [
+    {
+      id: 'campaigns-by-organization',
+      rows: stats.campaignsByOrganization.data,
+      metricKey: 'count',
+      metricLabel: 'campaigns',
+      secondaryLabel: { key: 'activeCount', label: 'active' },
+      endpoint: '/api/v1/stats/campaigns/by-organization',
+      title: 'Кампании по организациям',
+      description: 'Показывает, какие институты чаще всего участвуют в campaign-level данных.',
+      accent: 'campaigns',
+    },
+    {
+      id: 'relics-by-faction',
+      rows: stats.relicsByFaction.data,
+      metricKey: 'count',
+      metricLabel: 'relics',
+      secondaryLabel: { key: 'averagePowerLevel', label: 'avg power' },
+      endpoint: '/api/v1/stats/relics/by-faction',
+      title: 'Реликвии по фракциям',
+      description: 'Полезно для inventory dashboards, faction identity UI и power-driven sorting.',
+      accent: 'relics',
+    },
     {
       id: 'units-by-faction',
       rows: stats.unitsByFaction.data,
@@ -441,13 +477,41 @@ function Stats() {
     : sections.filter((section) => section.id === focus);
   const visiblePayload = focus === 'all'
     ? {
+      campaignsByOrganization: stats.campaignsByOrganization,
       factionsByRace: stats.factionsByRace,
       eventsByEra: stats.eventsByEra,
+      relicsByFaction: stats.relicsByFaction,
       unitsByFaction: stats.unitsByFaction,
       weaponsByKeyword: stats.weaponsByKeyword,
     }
     : { [focus]: payloadByFocus[focus] };
   const chartSections = [
+    {
+      id: 'campaigns-by-organization',
+      node: (
+        <ColumnChart
+          rows={stats.campaignsByOrganization.data}
+          title="Campaign participation по организациям"
+          description="Колонки показывают, какие institutional actors уже хорошо покрыты в campaign datasets."
+          endpoint="/api/v1/stats/campaigns/by-organization"
+          accent="campaigns"
+          subLabelRenderer={(row) => `active ${formatNumber(row.activeCount)}`}
+        />
+      ),
+    },
+    {
+      id: 'relics-by-faction',
+      node: (
+        <ColumnChart
+          rows={stats.relicsByFaction.data}
+          title="Relic density по фракциям"
+          description="Хорошо показывает, где inventory и hero-item модели уже дают богатые экспериментальные сценарии."
+          endpoint="/api/v1/stats/relics/by-faction"
+          accent="relics"
+          subLabelRenderer={(row) => `avg ${formatNumber(row.averagePowerLevel)}`}
+        />
+      ),
+    },
     {
       id: 'units-by-faction',
       node: (
@@ -457,6 +521,7 @@ function Stats() {
           description="Колонки быстро показывают, где модель данных уже достаточно плотная для army builder и squad browser."
           endpoint="/api/v1/stats/units/by-faction"
           accent="units"
+          subLabelRenderer={(row) => `avg ${formatNumber(row.averagePowerLevel)}`}
         />
       ),
     },
@@ -521,7 +586,7 @@ function Stats() {
           </div>
         </div>
         <div className="hero-side">
-          <div className="metric-chip">4 stats endpoint-а</div>
+          <div className="metric-chip">6 stats endpoint-ов</div>
           <div className="metric-chip">PostgreSQL aggregation</div>
           <div className="metric-chip">SVG charts</div>
         </div>
@@ -551,6 +616,16 @@ function Stats() {
       </section>
 
       <section className="stats-hero-grid">
+        <StatHeroCard
+          label="Топ organization"
+          value={topCampaignOrganization ? topCampaignOrganization.name : 'Нет данных'}
+          detail={topCampaignOrganization ? `${topCampaignOrganization.count} campaigns, active ${topCampaignOrganization.activeCount}` : 'Пока нет записей'}
+        />
+        <StatHeroCard
+          label="Топ relic faction"
+          value={topRelicFaction ? topRelicFaction.name : 'Нет данных'}
+          detail={topRelicFaction ? `${topRelicFaction.count} relics, avg power ${topRelicFaction.averagePowerLevel}` : 'Пока нет записей'}
+        />
         <StatHeroCard
           label="Топ по юнитам"
           value={topFactionUnit ? topFactionUnit.name : 'Нет данных'}

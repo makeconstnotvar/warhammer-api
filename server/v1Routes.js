@@ -76,6 +76,22 @@ apiV1Routes.get('/stats/:resource/:groupKey', async (req, res, next) => {
   }
 });
 
+apiV1Routes.get('/explore/graph', async (req, res, next) => {
+  try {
+    res.json(await contentApi.getExploreGraph(req.query));
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiV1Routes.get('/explore/path', async (req, res, next) => {
+  try {
+    res.json(await contentApi.getExplorePath(req.query));
+  } catch (error) {
+    next(error);
+  }
+});
+
 apiV1Routes.get('/:resource/:idOrSlug', async (req, res, next) => {
   try {
     res.json(await contentApi.getResourceDetail(req.params.resource, req.params.idOrSlug, req.query));
