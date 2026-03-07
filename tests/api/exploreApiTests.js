@@ -1,60 +1,139 @@
-const assert = require('node:assert/strict');
-const { getJson, runTestCases } = require('./testUtils');
+const assert = require("node:assert/strict");
+const { getJson, runTestCases } = require("./testUtils");
 
 async function runExploreApiTests(baseUrl) {
   const cases = [
     {
-      name: 'explore/graph returns relation graph for faction root',
+      name: "explore/graph returns relation graph for faction root",
       run: async () => {
-        const { json, response } = await getJson(baseUrl, '/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4');
+        const { json, response } = await getJson(
+          baseUrl,
+          "/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4",
+        );
 
         assert.equal(response.status, 200);
-        assert.equal(json.data.root.name, 'Imperium of Man');
+        assert.equal(json.data.root.name, "Imperium of Man");
         assert.ok(json.meta.nodeCount >= 10);
         assert.ok(json.meta.edgeCount >= 10);
-        assert.ok(json.meta.resourceTypes.includes('factions'));
-        assert.ok(json.meta.resourceTypes.includes('characters'));
-        assert.ok(json.data.nodes.some((node) => node.resource === 'campaigns'));
+        assert.ok(json.meta.resourceTypes.includes("factions"));
+        assert.ok(json.meta.resourceTypes.includes("characters"));
+        assert.ok(
+          json.data.nodes.some((node) => node.resource === "campaigns"),
+        );
       },
     },
     {
-      name: 'explore/graph resource whitelist keeps only requested types plus root',
+      name: "explore/graph resource whitelist keeps only requested types plus root",
       run: async () => {
-        const { json, response } = await getJson(baseUrl, '/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4&resources=campaigns,characters');
+        const { json, response } = await getJson(
+          baseUrl,
+          "/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4&resources=campaigns,characters",
+        );
 
         assert.equal(response.status, 200);
-        assert.deepEqual(json.meta.requestedResourceTypes, ['campaigns', 'characters']);
-        assert.deepEqual([...json.meta.resourceTypes].sort(), ['campaigns', 'characters', 'factions']);
-        assert.ok(json.data.nodes.every((node) => ['campaigns', 'characters', 'factions'].includes(node.resource)));
-        assert.equal(json.data.root.resource, 'factions');
+        assert.deepEqual(json.meta.requestedResourceTypes, [
+          "campaigns",
+          "characters",
+        ]);
+        assert.deepEqual([...json.meta.resourceTypes].sort(), [
+          "campaigns",
+          "characters",
+          "factions",
+        ]);
+        assert.ok(
+          json.data.nodes.every((node) =>
+            ["campaigns", "characters", "factions"].includes(node.resource),
+          ),
+        );
+        assert.equal(json.data.root.resource, "factions");
       },
     },
     {
-      name: 'explore/graph validates missing identifier',
+      name: "explore/graph validates missing identifier",
       run: async () => {
-        const { json, response } = await getJson(baseUrl, '/api/v1/explore/graph?resource=factions&depth=2');
+        const { json, response } = await getJson(
+          baseUrl,
+          "/api/v1/explore/graph?resource=factions&depth=2",
+        );
 
         assert.equal(response.status, 400);
-        assert.equal(json.error.code, 'VALIDATION_ERROR');
+        assert.equal(json.error.code, "VALIDATION_ERROR");
       },
     },
     {
-      name: 'explore/path finds shortest path through allowed faction relation',
+      name: "explore/graph aggregates validation details for invalid query parameters",
       run: async () => {
-        const { json, response } = await getJson(baseUrl, '/api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=factions');
+        const { json, response } = await getJson(
+          baseUrl,
+          "/api/v1/explore/graph?resource=unknown-resource&identifier=&depth=0&backlinks=maybe&resources=campaigns,unknown-resource",
+        );
+
+        assert.equal(response.status, 400);
+        assert.equal(json.error.code, "VALIDATION_ERROR");
+        assert.ok(
+          json.error.details.some(
+            (detail) =>
+              detail.field === "resource" && detail.code === "UNKNOWN_RESOURCE",
+          ),
+        );
+        assert.ok(
+          json.error.details.some(
+            (detail) =>
+              detail.field === "identifier" && detail.code === "REQUIRED",
+          ),
+        );
+        assert.ok(
+          json.error.details.some(
+            (detail) =>
+              detail.field === "depth" &&
+              detail.code === "INVALID_POSITIVE_INTEGER",
+          ),
+        );
+        assert.ok(
+          json.error.details.some(
+            (detail) =>
+              detail.field === "backlinks" && detail.code === "INVALID_BOOLEAN",
+          ),
+        );
+        assert.ok(
+          json.error.details.some(
+            (detail) =>
+              detail.field === "resources" &&
+              detail.code === "UNKNOWN_RESOURCE",
+          ),
+        );
+      },
+    },
+    {
+      name: "explore/path finds shortest path through allowed faction relation",
+      run: async () => {
+        const { json, response } = await getJson(
+          baseUrl,
+          "/api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=factions",
+        );
 
         assert.equal(response.status, 200);
         assert.equal(json.data.found, true);
         assert.equal(json.data.path.length, 2);
-        assert.deepEqual(json.meta.requestedResourceTypes, ['factions']);
-        assert.deepEqual(json.data.path.nodes.map((node) => node.name), ['Emperor\'s Sword', 'Imperium of Man', 'Plague Wars']);
-        assert.deepEqual([...json.meta.resourceTypes].sort(), ['campaigns', 'factions', 'relics']);
+        assert.deepEqual(json.meta.requestedResourceTypes, ["factions"]);
+        assert.deepEqual(
+          json.data.path.nodes.map((node) => node.name),
+          ["Emperor's Sword", "Imperium of Man", "Plague Wars"],
+        );
+        assert.deepEqual([...json.meta.resourceTypes].sort(), [
+          "campaigns",
+          "factions",
+          "relics",
+        ]);
       },
     },
     {
-      name: 'explore/path returns not found when whitelist blocks required traversal',
+      name: "explore/path returns not found when whitelist blocks required traversal",
       run: async () => {
-        const { json, response } = await getJson(baseUrl, '/api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=organizations');
+        const { json, response } = await getJson(
+          baseUrl,
+          "/api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=organizations",
+        );
 
         assert.equal(response.status, 200);
         assert.equal(json.data.found, false);
@@ -63,12 +142,15 @@ async function runExploreApiTests(baseUrl) {
       },
     },
     {
-      name: 'explore/path validates missing identifiers',
+      name: "explore/path validates missing identifiers",
       run: async () => {
-        const { json, response } = await getJson(baseUrl, '/api/v1/explore/path?fromResource=characters&toResource=relics');
+        const { json, response } = await getJson(
+          baseUrl,
+          "/api/v1/explore/path?fromResource=characters&toResource=relics",
+        );
 
         assert.equal(response.status, 400);
-        assert.equal(json.error.code, 'VALIDATION_ERROR');
+        assert.equal(json.error.code, "VALIDATION_ERROR");
       },
     },
   ];

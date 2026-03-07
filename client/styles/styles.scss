@@ -824,6 +824,43 @@ pre {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.timeline-list,
+.timeline-change-list,
+.policy-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.timeline-card,
+.timeline-change-card,
+.policy-card {
+  padding: 18px;
+  border: 1px solid rgba(214, 181, 129, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.timeline-card,
+.timeline-change-card,
+.policy-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.timeline-head,
+.policy-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.timeline-change-list,
+.policy-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .graph-svg {
   width: 100%;
   height: auto;
@@ -1012,6 +1049,22 @@ pre {
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
+}
+
+.compare-error-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.compare-error-list {
+  margin: 0;
+  padding-left: 18px;
+  color: rgba(255, 234, 234, 0.94);
+}
+
+.compare-error-list li + li {
+  margin-top: 6px;
 }
 
 .compare-metric-grid,
@@ -1294,7 +1347,9 @@ pre {
   .compare-form-foot,
   .resource-preview-foot,
   .compare-item-head,
-  .compare-visual-meta {
+  .compare-visual-meta,
+  .timeline-head,
+  .policy-card-head {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -1307,7 +1362,9 @@ pre {
   .graph-group-grid,
   .graph-truncation-list,
   .path-summary-grid,
-  .preview-detail-grid {
+  .preview-detail-grid,
+  .timeline-change-list,
+  .policy-grid {
     grid-template-columns: 1fr;
   }
 

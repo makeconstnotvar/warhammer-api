@@ -1,25 +1,27 @@
-const path = require('path');
-const { once } = require('node:events');
+const path = require("path");
+const { once } = require("node:events");
 
-require('dotenv').config({ path: path.join(__dirname, '../server/.env') });
+require("dotenv").config({ path: path.join(__dirname, "../server/.env") });
 
-const pool = require('../server/db');
-const { createApp } = require('../server/app');
-const { runCompareStatsApiTests } = require('./api/compareStatsApiTests');
-const { runDomainApiTests } = require('./api/domainApiTests');
-const { runExploreApiTests } = require('./api/exploreApiTests');
+const pool = require("../server/db");
+const { createApp } = require("../server/app");
+const { runCompareStatsApiTests } = require("./api/compareStatsApiTests");
+const { runDomainApiTests } = require("./api/domainApiTests");
+const { runExploreApiTests } = require("./api/exploreApiTests");
+const { runRateLimitApiTests } = require("./api/rateLimitApiTests");
 
 async function main() {
-  const server = createApp().listen(0, '127.0.0.1');
-  await once(server, 'listening');
+  const server = createApp().listen(0, "127.0.0.1");
+  await once(server, "listening");
   const address = server.address();
   const baseUrl = `http://127.0.0.1:${address.port}`;
   const failures = [];
 
   try {
-    failures.push(...await runExploreApiTests(baseUrl));
-    failures.push(...await runCompareStatsApiTests(baseUrl));
-    failures.push(...await runDomainApiTests(baseUrl));
+    failures.push(...(await runExploreApiTests(baseUrl)));
+    failures.push(...(await runCompareStatsApiTests(baseUrl)));
+    failures.push(...(await runDomainApiTests(baseUrl)));
+    failures.push(...(await runRateLimitApiTests()));
   } finally {
     await new Promise((resolve, reject) => {
       server.close((error) => {
@@ -41,7 +43,7 @@ async function main() {
     return;
   }
 
-  console.log('API tests passed');
+  console.log("API tests passed");
 }
 
 main().catch((error) => {

@@ -1,6 +1,6 @@
-import {Home} from "./pages/Home";
-import {ErrorBoundary, LocationProvider, Router} from "preact-iso";
-import {NotFound} from "./pages/NotFound";
+import { Home } from "./pages/Home";
+import { ErrorBoundary, LocationProvider, Router } from "preact-iso";
+import { NotFound } from "./pages/NotFound";
 import { QuickStart } from "./pages/QuickStart";
 import { Resources } from "./pages/Resources";
 import { ResourcePage } from "./pages/ResourcePage";
@@ -11,25 +11,29 @@ import { Stats } from "./pages/Stats";
 import { ComparePage } from "./pages/ComparePage";
 import { GraphPage } from "./pages/GraphPage";
 import { PathPage } from "./pages/PathPage";
+import { ChangelogPage } from "./pages/ChangelogPage";
+import { DeprecationPolicyPage } from "./pages/DeprecationPolicyPage";
 
 const Routes = () => (
   <LocationProvider>
     <ErrorBoundary>
       <Router>
-        <Home path="/"/>
-        <QuickStart path="/quick-start"/>
-        <Resources path="/resources"/>
-        <ResourcePage path="/resources/:resource"/>
-        <QueryGuide path="/query-guide"/>
-        <Stats path="/stats"/>
-        <ComparePage path="/compare"/>
-        <GraphPage path="/explore/graph"/>
-        <PathPage path="/explore/path"/>
-        <Playground path="/playground"/>
-        <ConcurrencyPage path="/examples/concurrency"/>
-        <NotFound default/>
+        <Home path="/" />
+        <QuickStart path="/quick-start" />
+        <Resources path="/resources" />
+        <ResourcePage path="/resources/:resource" />
+        <QueryGuide path="/query-guide" />
+        <ChangelogPage path="/changelog" />
+        <DeprecationPolicyPage path="/deprecation-policy" />
+        <Stats path="/stats" />
+        <ComparePage path="/compare" />
+        <GraphPage path="/explore/graph" />
+        <PathPage path="/explore/path" />
+        <Playground path="/playground" />
+        <ConcurrencyPage path="/examples/concurrency" />
+        <NotFound default />
       </Router>
     </ErrorBoundary>
   </LocationProvider>
-)
-export {Routes};
+);
+export { Routes };

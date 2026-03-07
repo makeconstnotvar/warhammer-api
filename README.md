@@ -9,7 +9,7 @@
 
 - клиент-документация на Preact
 - `api/v1` с `overview`, `catalog/resources`, `query-guide`, `search`, `explore/graph`, `explore/path`, `examples/concurrency`
-- docs-клиент со страницами `Quick Start`, `Resources`, `Query Guide`, `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Concurrency`
+- docs-клиент со страницами `Quick Start`, `Resources`, `Query Guide`, `Changelog`, `Deprecation Policy`, `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Concurrency`
 - каноническая схема PostgreSQL для `eras`, `races`, `planets`, `factions`, `characters`, `events`
 - домен расширен ресурсами `organizations`, `relics`, `campaigns`, `star-systems`, `battlefields`, `fleets`, `warp-routes`
 - seed-набор данных по известным сущностям Warhammer 40k
@@ -54,6 +54,9 @@ npm run client-watch
 - `GET /api/v1/overview`
 - `GET /api/v1/catalog/resources`
 - `GET /api/v1/query-guide`
+- `GET /api/v1/changelog`
+- `GET /api/v1/deprecation-policy`
+- `api/v1` responds with `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, `RateLimit-Policy` and `Retry-After` on 429
 - `GET /api/v1/search?search=cadia`
 - `GET /api/v1/characters?include=faction,race,homeworld,events`
 - `GET /api/v1/units?include=factions,weapons,keywords`
@@ -67,6 +70,7 @@ npm run client-watch
 - `GET /api/v1/campaigns?include=era,planets,factions,characters,organizations`
 - `GET /api/v1/battlefields?include=planet,starSystem,era,factions,characters,campaigns`
 - `GET /api/v1/examples/concurrency`
+- legacy `/api` now responds with `Deprecation`, `Sunset` and `Link` headers and points clients to `/deprecation-policy`
 - `GET /api/v1/random/character?include=faction,race,homeworld`
 - `GET /api/v1/random/unit?include=factions,weapons,keywords`
 - `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion&include=races,leaders,homeworld`
@@ -91,11 +95,15 @@ npm run client-watch
 
 Поиск `GET /api/v1/search` сейчас ранжирует результаты по релевантности: точный `slug` и `name` выше частичных совпадений по `summary` и `description`.
 `GET /api/v1/stats/events/by-era` теперь также возвращает `yearLabel` и `yearOrder`, чтобы клиент мог строить timeline charts по эрам.
+Rate limiting для `api/v1` по умолчанию настроен как `120` запросов на `60` секунд и может быть переопределен через `API_V1_RATE_LIMIT_MAX_REQUESTS` и `API_V1_RATE_LIMIT_WINDOW_MS`.
+Ошибки валидации query-параметров теперь приходят как `VALIDATION_ERROR` с детальным массивом `details` по каждому некорректному полю.
 `npm test` поднимает приложение на временном порту и прогоняет HTTP integration tests для `explore/graph`, `explore/path`, `compare`, `stats`, `star-systems`, `battlefields`, `fleets`, `warp-routes` и `campaigns -> battlefields` на реальной PostgreSQL.
 
 ## Shareable docs links
 
 - `/stats?focus=weapons-by-keyword`
+- `/changelog`
+- `/deprecation-policy`
 - `/compare?resource=units&ids=terminator-squad,intercessor-squad&include=factions,weapons,keywords`
 - `/compare?resource=star-systems&ids=sol-system,macragge-system&include=planets,era`
 - `/compare?resource=battlefields&ids=hesperon-void-line,kasr-partox-ruins&include=planet,starSystem,era,factions,characters,campaigns`

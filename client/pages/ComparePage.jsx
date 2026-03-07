@@ -1,170 +1,336 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
-import { docsApi } from '../api/docsApi';
-import { JsonViewer } from '../components/JsonViewer';
-import { StateNotice } from '../components/StateNotice';
-import { extractError } from '../hooks/useAsyncData';
-import { buildQueryString, readQueryState, replaceQueryState } from '../lib/query';
+import { useEffect, useMemo, useState } from "preact/hooks";
+import { docsApi } from "../api/docsApi";
+import { JsonViewer } from "../components/JsonViewer";
+import { StateNotice } from "../components/StateNotice";
+import { extractError } from "../hooks/useAsyncData";
+import {
+  buildQueryString,
+  readQueryState,
+  replaceQueryState,
+} from "../lib/query";
 
-const comparePalette = ['#d1a35a', '#78a7c5', '#7fb381', '#c37070', '#9f70c7', '#d69255'];
+const comparePalette = [
+  "#d1a35a",
+  "#78a7c5",
+  "#7fb381",
+  "#c37070",
+  "#9f70c7",
+  "#d69255",
+];
 
 const comparePresets = {
   battlefields: {
-    description: 'Сравни боевые зоны по intensity, terrain, campaign ties и общим участникам.',
-    ids: 'hesperon-void-line,kasr-partox-ruins',
-    include: 'planet,starSystem,era,factions,characters,campaigns',
-    label: 'Поля битв',
+    description:
+      "Сравни боевые зоны по intensity, terrain, campaign ties и общим участникам.",
+    ids: "hesperon-void-line,kasr-partox-ruins",
+    include: "planet,starSystem,era,factions,characters,campaigns",
+    label: "Поля битв",
   },
   campaigns: {
-    description: 'Сравни campaign-level данные по time span, planets, factions, organizations и общим участникам.',
-    ids: 'plague-wars,cadian-gate-counteroffensive',
-    include: 'era,planets,factions,characters,organizations,battlefields',
-    label: 'Кампании',
+    description:
+      "Сравни campaign-level данные по time span, planets, factions, organizations и общим участникам.",
+    ids: "plague-wars,cadian-gate-counteroffensive",
+    include: "era,planets,factions,characters,organizations,battlefields",
+    label: "Кампании",
   },
   factions: {
-    description: 'Сравни большие доменные блоки по alignment, races, leaders, homeworld и power spread.',
-    ids: 'imperium-of-man,black-legion',
-    include: 'races,leaders,homeworld',
-    label: 'Фракции',
+    description:
+      "Сравни большие доменные блоки по alignment, races, leaders, homeworld и power spread.",
+    ids: "imperium-of-man,black-legion",
+    include: "races,leaders,homeworld",
+    label: "Фракции",
   },
   characters: {
-    description: 'Сравни персонажей по alignment, faction, events, keywords и power level.',
-    ids: 'roboute-guilliman,abaddon-the-despoiler',
-    include: 'faction,race,homeworld,events',
-    label: 'Персонажи',
+    description:
+      "Сравни персонажей по alignment, faction, events, keywords и power level.",
+    ids: "roboute-guilliman,abaddon-the-despoiler",
+    include: "faction,race,homeworld,events",
+    label: "Персонажи",
   },
   organizations: {
-    description: 'Сравни институции по influence level, faction ties, leaders и homeworld.',
-    ids: 'inquisition,adeptus-mechanicus',
-    include: 'factions,leaders,homeworld,era',
-    label: 'Организации',
+    description:
+      "Сравни институции по influence level, faction ties, leaders и homeworld.",
+    ids: "inquisition,adeptus-mechanicus",
+    include: "factions,leaders,homeworld,era",
+    label: "Организации",
   },
   relics: {
-    description: 'Сравни реликвии по bearer, faction, origin и power spread.',
-    ids: 'emperors-sword,talon-of-horus',
-    include: 'faction,bearer,originPlanet,era,keywords',
-    label: 'Реликвии',
+    description: "Сравни реликвии по bearer, faction, origin и power spread.",
+    ids: "emperors-sword,talon-of-horus",
+    include: "faction,bearer,originPlanet,era,keywords",
+    label: "Реликвии",
   },
-  'star-systems': {
-    description: 'Сравни системы по segmentum, числу миров и общему системному контексту.',
-    ids: 'sol-system,macragge-system',
-    include: 'planets,era',
-    label: 'Системы',
+  "star-systems": {
+    description:
+      "Сравни системы по segmentum, числу миров и общему системному контексту.",
+    ids: "sol-system,macragge-system",
+    include: "planets,era",
+    label: "Системы",
   },
   units: {
-    description: 'Сравни squad-ы и specialist units по faction, weapons, keywords и power spread.',
-    ids: 'terminator-squad,intercessor-squad',
-    include: 'factions,weapons,keywords',
-    label: 'Юниты',
+    description:
+      "Сравни squad-ы и specialist units по faction, weapons, keywords и power spread.",
+    ids: "terminator-squad,intercessor-squad",
+    include: "factions,weapons,keywords",
+    label: "Юниты",
   },
 };
 
 const visualMetricDefinitions = {
   battlefields: [
-    { id: 'intensity', label: 'Intensity', getter: (item) => item.intensityLevel },
-    { id: 'factions', label: 'Фракции', getter: (item) => countValues(item.factionIds) },
-    { id: 'characters', label: 'Персонажи', getter: (item) => countValues(item.characterIds) },
-    { id: 'campaigns', label: 'Кампании', getter: (item) => countValues(item.campaignIds) },
+    {
+      id: "intensity",
+      label: "Intensity",
+      getter: (item) => item.intensityLevel,
+    },
+    {
+      id: "factions",
+      label: "Фракции",
+      getter: (item) => countValues(item.factionIds),
+    },
+    {
+      id: "characters",
+      label: "Персонажи",
+      getter: (item) => countValues(item.characterIds),
+    },
+    {
+      id: "campaigns",
+      label: "Кампании",
+      getter: (item) => countValues(item.campaignIds),
+    },
   ],
   campaigns: [
-    { id: 'planets', label: 'Миры', getter: (item) => countValues(item.planetIds) },
-    { id: 'factions', label: 'Фракции', getter: (item) => countValues(item.factionIds) },
-    { id: 'characters', label: 'Персонажи', getter: (item) => countValues(item.characterIds) },
-    { id: 'organizations', label: 'Организации', getter: (item) => countValues(item.organizationIds) },
-    { id: 'battlefields', label: 'Поля битв', getter: (item) => countValues(item.battlefieldIds) },
+    {
+      id: "planets",
+      label: "Миры",
+      getter: (item) => countValues(item.planetIds),
+    },
+    {
+      id: "factions",
+      label: "Фракции",
+      getter: (item) => countValues(item.factionIds),
+    },
+    {
+      id: "characters",
+      label: "Персонажи",
+      getter: (item) => countValues(item.characterIds),
+    },
+    {
+      id: "organizations",
+      label: "Организации",
+      getter: (item) => countValues(item.organizationIds),
+    },
+    {
+      id: "battlefields",
+      label: "Поля битв",
+      getter: (item) => countValues(item.battlefieldIds),
+    },
   ],
   factions: [
-    { id: 'power', label: 'Power', getter: (item) => item.powerLevel },
-    { id: 'leaders', label: 'Лидеры', getter: (item) => countValues(item.leaderIds) },
-    { id: 'races', label: 'Расы', getter: (item) => countValues(item.raceIds) },
-    { id: 'keywords', label: 'Keywords', getter: (item) => countValues(item.keywords) },
+    { id: "power", label: "Power", getter: (item) => item.powerLevel },
+    {
+      id: "leaders",
+      label: "Лидеры",
+      getter: (item) => countValues(item.leaderIds),
+    },
+    { id: "races", label: "Расы", getter: (item) => countValues(item.raceIds) },
+    {
+      id: "keywords",
+      label: "Keywords",
+      getter: (item) => countValues(item.keywords),
+    },
   ],
   characters: [
-    { id: 'power', label: 'Power', getter: (item) => item.powerLevel },
-    { id: 'events', label: 'События', getter: (item) => countValues(item.eventIds) },
-    { id: 'titles', label: 'Titles', getter: (item) => countValues(item.titles) },
-    { id: 'keywords', label: 'Keywords', getter: (item) => countValues(item.keywords) },
+    { id: "power", label: "Power", getter: (item) => item.powerLevel },
+    {
+      id: "events",
+      label: "События",
+      getter: (item) => countValues(item.eventIds),
+    },
+    {
+      id: "titles",
+      label: "Titles",
+      getter: (item) => countValues(item.titles),
+    },
+    {
+      id: "keywords",
+      label: "Keywords",
+      getter: (item) => countValues(item.keywords),
+    },
   ],
   organizations: [
-    { id: 'influence', label: 'Influence', getter: (item) => item.influenceLevel },
-    { id: 'factions', label: 'Фракции', getter: (item) => countValues(item.factionIds) },
-    { id: 'leaders', label: 'Лидеры', getter: (item) => countValues(item.leaderIds) },
-    { id: 'keywords', label: 'Keywords', getter: (item) => countValues(item.keywords) },
+    {
+      id: "influence",
+      label: "Influence",
+      getter: (item) => item.influenceLevel,
+    },
+    {
+      id: "factions",
+      label: "Фракции",
+      getter: (item) => countValues(item.factionIds),
+    },
+    {
+      id: "leaders",
+      label: "Лидеры",
+      getter: (item) => countValues(item.leaderIds),
+    },
+    {
+      id: "keywords",
+      label: "Keywords",
+      getter: (item) => countValues(item.keywords),
+    },
   ],
   relics: [
-    { id: 'power', label: 'Power', getter: (item) => item.powerLevel },
-    { id: 'keywords', label: 'Keywords', getter: (item) => countValues(item.keywordIds) },
+    { id: "power", label: "Power", getter: (item) => item.powerLevel },
+    {
+      id: "keywords",
+      label: "Keywords",
+      getter: (item) => countValues(item.keywordIds),
+    },
   ],
-  'star-systems': [
-    { id: 'planets', label: 'Миры', getter: (item) => countValues(item.planetIds) },
-    { id: 'keywords', label: 'Keywords', getter: (item) => countValues(item.keywords) },
+  "star-systems": [
+    {
+      id: "planets",
+      label: "Миры",
+      getter: (item) => countValues(item.planetIds),
+    },
+    {
+      id: "keywords",
+      label: "Keywords",
+      getter: (item) => countValues(item.keywords),
+    },
   ],
   units: [
-    { id: 'power', label: 'Power', getter: (item) => item.powerLevel },
-    { id: 'factions', label: 'Фракции', getter: (item) => countValues(item.factionIds) },
-    { id: 'weapons', label: 'Оружие', getter: (item) => countValues(item.weaponIds) },
-    { id: 'keywords', label: 'Keywords', getter: (item) => countValues(item.keywordIds) },
+    { id: "power", label: "Power", getter: (item) => item.powerLevel },
+    {
+      id: "factions",
+      label: "Фракции",
+      getter: (item) => countValues(item.factionIds),
+    },
+    {
+      id: "weapons",
+      label: "Оружие",
+      getter: (item) => countValues(item.weaponIds),
+    },
+    {
+      id: "keywords",
+      label: "Keywords",
+      getter: (item) => countValues(item.keywordIds),
+    },
   ],
 };
 
 const pathResourcePresets = {
-  battlefields: ['campaigns', 'characters', 'factions', 'planets', 'star-systems'],
-  campaigns: ['battlefields', 'characters', 'factions', 'organizations', 'planets'],
-  characters: ['campaigns', 'events', 'factions', 'organizations', 'planets', 'relics'],
-  factions: ['campaigns', 'characters', 'events', 'organizations', 'planets', 'units'],
-  organizations: ['campaigns', 'characters', 'factions', 'planets', 'relics'],
-  relics: ['campaigns', 'characters', 'factions', 'planets'],
-  'star-systems': ['battlefields', 'campaigns', 'planets'],
-  units: ['factions', 'keywords', 'weapons'],
+  battlefields: [
+    "campaigns",
+    "characters",
+    "factions",
+    "planets",
+    "star-systems",
+  ],
+  campaigns: [
+    "battlefields",
+    "characters",
+    "factions",
+    "organizations",
+    "planets",
+  ],
+  characters: [
+    "campaigns",
+    "events",
+    "factions",
+    "organizations",
+    "planets",
+    "relics",
+  ],
+  factions: [
+    "campaigns",
+    "characters",
+    "events",
+    "organizations",
+    "planets",
+    "units",
+  ],
+  organizations: ["campaigns", "characters", "factions", "planets", "relics"],
+  relics: ["campaigns", "characters", "factions", "planets"],
+  "star-systems": ["battlefields", "campaigns", "planets"],
+  units: ["factions", "keywords", "weapons"],
 };
 
 const sharedFieldDefinitions = {
-  sharedCampaignIds: { label: 'Общие кампании', resource: 'campaigns' },
-  sharedCharacterIds: { label: 'Общие персонажи', resource: 'characters' },
-  sharedEventIds: { label: 'Общие события', resource: 'events' },
-  sharedFactionIds: { label: 'Общие фракции', resource: 'factions' },
-  sharedKeywords: { label: 'Общие keywords', resource: null },
-  sharedKeywordIds: { label: 'Общие keywords', resource: 'keywords' },
-  sharedLeaderIds: { label: 'Общие лидеры', resource: 'characters' },
-  sharedOrganizationIds: { label: 'Общие организации', resource: 'organizations' },
-  sharedPlanetIds: { label: 'Общие миры', resource: 'planets' },
-  sharedRaceIds: { label: 'Общие расы', resource: 'races' },
-  sharedWeaponIds: { label: 'Общее оружие', resource: 'weapons' },
+  sharedCampaignIds: { label: "Общие кампании", resource: "campaigns" },
+  sharedCharacterIds: { label: "Общие персонажи", resource: "characters" },
+  sharedEventIds: { label: "Общие события", resource: "events" },
+  sharedFactionIds: { label: "Общие фракции", resource: "factions" },
+  sharedKeywords: { label: "Общие keywords", resource: null },
+  sharedKeywordIds: { label: "Общие keywords", resource: "keywords" },
+  sharedLeaderIds: { label: "Общие лидеры", resource: "characters" },
+  sharedOrganizationIds: {
+    label: "Общие организации",
+    resource: "organizations",
+  },
+  sharedPlanetIds: { label: "Общие миры", resource: "planets" },
+  sharedRaceIds: { label: "Общие расы", resource: "races" },
+  sharedWeaponIds: { label: "Общее оружие", resource: "weapons" },
 };
 
 const profileFieldDefinitions = {
-  alignments: 'Alignment',
-  battlefieldTypes: 'Типы полей битв',
-  campaignTypes: 'Типы кампаний',
-  organizationTypes: 'Типы организаций',
-  relicTypes: 'Типы реликвий',
-  segmentums: 'Segmentum',
-  statuses: 'Статусы',
-  terrains: 'Terrain',
-  unitTypes: 'Типы юнитов',
+  alignments: "Alignment",
+  battlefieldTypes: "Типы полей битв",
+  campaignTypes: "Типы кампаний",
+  organizationTypes: "Типы организаций",
+  relicTypes: "Типы реликвий",
+  segmentums: "Segmentum",
+  statuses: "Статусы",
+  terrains: "Terrain",
+  unitTypes: "Типы юнитов",
 };
 
 function countValues(value) {
   return Array.isArray(value) ? value.length : 0;
 }
 
+function extractErrorDetails(error) {
+  const details = error?.response?.data?.error?.details;
+  return Array.isArray(details) ? details : [];
+}
+
+function formatErrorDetail(detail) {
+  if (!detail || typeof detail !== "object") {
+    return "";
+  }
+
+  const fieldLabel = detail.field ? `${detail.field}: ` : "";
+
+  if (detail.code === "NOT_ENOUGH_MATCHES") {
+    return `${fieldLabel}${detail.message}. Matched ${detail.matchedCount ?? 0} из ${detail.requestedCount ?? 0}.`;
+  }
+
+  if (detail.code === "MIN_ITEMS") {
+    return `${fieldLabel}${detail.message}. Передано ${detail.count ?? 0}, требуется ${detail.minItems ?? 2}.`;
+  }
+
+  return `${fieldLabel}${detail.message || detail.code || "Некорректный параметр."}`;
+}
+
 function formatNumber(value) {
-  return typeof value === 'number' ? value.toLocaleString('ru-RU') : '0';
+  return typeof value === "number" ? value.toLocaleString("ru-RU") : "0";
 }
 
 function formatValue(value) {
-  if (value === null || value === undefined || value === '') {
-    return 'нет данных';
+  if (value === null || value === undefined || value === "") {
+    return "нет данных";
   }
 
   if (Array.isArray(value)) {
     if (!value.length) {
-      return '0';
+      return "0";
     }
 
-    return value.join(', ');
+    return value.join(", ");
   }
 
-  if (typeof value === 'object') {
+  if (typeof value === "object") {
     if (value.name && value.powerLevel !== undefined) {
       return `${value.name} (${value.powerLevel})`;
     }
@@ -195,45 +361,48 @@ function getMetricTone(metricKey) {
   const lowerKey = metricKey.toLowerCase();
 
   if (
-    lowerKey.includes('power') ||
-    lowerKey.includes('influence') ||
-    lowerKey.includes('intensity') ||
-    metricKey === 'strongest' ||
-    metricKey === 'mostInfluential' ||
-    metricKey === 'mostIntense'
+    lowerKey.includes("power") ||
+    lowerKey.includes("influence") ||
+    lowerKey.includes("intensity") ||
+    metricKey === "strongest" ||
+    metricKey === "mostInfluential" ||
+    metricKey === "mostIntense"
   ) {
-    return 'power';
+    return "power";
   }
 
-  if (lowerKey.includes('shared')) {
-    return 'shared';
+  if (lowerKey.includes("shared")) {
+    return "shared";
   }
 
   if (
-    lowerKey.includes('type') ||
-    lowerKey.includes('status') ||
-    lowerKey.includes('year') ||
-    lowerKey.includes('segment') ||
-    lowerKey.includes('terrain') ||
-    metricKey === 'latest' ||
-    metricKey === 'earliest'
+    lowerKey.includes("type") ||
+    lowerKey.includes("status") ||
+    lowerKey.includes("year") ||
+    lowerKey.includes("segment") ||
+    lowerKey.includes("terrain") ||
+    metricKey === "latest" ||
+    metricKey === "earliest"
   ) {
-    return 'type';
+    return "type";
   }
 
-  return 'default';
+  return "default";
 }
 
 function buildResourceLookup(included) {
-  return Object.entries(included || {}).reduce((result, [resourceKey, items]) => {
-    result[resourceKey] = new Map(
-      (items || []).map((item) => [
-        String(item.id),
-        item.name || item.slug || `#${item.id}`,
-      ])
-    );
-    return result;
-  }, {});
+  return Object.entries(included || {}).reduce(
+    (result, [resourceKey, items]) => {
+      result[resourceKey] = new Map(
+        (items || []).map((item) => [
+          String(item.id),
+          item.name || item.slug || `#${item.id}`,
+        ]),
+      );
+      return result;
+    },
+    {},
+  );
 }
 
 function resolveNamedValues(values, definition, lookup) {
@@ -254,37 +423,43 @@ function resolveNamedValues(values, definition, lookup) {
 }
 
 function buildSharedGroups(comparison, lookup) {
-  return Object.entries(sharedFieldDefinitions).reduce((result, [key, definition]) => {
-    const values = comparison[key];
+  return Object.entries(sharedFieldDefinitions).reduce(
+    (result, [key, definition]) => {
+      const values = comparison[key];
 
-    if (!Array.isArray(values) || !values.length) {
+      if (!Array.isArray(values) || !values.length) {
+        return result;
+      }
+
+      result.push({
+        id: key,
+        label: definition.label,
+        values: resolveNamedValues(values, definition, lookup),
+      });
       return result;
-    }
-
-    result.push({
-      id: key,
-      label: definition.label,
-      values: resolveNamedValues(values, definition, lookup),
-    });
-    return result;
-  }, []);
+    },
+    [],
+  );
 }
 
 function buildProfileGroups(comparison) {
-  return Object.entries(profileFieldDefinitions).reduce((result, [key, label]) => {
-    const values = comparison[key];
+  return Object.entries(profileFieldDefinitions).reduce(
+    (result, [key, label]) => {
+      const values = comparison[key];
 
-    if (!Array.isArray(values) || !values.length) {
+      if (!Array.isArray(values) || !values.length) {
+        return result;
+      }
+
+      result.push({
+        id: key,
+        label,
+        values: values.map((value) => String(value)),
+      });
       return result;
-    }
-
-    result.push({
-      id: key,
-      label,
-      values: values.map((value) => String(value)),
-    });
-    return result;
-  }, []);
+    },
+    [],
+  );
 }
 
 function buildVisualMetrics(resource, items) {
@@ -317,8 +492,8 @@ function buildVisualMetrics(resource, items) {
 function buildDetailLink(resource, item) {
   return `/resources/${resource}${buildQueryString({
     identifier: item.slug || item.id,
-    include: '',
-    mode: 'detail',
+    include: "",
+    mode: "detail",
   })}`;
 }
 
@@ -334,18 +509,18 @@ function buildGraphLink(resource, item) {
 
 function buildPathLink(resource, items) {
   if (!Array.isArray(items) || items.length < 2) {
-    return '';
+    return "";
   }
 
   const [fromItem, toItem] = items;
 
   return `/explore/path${buildQueryString({
-    backlinks: 'true',
+    backlinks: "true",
     fromIdentifier: fromItem.slug || fromItem.id,
     fromResource: resource,
     limitPerRelation: 6,
     maxDepth: 4,
-    resources: (pathResourcePresets[resource] || []).join(','),
+    resources: (pathResourcePresets[resource] || []).join(","),
     toIdentifier: toItem.slug || toItem.id,
     toResource: resource,
   })}`;
@@ -359,7 +534,11 @@ function CompareMetricCard({ label, value }) {
   return (
     <article className={`compare-metric-card compare-metric-card-${tone}`}>
       <div className="resource-kicker">{label}</div>
-      <div className={`compare-metric-value${compact ? ' compare-metric-value-compact' : ''}`}>{displayValue}</div>
+      <div
+        className={`compare-metric-value${compact ? " compare-metric-value-compact" : ""}`}
+      >
+        {displayValue}
+      </div>
     </article>
   );
 }
@@ -375,7 +554,8 @@ function CompareVisualSection({ metrics }) {
         <div>
           <h2>Visual compare</h2>
           <p className="muted-line">
-            Быстрый слой для карточек сравнения, charts и decision UI без отдельной клиентской агрегации.
+            Быстрый слой для карточек сравнения, charts и decision UI без
+            отдельной клиентской агрегации.
           </p>
         </div>
       </div>
@@ -393,7 +573,10 @@ function CompareVisualSection({ metrics }) {
                 const width = `${Math.max(((row.value || 0) / metric.maxValue) * 100, 8)}%`;
 
                 return (
-                  <div key={`${metric.id}-${row.slug || row.id}`} className="compare-visual-row">
+                  <div
+                    key={`${metric.id}-${row.slug || row.id}`}
+                    className="compare-visual-row"
+                  >
                     <div className="compare-visual-meta">
                       <span>{row.name}</span>
                       <strong>{formatNumber(row.value)}</strong>
@@ -402,7 +585,8 @@ function CompareVisualSection({ metrics }) {
                       <div
                         className="compare-visual-fill"
                         style={{
-                          backgroundColor: comparePalette[index % comparePalette.length],
+                          backgroundColor:
+                            comparePalette[index % comparePalette.length],
                           width,
                         }}
                       />
@@ -436,7 +620,9 @@ function ComparePillSection({ title, description, groups, emptyMessage }) {
               <h3>{group.label}</h3>
               <div className="compare-pill-list">
                 {group.values.map((value) => (
-                  <span key={value} className="tag">{value}</span>
+                  <span key={value} className="tag">
+                    {value}
+                  </span>
                 ))}
               </div>
             </article>
@@ -458,11 +644,21 @@ function CompareItemCard({ item, resource }) {
           <h3>{item.name}</h3>
         </div>
         <div className="tag-list">
-          {item.powerLevel !== undefined && <span className="metric-chip">power {item.powerLevel}</span>}
-          {item.influenceLevel !== undefined && <span className="metric-chip">influence {item.influenceLevel}</span>}
-          {item.intensityLevel !== undefined && <span className="metric-chip">intensity {item.intensityLevel}</span>}
-          {Array.isArray(item.planetIds) && <span className="metric-chip">planets {item.planetIds.length}</span>}
-          {item.yearLabel && <span className="metric-chip">{item.yearLabel}</span>}
+          {item.powerLevel !== undefined && (
+            <span className="metric-chip">power {item.powerLevel}</span>
+          )}
+          {item.influenceLevel !== undefined && (
+            <span className="metric-chip">influence {item.influenceLevel}</span>
+          )}
+          {item.intensityLevel !== undefined && (
+            <span className="metric-chip">intensity {item.intensityLevel}</span>
+          )}
+          {Array.isArray(item.planetIds) && (
+            <span className="metric-chip">planets {item.planetIds.length}</span>
+          )}
+          {item.yearLabel && (
+            <span className="metric-chip">{item.yearLabel}</span>
+          )}
         </div>
       </div>
 
@@ -473,16 +669,27 @@ function CompareItemCard({ item, resource }) {
         {item.alignment && <span className="tag">{item.alignment}</span>}
         {item.segmentum && <span className="tag">{item.segmentum}</span>}
         {item.unitType && <span className="tag">{item.unitType}</span>}
-        {item.organizationType && <span className="tag">{item.organizationType}</span>}
+        {item.organizationType && (
+          <span className="tag">{item.organizationType}</span>
+        )}
         {item.relicType && <span className="tag">{item.relicType}</span>}
         {item.campaignType && <span className="tag">{item.campaignType}</span>}
-        {item.battlefieldType && <span className="tag">{item.battlefieldType}</span>}
+        {item.battlefieldType && (
+          <span className="tag">{item.battlefieldType}</span>
+        )}
         {item.terrain && <span className="tag">{item.terrain}</span>}
       </div>
 
       <div className="compare-item-actions">
-        <a className="action-link" href={buildDetailLink(resource, item)}>Открыть detail preview</a>
-        <a className="action-link action-link-muted" href={buildGraphLink(resource, item)}>Открыть Graph</a>
+        <a className="action-link" href={buildDetailLink(resource, item)}>
+          Открыть detail preview
+        </a>
+        <a
+          className="action-link action-link-muted"
+          href={buildGraphLink(resource, item)}
+        >
+          Открыть Graph
+        </a>
       </div>
     </article>
   );
@@ -492,13 +699,17 @@ function IncludedSummary({ included }) {
   const entries = Object.entries(included || {});
 
   if (!entries.length) {
-    return <span className="muted-line">Этот compare не вернул included-блок.</span>;
+    return (
+      <span className="muted-line">Этот compare не вернул included-блок.</span>
+    );
   }
 
   return (
     <div className="tag-list">
       {entries.map(([key, items]) => (
-        <span key={key} className="metric-chip">{key}: {items.length}</span>
+        <span key={key} className="metric-chip">
+          {key}: {items.length}
+        </span>
       ))}
     </div>
   );
@@ -515,7 +726,8 @@ function CompareBridgeSection({ items, pathLink, resource }) {
         <div>
           <h2>Explore bridge</h2>
           <p className="muted-line">
-            Из compare можно сразу перейти в traversal-сценарии и проверить, как две записи связаны через relation graph.
+            Из compare можно сразу перейти в traversal-сценарии и проверить, как
+            две записи связаны через relation graph.
           </p>
         </div>
       </div>
@@ -525,12 +737,17 @@ function CompareBridgeSection({ items, pathLink, resource }) {
           <div className="resource-kicker">Path</div>
           <h3>Кратчайший путь между сравниваемыми сущностями</h3>
           <p className="muted-line">
-            Deeplink уже содержит `backlinks=true`, `maxDepth=4` и whitelist ресурсов под текущий compare.
+            Deeplink уже содержит `backlinks=true`, `maxDepth=4` и whitelist
+            ресурсов под текущий compare.
           </p>
           {pathLink ? (
-            <a className="action-link" href={pathLink}>Открыть Path между двумя записями</a>
+            <a className="action-link" href={pathLink}>
+              Открыть Path между двумя записями
+            </a>
           ) : (
-            <span className="muted-line">Нужно минимум две записи для path bridge.</span>
+            <span className="muted-line">
+              Нужно минимум две записи для path bridge.
+            </span>
           )}
         </article>
 
@@ -539,7 +756,11 @@ function CompareBridgeSection({ items, pathLink, resource }) {
           <h3>Фокус на обеих записях по отдельности</h3>
           <div className="compare-bridge-links">
             {items.map((item) => (
-              <a key={item.slug || item.id} className="action-link action-link-muted" href={buildGraphLink(resource, item)}>
+              <a
+                key={item.slug || item.id}
+                className="action-link action-link-muted"
+                href={buildGraphLink(resource, item)}
+              >
                 {item.name}
               </a>
             ))}
@@ -553,11 +774,13 @@ function CompareBridgeSection({ items, pathLink, resource }) {
 function ComparePage() {
   const initialQuery = useMemo(() => {
     const queryState = readQueryState({
-      resource: 'factions',
+      resource: "factions",
       ids: comparePresets.factions.ids,
       include: comparePresets.factions.include,
     });
-    const safeResource = comparePresets[queryState.resource] ? queryState.resource : 'factions';
+    const safeResource = comparePresets[queryState.resource]
+      ? queryState.resource
+      : "factions";
     const safePreset = comparePresets[safeResource];
 
     return {
@@ -569,9 +792,10 @@ function ComparePage() {
   const [resource, setResource] = useState(initialQuery.resource);
   const [ids, setIds] = useState(initialQuery.ids);
   const [include, setInclude] = useState(initialQuery.include);
-  const [requestPath, setRequestPath] = useState('');
+  const [requestPath, setRequestPath] = useState("");
   const [responseData, setResponseData] = useState(null);
-  const [submitError, setSubmitError] = useState('');
+  const [submitError, setSubmitError] = useState("");
+  const [submitErrorDetails, setSubmitErrorDetails] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const preset = comparePresets[resource];
@@ -579,46 +803,56 @@ function ComparePage() {
   const comparison = responseData?.data?.comparison || {};
   const comparisonEntries = useMemo(
     () => Object.entries(comparison),
-    [comparison]
+    [comparison],
   );
   const includedLookup = useMemo(
     () => buildResourceLookup(responseData?.included),
-    [responseData]
+    [responseData],
   );
   const visualMetrics = useMemo(
     () => buildVisualMetrics(resource, responseItems),
-    [resource, responseItems]
+    [resource, responseItems],
   );
   const sharedGroups = useMemo(
     () => buildSharedGroups(comparison, includedLookup),
-    [comparison, includedLookup]
+    [comparison, includedLookup],
   );
   const profileGroups = useMemo(
     () => buildProfileGroups(comparison),
-    [comparison]
+    [comparison],
   );
   const pathLink = useMemo(
     () => buildPathLink(resource, responseItems),
-    [resource, responseItems]
+    [resource, responseItems],
   );
 
-  async function runCompare(nextResource = resource, nextIds = ids, nextInclude = include) {
+  async function runCompare(
+    nextResource = resource,
+    nextIds = ids,
+    nextInclude = include,
+  ) {
     const params = {
       ids: nextIds,
       include: nextInclude,
     };
 
     setLoading(true);
-    setSubmitError('');
+    setSubmitError("");
+    setSubmitErrorDetails([]);
 
     try {
       const result = await docsApi.getCompare(nextResource, params);
-      setRequestPath(`/api/v1/compare/${nextResource}${buildQueryString(params)}`);
+      setRequestPath(
+        `/api/v1/compare/${nextResource}${buildQueryString(params)}`,
+      );
       setResponseData(result);
     } catch (error) {
       setSubmitError(extractError(error));
+      setSubmitErrorDetails(extractErrorDetails(error));
       setResponseData(null);
-      setRequestPath(`/api/v1/compare/${nextResource}${buildQueryString(params)}`);
+      setRequestPath(
+        `/api/v1/compare/${nextResource}${buildQueryString(params)}`,
+      );
     } finally {
       replaceQueryState({
         resource: nextResource,
@@ -655,9 +889,9 @@ function ComparePage() {
           <div className="section-eyebrow">Compare</div>
           <h1>Готовый compare UI поверх одного endpoint-а</h1>
           <p className="page-lead">
-            Эта страница показывает, что compare-сценарий не требует сложной клиентской логики.
-            Достаточно выбрать ресурс, передать `ids` и `include`, а API вернет и сами items,
-            и готовую сводку различий.
+            Эта страница показывает, что compare-сценарий не требует сложной
+            клиентской логики. Достаточно выбрать ресурс, передать `ids` и
+            `include`, а API вернет и сами items, и готовую сводку различий.
           </p>
         </div>
         <div className="hero-side">
@@ -674,31 +908,58 @@ function ComparePage() {
             <span>Ресурс</span>
             <select value={resource} onChange={handleResourceChange}>
               {Object.entries(comparePresets).map(([key, value]) => (
-                <option key={key} value={key}>{value.label}</option>
+                <option key={key} value={key}>
+                  {value.label}
+                </option>
               ))}
             </select>
           </label>
 
           <label className="label-wide">
             <span>IDs</span>
-            <input value={ids} onInput={(event) => setIds(event.target.value)} placeholder={preset.ids} />
+            <input
+              value={ids}
+              onInput={(event) => setIds(event.target.value)}
+              placeholder={preset.ids}
+            />
           </label>
 
           <label className="label-wide">
             <span>Include</span>
-            <input value={include} onInput={(event) => setInclude(event.target.value)} placeholder={preset.include} />
+            <input
+              value={include}
+              onInput={(event) => setInclude(event.target.value)}
+              placeholder={preset.include}
+            />
           </label>
         </div>
 
         <div className="compare-form-foot">
           <p className="muted-line">{preset.description}</p>
           <button type="submit" className="action-button" disabled={loading}>
-            {loading ? 'Сравнение выполняется...' : 'Выполнить compare'}
+            {loading ? "Сравнение выполняется..." : "Выполнить compare"}
           </button>
         </div>
       </form>
 
-      {submitError && <StateNotice type="error">{submitError}</StateNotice>}
+      {submitError && (
+        <StateNotice type="error">
+          <div className="compare-error-body">
+            <strong>{submitError}</strong>
+            {submitErrorDetails.length ? (
+              <ul className="compare-error-list">
+                {submitErrorDetails.map((detail, index) => (
+                  <li
+                    key={`${detail.field || "detail"}-${detail.code || index}-${index}`}
+                  >
+                    {formatErrorDetail(detail)}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        </StateNotice>
+      )}
       {requestPath && <StateNotice>{requestPath}</StateNotice>}
 
       {responseData && (
@@ -708,10 +969,13 @@ function ComparePage() {
               <div>
                 <h2>Сводка сравнения</h2>
                 <p className="muted-line">
-                  API уже посчитал пересечения и различия. Клиенту не нужно вручную нормализовать доменную логику.
+                  API уже посчитал пересечения и различия. Клиенту не нужно
+                  вручную нормализовать доменную логику.
                 </p>
               </div>
-              <a className="query-link" href={requestPath}>{requestPath}</a>
+              <a className="query-link" href={requestPath}>
+                {requestPath}
+              </a>
             </div>
 
             <div className="compare-metric-grid">
@@ -723,7 +987,11 @@ function ComparePage() {
 
           <CompareVisualSection metrics={visualMetrics} />
 
-          <CompareBridgeSection items={responseItems} pathLink={pathLink} resource={resource} />
+          <CompareBridgeSection
+            items={responseItems}
+            pathLink={pathLink}
+            resource={resource}
+          />
 
           <ComparePillSection
             title="Shared overlap"
@@ -743,7 +1011,11 @@ function ComparePage() {
             <h2>Сравниваемые записи</h2>
             <div className="compare-item-grid">
               {responseItems.map((item) => (
-                <CompareItemCard key={item.id || item.slug} item={item} resource={resource} />
+                <CompareItemCard
+                  key={item.id || item.slug}
+                  item={item}
+                  resource={resource}
+                />
               ))}
             </div>
           </section>
