@@ -44,6 +44,34 @@ async function runDomainApiTests(baseUrl) {
       },
     },
     {
+      name: "openapi endpoint publishes machine-readable contract",
+      run: async () => {
+        const { json, response } = await getJson(
+          baseUrl,
+          "/api/v1/openapi.json",
+        );
+
+        assert.equal(response.status, 200);
+        assert.equal(json.openapi, "3.1.0");
+        assert.ok(json.paths["/api/v1/openapi.json"]);
+        assert.ok(json.paths["/api/v1/compare/{resource}"]);
+        assert.ok(json.paths["/api/v1/{resource}"]);
+        assert.ok(
+          json.paths[
+            "/api/v1/{resource}"
+          ].get.parameters[0].schema.enum.includes("factions"),
+        );
+        assert.ok(json.components.schemas.FactionsResource);
+        assert.ok(json.components.schemas.ValidationErrorResponse);
+        assert.equal(
+          json.paths["/api/v1/explore/graph"].get.responses["429"].content[
+            "application/json"
+          ].example.error.code,
+          "RATE_LIMIT_EXCEEDED",
+        );
+      },
+    },
+    {
       name: "legacy api responses expose deprecation headers",
       run: async () => {
         const response = await fetch(`${baseUrl}/api/factions`);

@@ -8,6 +8,7 @@ const {
   resourceOrder,
 } = require("./warhammerContent");
 const { changelog, deprecationPolicy } = require("./apiLifecycle");
+const { buildOpenApiSpec } = require("./openApiSpec");
 const config = require("../config");
 const { buildRateLimitPolicy } = require("../lib/apiRateLimit");
 const {
@@ -1788,6 +1789,10 @@ function getQueryGuide() {
   };
 }
 
+function getOpenApiSpec() {
+  return buildOpenApiSpec(getRateLimitGuide());
+}
+
 function getConcurrencyExample() {
   return {
     data: concurrencyExample,
@@ -2031,6 +2036,7 @@ module.exports = {
   getConcurrencyExample,
   getDeprecationPolicy,
   getOverview,
+  getOpenApiSpec,
   getQueryGuide,
   getRandomResource,
   getResourceCatalog,

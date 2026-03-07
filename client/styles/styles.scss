@@ -1051,20 +1051,40 @@ pre {
   gap: 16px;
 }
 
-.compare-error-body {
+.api-error-body {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.compare-error-list {
+.api-error-list {
   margin: 0;
   padding-left: 18px;
   color: rgba(255, 234, 234, 0.94);
 }
 
-.compare-error-list li + li {
+.api-error-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.api-error-item + .api-error-item {
   margin-top: 6px;
+}
+
+.api-error-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.api-error-field {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 238, 238, 0.98);
 }
 
 .compare-metric-grid,

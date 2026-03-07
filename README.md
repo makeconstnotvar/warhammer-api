@@ -8,8 +8,8 @@
 ## Что уже есть
 
 - клиент-документация на Preact
-- `api/v1` с `overview`, `catalog/resources`, `query-guide`, `search`, `explore/graph`, `explore/path`, `examples/concurrency`
-- docs-клиент со страницами `Quick Start`, `Resources`, `Query Guide`, `Changelog`, `Deprecation Policy`, `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Concurrency`
+- `api/v1` с `overview`, `catalog/resources`, `query-guide`, `openapi.json`, `search`, `explore/graph`, `explore/path`, `examples/concurrency`
+- docs-клиент со страницами `Quick Start`, `Resources`, `Query Guide`, `OpenAPI`, `Changelog`, `Deprecation Policy`, `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Concurrency`
 - каноническая схема PostgreSQL для `eras`, `races`, `planets`, `factions`, `characters`, `events`
 - домен расширен ресурсами `organizations`, `relics`, `campaigns`, `star-systems`, `battlefields`, `fleets`, `warp-routes`
 - seed-набор данных по известным сущностям Warhammer 40k
@@ -73,6 +73,7 @@ npm run client-watch
 - legacy `/api` now responds with `Deprecation`, `Sunset` and `Link` headers and points clients to `/deprecation-policy`
 - `GET /api/v1/random/character?include=faction,race,homeworld`
 - `GET /api/v1/random/unit?include=factions,weapons,keywords`
+- `GET /api/v1/openapi.json`
 - `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion&include=races,leaders,homeworld`
 - `GET /api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus&include=factions,leaders,homeworld,era`
 - `GET /api/v1/compare/relics?ids=emperors-sword,talon-of-horus&include=faction,bearer,originPlanet,era,keywords`
@@ -104,6 +105,7 @@ Rate limiting для `api/v1` по умолчанию настроен как `1
 - `/stats?focus=weapons-by-keyword`
 - `/changelog`
 - `/deprecation-policy`
+- `/openapi`
 - `/compare?resource=units&ids=terminator-squad,intercessor-squad&include=factions,weapons,keywords`
 - `/compare?resource=star-systems&ids=sol-system,macragge-system&include=planets,era`
 - `/compare?resource=battlefields&ids=hesperon-void-line,kasr-partox-ruins&include=planet,starSystem,era,factions,characters,campaigns`

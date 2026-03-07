@@ -25,6 +25,11 @@ const gettingStartedSteps = [
       "/api/v1/characters?filter[faction]=ultramarines&include=faction,race,homeworld,events",
   },
   {
+    title: "Забери OpenAPI spec",
+    description: "Используй машиночитаемый контракт для codegen и mock server.",
+    endpoint: "/api/v1/openapi.json",
+  },
+  {
     title: "Попробуй конкурентные запросы",
     description: "Собери dashboard через Promise.all.",
     endpoint: "/api/v1/examples/concurrency",

@@ -40,6 +40,10 @@ apiV1Routes.get("/query-guide", (req, res) => {
   res.json(contentApi.getQueryGuide());
 });
 
+apiV1Routes.get("/openapi.json", (req, res) => {
+  res.json(contentApi.getOpenApiSpec());
+});
+
 apiV1Routes.get("/changelog", (req, res) => {
   res.json(contentApi.getChangelog());
 });

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { docsApi } from "../api/docsApi";
+import { ApiErrorNotice } from "../components/ApiErrorNotice";
 import { JsonViewer } from "../components/JsonViewer";
 import { StateNotice } from "../components/StateNotice";
-import { extractError } from "../hooks/useAsyncData";
+import { extractError, extractErrorDetails } from "../hooks/useAsyncData";
 import {
   buildQueryString,
   readQueryState,
@@ -288,29 +289,6 @@ const profileFieldDefinitions = {
 
 function countValues(value) {
   return Array.isArray(value) ? value.length : 0;
-}
-
-function extractErrorDetails(error) {
-  const details = error?.response?.data?.error?.details;
-  return Array.isArray(details) ? details : [];
-}
-
-function formatErrorDetail(detail) {
-  if (!detail || typeof detail !== "object") {
-    return "";
-  }
-
-  const fieldLabel = detail.field ? `${detail.field}: ` : "";
-
-  if (detail.code === "NOT_ENOUGH_MATCHES") {
-    return `${fieldLabel}${detail.message}. Matched ${detail.matchedCount ?? 0} из ${detail.requestedCount ?? 0}.`;
-  }
-
-  if (detail.code === "MIN_ITEMS") {
-    return `${fieldLabel}${detail.message}. Передано ${detail.count ?? 0}, требуется ${detail.minItems ?? 2}.`;
-  }
-
-  return `${fieldLabel}${detail.message || detail.code || "Некорректный параметр."}`;
 }
 
 function formatNumber(value) {
@@ -942,24 +920,7 @@ function ComparePage() {
         </div>
       </form>
 
-      {submitError && (
-        <StateNotice type="error">
-          <div className="compare-error-body">
-            <strong>{submitError}</strong>
-            {submitErrorDetails.length ? (
-              <ul className="compare-error-list">
-                {submitErrorDetails.map((detail, index) => (
-                  <li
-                    key={`${detail.field || "detail"}-${detail.code || index}-${index}`}
-                  >
-                    {formatErrorDetail(detail)}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        </StateNotice>
-      )}
+      <ApiErrorNotice details={submitErrorDetails} message={submitError} />
       {requestPath && <StateNotice>{requestPath}</StateNotice>}
 
       {responseData && (

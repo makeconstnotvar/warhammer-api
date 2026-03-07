@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { docsApi } from "../api/docsApi";
+import { ApiErrorNotice } from "../components/ApiErrorNotice";
 import { JsonViewer } from "../components/JsonViewer";
 import { StateNotice } from "../components/StateNotice";
-import { extractError, useAsyncData } from "../hooks/useAsyncData";
+import {
+  extractError,
+  extractErrorDetails,
+  useAsyncData,
+} from "../hooks/useAsyncData";
 import {
   buildQueryString,
   hasSearchParams,
@@ -56,6 +61,7 @@ function Playground() {
   const [responseData, setResponseData] = useState(null);
   const [responseMeta, setResponseMeta] = useState(null);
   const [submitError, setSubmitError] = useState("");
+  const [submitErrorDetails, setSubmitErrorDetails] = useState([]);
   const [loading, setLoading] = useState(false);
   const didHydrateDefaults = useRef(false);
   const didRunInitialQuery = useRef(false);
@@ -107,6 +113,7 @@ function Playground() {
 
     setLoading(true);
     setSubmitError("");
+    setSubmitErrorDetails([]);
 
     try {
       const result = await docsApi.getResourceListResponse(
@@ -121,6 +128,7 @@ function Playground() {
       });
     } catch (error) {
       setSubmitError(extractError(error));
+      setSubmitErrorDetails(extractErrorDetails(error));
       setResponseData(error?.response?.data || null);
       setResponseMeta(
         error?.response
@@ -270,7 +278,7 @@ function Playground() {
       {docState.error && (
         <StateNotice type="error">{docState.error}</StateNotice>
       )}
-      {submitError && <StateNotice type="error">{submitError}</StateNotice>}
+      <ApiErrorNotice details={submitErrorDetails} message={submitError} />
       {requestPath && <StateNotice>{requestPath}</StateNotice>}
       {responseMeta && (
         <section className="section-card">

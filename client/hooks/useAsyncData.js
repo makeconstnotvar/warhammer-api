@@ -1,23 +1,28 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useState } from "preact/hooks";
 
 function extractError(error) {
   return (
     error?.response?.data?.error?.message ||
     error?.message ||
-    'Не удалось загрузить данные.'
+    "Не удалось загрузить данные."
   );
+}
+
+function extractErrorDetails(error) {
+  const details = error?.response?.data?.error?.details;
+  return Array.isArray(details) ? details : [];
 }
 
 function useAsyncData(loader, deps = []) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
 
     setLoading(true);
-    setError('');
+    setError("");
 
     Promise.resolve()
       .then(() => loader())
@@ -51,4 +56,4 @@ function useAsyncData(loader, deps = []) {
   return { data, loading, error };
 }
 
-export { extractError, useAsyncData };
+export { extractError, extractErrorDetails, useAsyncData };

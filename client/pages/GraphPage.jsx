@@ -1,141 +1,163 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
-import { docsApi } from '../api/docsApi';
-import { JsonViewer } from '../components/JsonViewer';
-import { StateNotice } from '../components/StateNotice';
-import { extractError, useAsyncData } from '../hooks/useAsyncData';
-import { buildQueryString, parseCsvParam, readQueryState, replaceQueryState, toCsvParam } from '../lib/query';
+import { useEffect, useMemo, useState } from "preact/hooks";
+import { docsApi } from "../api/docsApi";
+import { ApiErrorNotice } from "../components/ApiErrorNotice";
+import { JsonViewer } from "../components/JsonViewer";
+import { StateNotice } from "../components/StateNotice";
+import {
+  extractError,
+  extractErrorDetails,
+  useAsyncData,
+} from "../hooks/useAsyncData";
+import {
+  buildQueryString,
+  parseCsvParam,
+  readQueryState,
+  replaceQueryState,
+  toCsvParam,
+} from "../lib/query";
 
 const graphPresets = {
   battlefields: {
-    depth: '2',
-    description: 'Тактический graph: campaign, planet, star-system, factions и key characters вокруг одного battlefield.',
-    identifier: 'hesperon-void-line',
-    label: 'Поле битвы',
-    limitPerRelation: '4',
-    resource: 'battlefields',
+    depth: "2",
+    description:
+      "Тактический graph: campaign, planet, star-system, factions и key characters вокруг одного battlefield.",
+    identifier: "hesperon-void-line",
+    label: "Поле битвы",
+    limitPerRelation: "4",
+    resource: "battlefields",
   },
   campaigns: {
-    depth: '2',
-    description: 'Кампания как точка входа в planets, factions, characters и organizations.',
-    identifier: 'plague-wars',
-    label: 'Кампания',
-    limitPerRelation: '4',
-    resource: 'campaigns',
+    depth: "2",
+    description:
+      "Кампания как точка входа в planets, factions, characters и organizations.",
+    identifier: "plague-wars",
+    label: "Кампания",
+    limitPerRelation: "4",
+    resource: "campaigns",
   },
   fleets: {
-    depth: '2',
-    description: 'Флот связывает commanders, campaigns, factions и текущую star-system в одном naval graph.',
-    identifier: 'indomitus-battlegroup',
-    label: 'Флот',
-    limitPerRelation: '4',
-    resource: 'fleets',
+    depth: "2",
+    description:
+      "Флот связывает commanders, campaigns, factions и текущую star-system в одном naval graph.",
+    identifier: "indomitus-battlegroup",
+    label: "Флот",
+    limitPerRelation: "4",
+    resource: "fleets",
   },
   characters: {
-    depth: '2',
-    description: 'Классический detail graph: faction, race, homeworld, events и обратные связи через relics и organizations.',
-    identifier: 'roboute-guilliman',
-    label: 'Персонаж',
-    limitPerRelation: '4',
-    resource: 'characters',
+    depth: "2",
+    description:
+      "Классический detail graph: faction, race, homeworld, events и обратные связи через relics и organizations.",
+    identifier: "roboute-guilliman",
+    label: "Персонаж",
+    limitPerRelation: "4",
+    resource: "characters",
   },
   factions: {
-    depth: '2',
-    description: 'Фракция быстро показывает characters, units, events, organizations и parent-child связи.',
-    identifier: 'imperium-of-man',
-    label: 'Фракция',
-    limitPerRelation: '4',
-    resource: 'factions',
+    depth: "2",
+    description:
+      "Фракция быстро показывает characters, units, events, organizations и parent-child связи.",
+    identifier: "imperium-of-man",
+    label: "Фракция",
+    limitPerRelation: "4",
+    resource: "factions",
   },
-  'star-systems': {
-    depth: '2',
-    description: 'Системный graph связывает worlds, campaigns и battlefields в одном космическом контексте.',
-    identifier: 'sol-system',
-    label: 'Система',
-    limitPerRelation: '4',
-    resource: 'star-systems',
+  "star-systems": {
+    depth: "2",
+    description:
+      "Системный graph связывает worlds, campaigns и battlefields в одном космическом контексте.",
+    identifier: "sol-system",
+    label: "Система",
+    limitPerRelation: "4",
+    resource: "star-systems",
   },
   organizations: {
-    depth: '2',
-    description: 'Institutional graph для dashboards и political-map UI.',
-    identifier: 'inquisition',
-    label: 'Организация',
-    limitPerRelation: '4',
-    resource: 'organizations',
+    depth: "2",
+    description: "Institutional graph для dashboards и political-map UI.",
+    identifier: "inquisition",
+    label: "Организация",
+    limitPerRelation: "4",
+    resource: "organizations",
   },
   relics: {
-    depth: '2',
-    description: 'Легкий inventory graph: bearer, faction, planet origin и ключевые relation tags.',
-    identifier: 'emperors-sword',
-    label: 'Реликвия',
-    limitPerRelation: '4',
-    resource: 'relics',
+    depth: "2",
+    description:
+      "Легкий inventory graph: bearer, faction, planet origin и ключевые relation tags.",
+    identifier: "emperors-sword",
+    label: "Реликвия",
+    limitPerRelation: "4",
+    resource: "relics",
   },
-  'warp-routes': {
-    depth: '2',
-    description: 'Route graph показывает обе системы, campaigns и factions, завязанные на конкретный варп-маршрут.',
-    identifier: 'sol-macragge-corridor',
-    label: 'Варп-маршрут',
-    limitPerRelation: '4',
-    resource: 'warp-routes',
+  "warp-routes": {
+    depth: "2",
+    description:
+      "Route graph показывает обе системы, campaigns и factions, завязанные на конкретный варп-маршрут.",
+    identifier: "sol-macragge-corridor",
+    label: "Варп-маршрут",
+    limitPerRelation: "4",
+    resource: "warp-routes",
   },
 };
 
 const graphResourceColors = {
-  battlefields: '#cf7f55',
-  campaigns: '#6fbf86',
-  characters: '#d1a35a',
-  eras: '#8f7ed2',
-  events: '#d46f6f',
-  factions: '#c95a5a',
-  fleets: '#87a8d8',
-  keywords: '#6d88d9',
-  organizations: '#6caed6',
-  planets: '#87b38a',
-  races: '#af8cdd',
-  relics: '#d69255',
-  'star-systems': '#5aa7a0',
-  units: '#b2b45e',
-  'warp-routes': '#4e8fbe',
-  weapons: '#78a7c5',
+  battlefields: "#cf7f55",
+  campaigns: "#6fbf86",
+  characters: "#d1a35a",
+  eras: "#8f7ed2",
+  events: "#d46f6f",
+  factions: "#c95a5a",
+  fleets: "#87a8d8",
+  keywords: "#6d88d9",
+  organizations: "#6caed6",
+  planets: "#87b38a",
+  races: "#af8cdd",
+  relics: "#d69255",
+  "star-systems": "#5aa7a0",
+  units: "#b2b45e",
+  "warp-routes": "#4e8fbe",
+  weapons: "#78a7c5",
 };
 
 const compareIncludePresets = {
-  battlefields: 'planet,starSystem,era,factions,characters,campaigns',
-  campaigns: 'era,planets,factions,characters,organizations,battlefields',
-  characters: 'faction,race,homeworld,events',
-  factions: 'races,leaders,homeworld',
-  organizations: 'factions,leaders,homeworld,era',
-  relics: 'faction,bearer,originPlanet,era,keywords',
-  'star-systems': 'planets,era',
-  units: 'factions,weapons,keywords',
+  battlefields: "planet,starSystem,era,factions,characters,campaigns",
+  campaigns: "era,planets,factions,characters,organizations,battlefields",
+  characters: "faction,race,homeworld,events",
+  factions: "races,leaders,homeworld",
+  organizations: "factions,leaders,homeworld,era",
+  relics: "faction,bearer,originPlanet,era,keywords",
+  "star-systems": "planets,era",
+  units: "factions,weapons,keywords",
 };
 
 function getPresetForResource(resource) {
-  return graphPresets[resource] || {
-    depth: '2',
-    description: 'Укажи slug или id вручную и собери graph для любого поддерживаемого ресурса.',
-    identifier: '',
-    label: resource,
-    limitPerRelation: '4',
-    resource,
-  };
+  return (
+    graphPresets[resource] || {
+      depth: "2",
+      description:
+        "Укажи slug или id вручную и собери graph для любого поддерживаемого ресурса.",
+      identifier: "",
+      label: resource,
+      limitPerRelation: "4",
+      resource,
+    }
+  );
 }
 
 function normalizeSelectedKeys(rawValue) {
-  return String(rawValue || '')
-    .split(',')
+  return String(rawValue || "")
+    .split(",")
     .map((item) => item.trim())
     .filter(Boolean)
     .slice(0, 2);
 }
 
 function truncateLabel(value, maxLength = 18) {
-  const text = String(value || '');
+  const text = String(value || "");
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}...` : text;
 }
 
 function formatMetric(value) {
-  if (value === null || value === undefined || value === '') {
+  if (value === null || value === undefined || value === "") {
     return null;
   }
 
@@ -168,20 +190,23 @@ function buildExploreLink(node, options = {}) {
 function buildDetailLink(node) {
   return `/resources/${node.resource}${buildQueryString({
     identifier: getNodeIdentifier(node),
-    include: '',
-    mode: 'detail',
+    include: "",
+    mode: "detail",
   })}`;
 }
 
 function buildCompareLink(nodes) {
   if (nodes.length !== 2) {
-    return '';
+    return "";
   }
 
   const [left, right] = nodes;
 
-  if (left.resource !== right.resource || !compareIncludePresets[left.resource]) {
-    return '';
+  if (
+    left.resource !== right.resource ||
+    !compareIncludePresets[left.resource]
+  ) {
+    return "";
   }
 
   return `/compare${buildQueryString({
@@ -212,7 +237,10 @@ function buildGraphLayout(nodes = []) {
   }, {});
 
   const positions = {};
-  positions[nodes.find((node) => node.distance === 0)?.key || 'root'] = { x: centerX, y: centerY };
+  positions[nodes.find((node) => node.distance === 0)?.key || "root"] = {
+    x: centerX,
+    y: centerY,
+  };
 
   Object.entries(groupedByDistance).forEach(([distanceKey, layerNodes]) => {
     const distance = Number(distanceKey);
@@ -224,15 +252,15 @@ function buildGraphLayout(nodes = []) {
       return;
     }
 
-    const radius = 110 + ((distance - 1) * 120);
+    const radius = 110 + (distance - 1) * 120;
     const step = (Math.PI * 2) / Math.max(layerNodes.length, 1);
     const offset = distance % 2 === 0 ? Math.PI / 6 : -Math.PI / 8;
 
     layerNodes.forEach((node, index) => {
-      const angle = offset + (index * step);
+      const angle = offset + index * step;
       positions[node.key] = {
-        x: centerX + (Math.cos(angle) * radius),
-        y: centerY + (Math.sin(angle) * radius * 0.72),
+        x: centerX + Math.cos(angle) * radius,
+        y: centerY + Math.sin(angle) * radius * 0.72,
       };
     });
   });
@@ -240,10 +268,27 @@ function buildGraphLayout(nodes = []) {
   return { height, positions, width };
 }
 
-function GraphStage({ edges, focusedNodeKey, nodes, onNodeSelect, root, selectedNodeKeys }) {
+function GraphStage({
+  edges,
+  focusedNodeKey,
+  nodes,
+  onNodeSelect,
+  root,
+  selectedNodeKeys,
+}) {
   const layout = useMemo(() => buildGraphLayout(nodes), [nodes]);
-  const rings = useMemo(() => [...new Set(nodes.map((node) => node.distance).filter((distance) => distance > 0))], [nodes]);
-  const selectedNodeSet = useMemo(() => new Set(selectedNodeKeys), [selectedNodeKeys]);
+  const rings = useMemo(
+    () => [
+      ...new Set(
+        nodes.map((node) => node.distance).filter((distance) => distance > 0),
+      ),
+    ],
+    [nodes],
+  );
+  const selectedNodeSet = useMemo(
+    () => new Set(selectedNodeKeys),
+    [selectedNodeKeys],
+  );
 
   return (
     <section className="section-card graph-stage-card">
@@ -251,7 +296,8 @@ function GraphStage({ edges, focusedNodeKey, nodes, onNodeSelect, root, selected
         <div>
           <h2>Graph view</h2>
           <p className="muted-line">
-            Клик по узлу переводит фокус, подсвечивает связи и добавляет запись в рабочую область.
+            Клик по узлу переводит фокус, подсвечивает связи и добавляет запись
+            в рабочую область.
           </p>
         </div>
         <div className="tag-list">
@@ -261,22 +307,28 @@ function GraphStage({ edges, focusedNodeKey, nodes, onNodeSelect, root, selected
         </div>
       </div>
 
-      <svg className="graph-svg" viewBox={`0 0 ${layout.width} ${layout.height}`} role="img" aria-label="Graph explorer">
+      <svg
+        className="graph-svg"
+        viewBox={`0 0 ${layout.width} ${layout.height}`}
+        role="img"
+        aria-label="Graph explorer"
+      >
         {rings.map((distance) => (
           <ellipse
             key={distance}
             className="graph-ring"
             cx={layout.width / 2}
             cy={layout.height / 2}
-            rx={110 + ((distance - 1) * 120)}
-            ry={(110 + ((distance - 1) * 120)) * 0.72}
+            rx={110 + (distance - 1) * 120}
+            ry={(110 + (distance - 1) * 120) * 0.72}
           />
         ))}
 
         {edges.map((edge) => {
           const from = layout.positions[edge.from];
           const to = layout.positions[edge.to];
-          const isFocused = edge.from === focusedNodeKey || edge.to === focusedNodeKey;
+          const isFocused =
+            edge.from === focusedNodeKey || edge.to === focusedNodeKey;
 
           if (!from || !to) {
             return null;
@@ -285,7 +337,7 @@ function GraphStage({ edges, focusedNodeKey, nodes, onNodeSelect, root, selected
           return (
             <g key={edge.id}>
               <line
-                className={`graph-edge${isFocused ? ' graph-edge-active' : ''}`}
+                className={`graph-edge${isFocused ? " graph-edge-active" : ""}`}
                 x1={from.x}
                 y1={from.y}
                 x2={to.x}
@@ -297,7 +349,7 @@ function GraphStage({ edges, focusedNodeKey, nodes, onNodeSelect, root, selected
 
         {nodes.map((node) => {
           const position = layout.positions[node.key];
-          const color = graphResourceColors[node.resource] || '#d1a35a';
+          const color = graphResourceColors[node.resource] || "#d1a35a";
           const isFocused = node.key === focusedNodeKey;
           const isSelected = selectedNodeSet.has(node.key);
 
@@ -313,18 +365,28 @@ function GraphStage({ edges, focusedNodeKey, nodes, onNodeSelect, root, selected
               onClick={() => onNodeSelect(node.key)}
             >
               <circle
-                className={`graph-node-halo${isFocused ? ' graph-node-halo-focused' : ''}${isSelected ? ' graph-node-halo-selected' : ''}`}
+                className={`graph-node-halo${isFocused ? " graph-node-halo-focused" : ""}${isSelected ? " graph-node-halo-selected" : ""}`}
                 r={node.distance === 0 ? 44 : 32}
               />
               <circle
-                className={`graph-node graph-node-${node.distance === 0 ? 'root' : 'leaf'}${isFocused ? ' graph-node-focused' : ''}${isSelected ? ' graph-node-selected' : ''}`}
+                className={`graph-node graph-node-${node.distance === 0 ? "root" : "leaf"}${isFocused ? " graph-node-focused" : ""}${isSelected ? " graph-node-selected" : ""}`}
                 r={node.distance === 0 ? 36 : 24}
                 style={{ fill: color }}
               />
-              <text className="graph-node-label" x="0" y={node.distance === 0 ? 56 : 44} textAnchor="middle">
+              <text
+                className="graph-node-label"
+                x="0"
+                y={node.distance === 0 ? 56 : 44}
+                textAnchor="middle"
+              >
                 {truncateLabel(node.name, 20)}
               </text>
-              <text className="graph-node-resource" x="0" y={node.distance === 0 ? 72 : 58} textAnchor="middle">
+              <text
+                className="graph-node-resource"
+                x="0"
+                y={node.distance === 0 ? 72 : 58}
+                textAnchor="middle"
+              >
                 {node.resource}
               </text>
             </g>
@@ -335,13 +397,32 @@ function GraphStage({ edges, focusedNodeKey, nodes, onNodeSelect, root, selected
   );
 }
 
-function GraphNodeCard({ active, backlinks, depth, limitPerRelation, node, onFocus, onToggleSelect, resourceFilterKeys, selected }) {
-  const metric = formatMetric(node.powerLevel ?? node.influenceLevel ?? node.yearLabel);
+function GraphNodeCard({
+  active,
+  backlinks,
+  depth,
+  limitPerRelation,
+  node,
+  onFocus,
+  onToggleSelect,
+  resourceFilterKeys,
+  selected,
+}) {
+  const metric = formatMetric(
+    node.powerLevel ?? node.influenceLevel ?? node.yearLabel,
+  );
   const detailLink = buildDetailLink(node);
-  const exploreLink = buildExploreLink(node, { backlinks, depth, limitPerRelation, resourceFilterKeys });
+  const exploreLink = buildExploreLink(node, {
+    backlinks,
+    depth,
+    limitPerRelation,
+    resourceFilterKeys,
+  });
 
   return (
-    <article className={`graph-node-card${active ? ' graph-node-card-active' : ''}`}>
+    <article
+      className={`graph-node-card${active ? " graph-node-card-active" : ""}`}
+    >
       <div className="resource-card-top">
         <div>
           <div className="resource-kicker">{node.resource}</div>
@@ -359,14 +440,26 @@ function GraphNodeCard({ active, backlinks, depth, limitPerRelation, node, onFoc
         {node.type && <span className="tag">{node.type}</span>}
       </div>
       <div className="graph-card-actions">
-        <button type="button" className="action-button" onClick={() => onFocus(node.key)}>
+        <button
+          type="button"
+          className="action-button"
+          onClick={() => onFocus(node.key)}
+        >
           Фокус
         </button>
-        <button type="button" className="action-button action-link-muted" onClick={() => onToggleSelect(node.key)}>
-          {selected ? 'Убрать из selection' : 'Добавить в selection'}
+        <button
+          type="button"
+          className="action-button action-link-muted"
+          onClick={() => onToggleSelect(node.key)}
+        >
+          {selected ? "Убрать из selection" : "Добавить в selection"}
         </button>
-        <a className="query-link" href={detailLink}>Открыть detail preview</a>
-        <a className="query-link" href={exploreLink}>Сделать root</a>
+        <a className="query-link" href={detailLink}>
+          Открыть detail preview
+        </a>
+        <a className="query-link" href={exploreLink}>
+          Сделать root
+        </a>
       </div>
     </article>
   );
@@ -383,7 +476,10 @@ function NodeGroups({
   resourceFilterKeys,
   selectedNodeKeys,
 }) {
-  const selectedNodeSet = useMemo(() => new Set(selectedNodeKeys), [selectedNodeKeys]);
+  const selectedNodeSet = useMemo(
+    () => new Set(selectedNodeKeys),
+    [selectedNodeKeys],
+  );
   const grouped = useMemo(() => {
     return nodes.reduce((result, node) => {
       result[node.resource] = result[node.resource] || [];
@@ -458,13 +554,16 @@ function TruncationSummary({ items }) {
   return (
     <div className="graph-truncation-list">
       {items.map((item) => (
-        <article key={`${item.from}-${item.relation}-${item.sourceResource || item.targetResource || 'target'}`} className="sample-query-card">
+        <article
+          key={`${item.from}-${item.relation}-${item.sourceResource || item.targetResource || "target"}`}
+          className="sample-query-card"
+        >
           <div className="resource-kicker">{item.relation}</div>
           <strong>{item.hiddenCount} скрытых связей</strong>
           <p className="muted-line">
             from: {item.from}
-            {item.targetResource ? `, target: ${item.targetResource}` : ''}
-            {item.sourceResource ? `, source: ${item.sourceResource}` : ''}
+            {item.targetResource ? `, target: ${item.targetResource}` : ""}
+            {item.sourceResource ? `, source: ${item.sourceResource}` : ""}
           </p>
         </article>
       ))}
@@ -495,12 +594,21 @@ function Workbench({
         </div>
         <div className="graph-selection-bar">
           {selectedNodes.map((node) => (
-            <button key={node.key} type="button" className="control-chip control-chip-active" onClick={() => onRemoveSelection(node.key)}>
+            <button
+              key={node.key}
+              type="button"
+              className="control-chip control-chip-active"
+              onClick={() => onRemoveSelection(node.key)}
+            >
               {node.name}
             </button>
           ))}
           {!!selectedNodes.length && (
-            <button type="button" className="control-chip" onClick={onClearSelection}>
+            <button
+              type="button"
+              className="control-chip"
+              onClick={onClearSelection}
+            >
               Очистить selection
             </button>
           )}
@@ -516,14 +624,23 @@ function Workbench({
             <div className="tag-list">
               <span className="metric-chip">{focusNode.resource}</span>
               <span className="metric-chip">depth {focusNode.distance}</span>
-              {focusNode.status && <span className="tag">{focusNode.status}</span>}
+              {focusNode.status && (
+                <span className="tag">{focusNode.status}</span>
+              )}
               {focusNode.type && <span className="tag">{focusNode.type}</span>}
             </div>
             <div className="graph-card-actions">
-              <a className="query-link" href={buildDetailLink(focusNode)}>Открыть detail preview</a>
+              <a className="query-link" href={buildDetailLink(focusNode)}>
+                Открыть detail preview
+              </a>
               <a
                 className="query-link"
-                href={buildExploreLink(focusNode, { backlinks, depth, limitPerRelation, resourceFilterKeys })}
+                href={buildExploreLink(focusNode, {
+                  backlinks,
+                  depth,
+                  limitPerRelation,
+                  resourceFilterKeys,
+                })}
               >
                 Перестроить graph от этого узла
               </a>
@@ -542,20 +659,27 @@ function Workbench({
                 ))}
               </div>
             ) : (
-              <p className="muted-line">У текущего узла нет видимых ребер на этом depth.</p>
+              <p className="muted-line">
+                У текущего узла нет видимых ребер на этом depth.
+              </p>
             )}
           </article>
         </div>
       ) : (
-        <p className="muted-line">Сначала построй graph и выбери хотя бы один узел.</p>
+        <p className="muted-line">
+          Сначала построй graph и выбери хотя бы один узел.
+        </p>
       )}
 
       <div className="graph-selection-status">
         {compareLink ? (
-          <a className="action-link" href={compareLink}>Открыть Compare для selection</a>
+          <a className="action-link" href={compareLink}>
+            Открыть Compare для selection
+          </a>
         ) : (
           <p className="muted-line">
-            Для compare нужны две выбранные записи одного compare-capable ресурса.
+            Для compare нужны две выбранные записи одного compare-capable
+            ресурса.
           </p>
         )}
       </div>
@@ -566,14 +690,14 @@ function Workbench({
 function GraphPage() {
   const initialQuery = useMemo(() => {
     const queryState = readQueryState({
-      backlinks: 'true',
+      backlinks: "true",
       depth: graphPresets.characters.depth,
-      focus: '',
+      focus: "",
       identifier: graphPresets.characters.identifier,
       limitPerRelation: graphPresets.characters.limitPerRelation,
       resource: graphPresets.characters.resource,
-      resources: '',
-      selected: '',
+      resources: "",
+      selected: "",
     });
     const safePreset = getPresetForResource(queryState.resource);
 
@@ -582,7 +706,8 @@ function GraphPage() {
       depth: queryState.depth || safePreset.depth,
       focus: queryState.focus,
       identifier: queryState.identifier || safePreset.identifier,
-      limitPerRelation: queryState.limitPerRelation || safePreset.limitPerRelation,
+      limitPerRelation:
+        queryState.limitPerRelation || safePreset.limitPerRelation,
       resource: queryState.resource,
       resourceFilterKeys: parseCsvParam(queryState.resources),
       selected: normalizeSelectedKeys(queryState.selected),
@@ -594,14 +719,21 @@ function GraphPage() {
   const [resource, setResource] = useState(initialQuery.resource);
   const [identifier, setIdentifier] = useState(initialQuery.identifier);
   const [depth, setDepth] = useState(initialQuery.depth);
-  const [limitPerRelation, setLimitPerRelation] = useState(initialQuery.limitPerRelation);
+  const [limitPerRelation, setLimitPerRelation] = useState(
+    initialQuery.limitPerRelation,
+  );
   const [backlinks, setBacklinks] = useState(initialQuery.backlinks);
-  const [resourceFilterKeys, setResourceFilterKeys] = useState(initialQuery.resourceFilterKeys);
-  const [selectedNodeKeys, setSelectedNodeKeys] = useState(initialQuery.selected);
+  const [resourceFilterKeys, setResourceFilterKeys] = useState(
+    initialQuery.resourceFilterKeys,
+  );
+  const [selectedNodeKeys, setSelectedNodeKeys] = useState(
+    initialQuery.selected,
+  );
   const [focusedNodeKey, setFocusedNodeKey] = useState(initialQuery.focus);
-  const [requestPath, setRequestPath] = useState('');
+  const [requestPath, setRequestPath] = useState("");
   const [responseData, setResponseData] = useState(null);
-  const [submitError, setSubmitError] = useState('');
+  const [submitError, setSubmitError] = useState("");
+  const [submitErrorDetails, setSubmitErrorDetails] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const activePreset = getPresetForResource(resource);
@@ -610,22 +742,32 @@ function GraphPage() {
   const meta = responseData?.meta;
   const rootNode = responseData?.data?.root || null;
   const nodeByKey = useMemo(
-    () => nodes.reduce((result, node) => {
-      result[node.key] = node;
-      return result;
-    }, {}),
-    [nodes]
+    () =>
+      nodes.reduce((result, node) => {
+        result[node.key] = node;
+        return result;
+      }, {}),
+    [nodes],
   );
   const selectedNodes = useMemo(
     () => selectedNodeKeys.map((nodeKey) => nodeByKey[nodeKey]).filter(Boolean),
-    [nodeByKey, selectedNodeKeys]
+    [nodeByKey, selectedNodeKeys],
   );
-  const focusNode = nodeByKey[focusedNodeKey] || selectedNodes[selectedNodes.length - 1] || rootNode;
+  const focusNode =
+    nodeByKey[focusedNodeKey] ||
+    selectedNodes[selectedNodes.length - 1] ||
+    rootNode;
   const focusedEdges = useMemo(
-    () => edges.filter((edge) => edge.from === focusNode?.key || edge.to === focusNode?.key),
-    [edges, focusNode]
+    () =>
+      edges.filter(
+        (edge) => edge.from === focusNode?.key || edge.to === focusNode?.key,
+      ),
+    [edges, focusNode],
   );
-  const compareLink = useMemo(() => buildCompareLink(selectedNodes), [selectedNodes]);
+  const compareLink = useMemo(
+    () => buildCompareLink(selectedNodes),
+    [selectedNodes],
+  );
 
   async function runGraph(nextState = {}) {
     const nextResource = nextState.resource ?? resource;
@@ -633,7 +775,8 @@ function GraphPage() {
     const nextDepth = nextState.depth ?? depth;
     const nextLimitPerRelation = nextState.limitPerRelation ?? limitPerRelation;
     const nextBacklinks = nextState.backlinks ?? backlinks;
-    const nextResourceFilterKeys = nextState.resourceFilterKeys ?? resourceFilterKeys;
+    const nextResourceFilterKeys =
+      nextState.resourceFilterKeys ?? resourceFilterKeys;
     const params = {
       backlinks: nextBacklinks,
       depth: nextDepth,
@@ -645,11 +788,12 @@ function GraphPage() {
 
     if (nextState.resetSelection) {
       setSelectedNodeKeys([]);
-      setFocusedNodeKey('');
+      setFocusedNodeKey("");
     }
 
     setLoading(true);
-    setSubmitError('');
+    setSubmitError("");
+    setSubmitErrorDetails([]);
 
     try {
       const result = await docsApi.getGraph(params);
@@ -657,13 +801,14 @@ function GraphPage() {
       setResponseData(result);
     } catch (error) {
       setSubmitError(extractError(error));
+      setSubmitErrorDetails(extractErrorDetails(error));
       setResponseData(null);
       setRequestPath(`/api/v1/explore/graph${buildQueryString(params)}`);
     } finally {
       replaceQueryState({
         ...params,
         focus: focusedNodeKey,
-        selected: selectedNodeKeys.join(','),
+        selected: selectedNodeKeys.join(","),
       });
       setLoading(false);
     }
@@ -679,11 +824,17 @@ function GraphPage() {
     }
 
     const availableNodeKeys = new Set(nodes.map((node) => node.key));
-    const filteredSelected = selectedNodeKeys.filter((nodeKey) => availableNodeKeys.has(nodeKey));
-    const nextSelected = filteredSelected.length ? filteredSelected : (rootNode ? [rootNode.key] : []);
+    const filteredSelected = selectedNodeKeys.filter((nodeKey) =>
+      availableNodeKeys.has(nodeKey),
+    );
+    const nextSelected = filteredSelected.length
+      ? filteredSelected
+      : rootNode
+        ? [rootNode.key]
+        : [];
     const nextFocus = availableNodeKeys.has(focusedNodeKey)
       ? focusedNodeKey
-      : (nextSelected[nextSelected.length - 1] || rootNode?.key || '');
+      : nextSelected[nextSelected.length - 1] || rootNode?.key || "";
 
     if (!areKeyArraysEqual(nextSelected, selectedNodeKeys)) {
       setSelectedNodeKeys(nextSelected);
@@ -707,9 +858,19 @@ function GraphPage() {
       limitPerRelation,
       resources: toCsvParam(resourceFilterKeys),
       resource,
-      selected: selectedNodeKeys.join(','),
+      selected: selectedNodeKeys.join(","),
     });
-  }, [backlinks, depth, focusedNodeKey, identifier, limitPerRelation, requestPath, resource, resourceFilterKeys, selectedNodeKeys]);
+  }, [
+    backlinks,
+    depth,
+    focusedNodeKey,
+    identifier,
+    limitPerRelation,
+    requestPath,
+    resource,
+    resourceFilterKeys,
+    selectedNodeKeys,
+  ]);
 
   function applyPreset(preset) {
     setResource(preset.resource);
@@ -741,7 +902,9 @@ function GraphPage() {
   }
 
   function toggleGraphResourceFilter(resourceKey) {
-    setResourceFilterKeys((current) => toggleResourceFilterKey(current, resourceKey));
+    setResourceFilterKeys((current) =>
+      toggleResourceFilterKey(current, resourceKey),
+    );
   }
 
   function focusNodeByKey(nodeKey) {
@@ -765,7 +928,9 @@ function GraphPage() {
         const nextSelection = current.filter((item) => item !== nodeKey);
 
         if (focusedNodeKey === nodeKey) {
-          setFocusedNodeKey(nextSelection[nextSelection.length - 1] || rootNode?.key || '');
+          setFocusedNodeKey(
+            nextSelection[nextSelection.length - 1] || rootNode?.key || "",
+          );
         }
 
         return nextSelection;
@@ -781,7 +946,7 @@ function GraphPage() {
   }
 
   function clearSelection() {
-    const fallbackKey = rootNode?.key || '';
+    const fallbackKey = rootNode?.key || "";
     setSelectedNodeKeys(fallbackKey ? [fallbackKey] : []);
     setFocusedNodeKey(fallbackKey);
   }
@@ -791,7 +956,9 @@ function GraphPage() {
       const nextSelection = current.filter((item) => item !== nodeKey);
 
       if (focusedNodeKey === nodeKey) {
-        setFocusedNodeKey(nextSelection[nextSelection.length - 1] || rootNode?.key || '');
+        setFocusedNodeKey(
+          nextSelection[nextSelection.length - 1] || rootNode?.key || "",
+        );
       }
 
       return nextSelection;
@@ -813,8 +980,9 @@ function GraphPage() {
           <div className="section-eyebrow">Graph</div>
           <h1>Explorer связей поверх одного endpoint-а</h1>
           <p className="page-lead">
-            `explore/graph` возвращает уже готовые `nodes` и `edges`. Теперь этот экран еще и умеет
-            выделять узлы, фокусировать связи и перекидывать selection в `Compare`.
+            `explore/graph` возвращает уже готовые `nodes` и `edges`. Теперь
+            этот экран еще и умеет выделять узлы, фокусировать связи и
+            перекидывать selection в `Compare`.
           </p>
         </div>
         <div className="hero-side">
@@ -829,7 +997,8 @@ function GraphPage() {
           <div>
             <h2>Preset scenarios</h2>
             <p className="muted-line">
-              Быстрые точки входа для detail graph, campaign explorer и institutional map.
+              Быстрые точки входа для detail graph, campaign explorer и
+              institutional map.
             </p>
           </div>
         </div>
@@ -838,7 +1007,7 @@ function GraphPage() {
             <button
               key={preset.resource}
               type="button"
-              className={`control-chip${preset.resource === resource ? ' control-chip-active' : ''}`}
+              className={`control-chip${preset.resource === resource ? " control-chip-active" : ""}`}
               onClick={() => applyPreset(preset)}
             >
               {preset.label}
@@ -854,19 +1023,28 @@ function GraphPage() {
             <span>Ресурс</span>
             <select value={resource} onChange={handleResourceChange}>
               {resources.map((item) => (
-                <option key={item.id} value={item.id}>{item.label}</option>
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
               ))}
             </select>
           </label>
 
           <label>
             <span>Identifier</span>
-            <input value={identifier} onInput={(event) => setIdentifier(event.target.value)} placeholder={activePreset.identifier} />
+            <input
+              value={identifier}
+              onInput={(event) => setIdentifier(event.target.value)}
+              placeholder={activePreset.identifier}
+            />
           </label>
 
           <label>
             <span>Depth</span>
-            <select value={depth} onChange={(event) => setDepth(event.target.value)}>
+            <select
+              value={depth}
+              onChange={(event) => setDepth(event.target.value)}
+            >
               <option value="1">1</option>
               <option value="2">2</option>
               <option value="3">3</option>
@@ -875,7 +1053,10 @@ function GraphPage() {
 
           <label>
             <span>Limit per relation</span>
-            <select value={limitPerRelation} onChange={(event) => setLimitPerRelation(event.target.value)}>
+            <select
+              value={limitPerRelation}
+              onChange={(event) => setLimitPerRelation(event.target.value)}
+            >
               <option value="2">2</option>
               <option value="4">4</option>
               <option value="6">6</option>
@@ -885,7 +1066,10 @@ function GraphPage() {
 
           <label>
             <span>Backlinks</span>
-            <select value={backlinks} onChange={(event) => setBacklinks(event.target.value)}>
+            <select
+              value={backlinks}
+              onChange={(event) => setBacklinks(event.target.value)}
+            >
               <option value="true">true</option>
               <option value="false">false</option>
             </select>
@@ -897,18 +1081,23 @@ function GraphPage() {
             <div>
               <h2>Resource filter</h2>
               <p className="muted-line">
-                Ограничивает соседние типы ресурсов. Root-узел всегда сохраняется, даже если его нет в whitelist.
+                Ограничивает соседние типы ресурсов. Root-узел всегда
+                сохраняется, даже если его нет в whitelist.
               </p>
             </div>
             <div className="tag-list">
-              <span className="metric-chip">{resourceFilterKeys.length || resources.length} resource types</span>
-              <span className="metric-chip">{resourceFilterKeys.length ? 'filtered' : 'all visible'}</span>
+              <span className="metric-chip">
+                {resourceFilterKeys.length || resources.length} resource types
+              </span>
+              <span className="metric-chip">
+                {resourceFilterKeys.length ? "filtered" : "all visible"}
+              </span>
             </div>
           </div>
           <div className="control-chip-bar">
             <button
               type="button"
-              className={`control-chip${!resourceFilterKeys.length ? ' control-chip-active' : ''}`}
+              className={`control-chip${!resourceFilterKeys.length ? " control-chip-active" : ""}`}
               onClick={() => setResourceFilterKeys([])}
             >
               Все ресурсы
@@ -917,7 +1106,7 @@ function GraphPage() {
               <button
                 key={item.id}
                 type="button"
-                className={`control-chip${resourceFilterKeys.includes(item.id) ? ' control-chip-active' : ''}`}
+                className={`control-chip${resourceFilterKeys.includes(item.id) ? " control-chip-active" : ""}`}
                 onClick={() => toggleGraphResourceFilter(item.id)}
               >
                 {item.label}
@@ -928,16 +1117,17 @@ function GraphPage() {
 
         <div className="resource-preview-foot">
           <p className="muted-line">
-            Подходит для graph explorer, connected detail screen и relation-aware dashboard. Для sharable ссылок фильтр
-            уходит в `resources=...`.
+            Подходит для graph explorer, connected detail screen и
+            relation-aware dashboard. Для sharable ссылок фильтр уходит в
+            `resources=...`.
           </p>
           <button type="submit" className="action-button" disabled={loading}>
-            {loading ? 'Сборка graph...' : 'Построить graph'}
+            {loading ? "Сборка graph..." : "Построить graph"}
           </button>
         </div>
       </form>
 
-      {submitError && <StateNotice type="error">{submitError}</StateNotice>}
+      <ApiErrorNotice details={submitErrorDetails} message={submitError} />
       {requestPath && <StateNotice>{requestPath}</StateNotice>}
 
       {responseData && (
@@ -946,22 +1136,28 @@ function GraphPage() {
             <article className="stat-card">
               <div className="resource-kicker">Nodes</div>
               <div className="stat-value">{meta.nodeCount}</div>
-              <p className="muted-line">Количество узлов в возвращенной сети.</p>
+              <p className="muted-line">
+                Количество узлов в возвращенной сети.
+              </p>
             </article>
             <article className="stat-card">
               <div className="resource-kicker">Edges</div>
               <div className="stat-value">{meta.edgeCount}</div>
-              <p className="muted-line">Количество прямых связей между узлами.</p>
+              <p className="muted-line">
+                Количество прямых связей между узлами.
+              </p>
             </article>
             <article className="stat-card">
               <div className="resource-kicker">Resource Types</div>
               <div className="stat-value">{meta.resourceTypes.length}</div>
-              <p className="muted-line">{meta.resourceTypes.join(', ')}</p>
+              <p className="muted-line">{meta.resourceTypes.join(", ")}</p>
             </article>
             <article className="stat-card">
               <div className="resource-kicker">Selection</div>
               <div className="stat-value">{selectedNodes.length}</div>
-              <p className="muted-line">До двух узлов для compare bridge и ручного фокуса.</p>
+              <p className="muted-line">
+                До двух узлов для compare bridge и ручного фокуса.
+              </p>
             </article>
           </section>
 
@@ -980,7 +1176,7 @@ function GraphPage() {
 
           <GraphStage
             edges={edges}
-            focusedNodeKey={focusNode?.key || ''}
+            focusedNodeKey={focusNode?.key || ""}
             nodes={nodes}
             onNodeSelect={focusNodeByKey}
             root={rootNode}
@@ -993,7 +1189,7 @@ function GraphPage() {
           </section>
 
           <NodeGroups
-            activeNodeKey={focusNode?.key || ''}
+            activeNodeKey={focusNode?.key || ""}
             backlinks={backlinks}
             depth={depth}
             limitPerRelation={limitPerRelation}

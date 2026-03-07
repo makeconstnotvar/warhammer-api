@@ -11,6 +11,7 @@ const Menu = () => {
           <a href="/quick-start">Quick Start</a>
           <a href="/resources">Resources</a>
           <a href="/query-guide">Query Guide</a>
+          <a href="/openapi">OpenAPI</a>
           <a href="/changelog">Changelog</a>
           <a href="/deprecation-policy">Deprecation</a>
           <a href="/stats">Stats</a>

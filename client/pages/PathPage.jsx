@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { docsApi } from '../api/docsApi';
+import { ApiErrorNotice } from '../components/ApiErrorNotice';
 import { JsonViewer } from '../components/JsonViewer';
 import { StateNotice } from '../components/StateNotice';
-import { extractError, useAsyncData } from '../hooks/useAsyncData';
+import { extractError, extractErrorDetails, useAsyncData } from '../hooks/useAsyncData';
 import { buildQueryString, parseCsvParam, readQueryState, replaceQueryState, toCsvParam } from '../lib/query';
 
 const pathPresets = {
@@ -182,6 +183,7 @@ function PathPage() {
   const [requestPath, setRequestPath] = useState('');
   const [responseData, setResponseData] = useState(null);
   const [submitError, setSubmitError] = useState('');
+  const [submitErrorDetails, setSubmitErrorDetails] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const path = responseData?.data?.path;
@@ -201,6 +203,7 @@ function PathPage() {
 
     setLoading(true);
     setSubmitError('');
+    setSubmitErrorDetails([]);
 
     try {
       const result = await docsApi.getPath(params);
@@ -208,6 +211,7 @@ function PathPage() {
       setResponseData(result);
     } catch (error) {
       setSubmitError(extractError(error));
+      setSubmitErrorDetails(extractErrorDetails(error));
       setResponseData(null);
       setRequestPath(`/api/v1/explore/path${buildQueryString(params)}`);
     } finally {
@@ -391,7 +395,7 @@ function PathPage() {
         </div>
       </form>
 
-      {submitError && <StateNotice type="error">{submitError}</StateNotice>}
+      <ApiErrorNotice details={submitErrorDetails} message={submitError} />
       {requestPath && <StateNotice>{requestPath}</StateNotice>}
 
       {responseData && (
