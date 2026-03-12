@@ -1,17 +1,30 @@
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
+
+function readEnvString(name, fallback = "") {
+  const value = process.env[name];
+  return typeof value === "string" ? value : fallback;
+}
+
+function readEnvInt(name, fallback) {
+  const parsed = Number.parseInt(readEnvString(name, ""), 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
+}
+
 const config = {
   database: {
-    host: process.env.DB_HOST || "localhost",
-    port: parseInt(process.env.DB_PORT || 5432),
-    user: process.env.DB_USER || "postgres",
-    password: process.env.DB_PASSWORD || "",
-    name: process.env.DB_NAME || "warhammer",
+    host: readEnvString("DB_HOST", "localhost"),
+    port: readEnvInt("DB_PORT", 5432),
+    user: readEnvString("DB_USER", "postgres"),
+    password: readEnvString("DB_PASSWORD", ""),
+    name: readEnvString("DB_NAME", "warhammer"),
   },
   server: {
-    port: parseInt(process.env.PORT || 3000),
+    port: readEnvInt("PORT", 3000),
   },
   apiV1RateLimit: {
-    maxRequests: parseInt(process.env.API_V1_RATE_LIMIT_MAX_REQUESTS || 120),
-    windowMs: parseInt(process.env.API_V1_RATE_LIMIT_WINDOW_MS || 60000),
+    maxRequests: readEnvInt("API_V1_RATE_LIMIT_MAX_REQUESTS", 120),
+    windowMs: readEnvInt("API_V1_RATE_LIMIT_WINDOW_MS", 60000),
   },
 };
 

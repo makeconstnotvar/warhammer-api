@@ -145,6 +145,24 @@ async function runCompareStatsApiTests(baseUrl) {
       },
     },
     {
+      name: "compare supports sparse fieldsets for response items",
+      run: async () => {
+        const { json, response } = await getJson(
+          baseUrl,
+          "/api/v1/compare/factions?ids=imperium-of-man,black-legion&fields[factions]=id,name,slug",
+        );
+
+        assert.equal(response.status, 200);
+        assert.equal(json.meta.resource, "factions");
+        assert.deepEqual(Object.keys(json.data.items[0]).sort(), [
+          "id",
+          "name",
+          "slug",
+        ]);
+        assert.equal(json.data.comparison.powerSpread, 5);
+      },
+    },
+    {
       name: "compare returns validation error when ids are missing",
       run: async () => {
         const { json, response } = await getJson(

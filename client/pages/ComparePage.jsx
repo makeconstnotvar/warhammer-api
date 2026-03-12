@@ -1,14 +1,27 @@
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { docsApi } from "../api/docsApi";
 import { ApiErrorNotice } from "../components/ApiErrorNotice";
+import { ApiOperationGuide } from "../components/ApiOperationGuide";
 import { JsonViewer } from "../components/JsonViewer";
 import { StateNotice } from "../components/StateNotice";
-import { extractError, extractErrorDetails } from "../hooks/useAsyncData";
+import {
+  extractError,
+  extractErrorDetails,
+  useAsyncData,
+} from "../hooks/useAsyncData";
+import {
+  getOpenApiParameterHint,
+  getOpenApiParameterMap,
+} from "../lib/openApi";
 import {
   buildQueryString,
   readQueryState,
   replaceQueryState,
 } from "../lib/query";
+import {
+  findWorkbenchScenarioByResource,
+  parseCompareWorkbenchScenarios,
+} from "../lib/workbenchScenarios";
 
 const comparePalette = [
   "#d1a35a",
@@ -19,63 +32,30 @@ const comparePalette = [
   "#d69255",
 ];
 
-const comparePresets = {
-  battlefields: {
+function buildCompareParams(resource, ids, include, fields) {
+  const params = {
+    ids,
+    include,
+  };
+
+  if (fields) {
+    params[`fields[${resource}]`] = fields;
+  }
+
+  return params;
+}
+
+function createCompareFallbackScenario(resource) {
+  return {
     description:
-      "Сравни боевые зоны по intensity, terrain, campaign ties и общим участникам.",
-    ids: "hesperon-void-line,kasr-partox-ruins",
-    include: "planet,starSystem,era,factions,characters,campaigns",
-    label: "Поля битв",
-  },
-  campaigns: {
-    description:
-      "Сравни campaign-level данные по time span, planets, factions, organizations и общим участникам.",
-    ids: "plague-wars,cadian-gate-counteroffensive",
-    include: "era,planets,factions,characters,organizations,battlefields",
-    label: "Кампании",
-  },
-  factions: {
-    description:
-      "Сравни большие доменные блоки по alignment, races, leaders, homeworld и power spread.",
-    ids: "imperium-of-man,black-legion",
-    include: "races,leaders,homeworld",
-    label: "Фракции",
-  },
-  characters: {
-    description:
-      "Сравни персонажей по alignment, faction, events, keywords и power level.",
-    ids: "roboute-guilliman,abaddon-the-despoiler",
-    include: "faction,race,homeworld,events",
-    label: "Персонажи",
-  },
-  organizations: {
-    description:
-      "Сравни институции по influence level, faction ties, leaders и homeworld.",
-    ids: "inquisition,adeptus-mechanicus",
-    include: "factions,leaders,homeworld,era",
-    label: "Организации",
-  },
-  relics: {
-    description: "Сравни реликвии по bearer, faction, origin и power spread.",
-    ids: "emperors-sword,talon-of-horus",
-    include: "faction,bearer,originPlanet,era,keywords",
-    label: "Реликвии",
-  },
-  "star-systems": {
-    description:
-      "Сравни системы по segmentum, числу миров и общему системному контексту.",
-    ids: "sol-system,macragge-system",
-    include: "planets,era",
-    label: "Системы",
-  },
-  units: {
-    description:
-      "Сравни squad-ы и specialist units по faction, weapons, keywords и power spread.",
-    ids: "terminator-squad,intercessor-squad",
-    include: "factions,weapons,keywords",
-    label: "Юниты",
-  },
-};
+      "Выбери compare-capable ресурс и передай как минимум два identifier-а через `ids`.",
+    fields: "",
+    ids: "",
+    include: "",
+    label: resource || "Ресурс",
+    resource,
+  };
+}
 
 const visualMetricDefinitions = {
   battlefields: [
@@ -219,43 +199,6 @@ const visualMetricDefinitions = {
       getter: (item) => countValues(item.keywordIds),
     },
   ],
-};
-
-const pathResourcePresets = {
-  battlefields: [
-    "campaigns",
-    "characters",
-    "factions",
-    "planets",
-    "star-systems",
-  ],
-  campaigns: [
-    "battlefields",
-    "characters",
-    "factions",
-    "organizations",
-    "planets",
-  ],
-  characters: [
-    "campaigns",
-    "events",
-    "factions",
-    "organizations",
-    "planets",
-    "relics",
-  ],
-  factions: [
-    "campaigns",
-    "characters",
-    "events",
-    "organizations",
-    "planets",
-    "units",
-  ],
-  organizations: ["campaigns", "characters", "factions", "planets", "relics"],
-  relics: ["campaigns", "characters", "factions", "planets"],
-  "star-systems": ["battlefields", "campaigns", "planets"],
-  units: ["factions", "keywords", "weapons"],
 };
 
 const sharedFieldDefinitions = {
@@ -485,7 +428,7 @@ function buildGraphLink(resource, item) {
   })}`;
 }
 
-function buildPathLink(resource, items) {
+function buildPathLink(resource, items, pathResources = []) {
   if (!Array.isArray(items) || items.length < 2) {
     return "";
   }
@@ -498,7 +441,7 @@ function buildPathLink(resource, items) {
     fromResource: resource,
     limitPerRelation: 6,
     maxDepth: 4,
-    resources: (pathResourcePresets[resource] || []).join(","),
+    resources: pathResources.join(","),
     toIdentifier: toItem.slug || toItem.id,
     toResource: resource,
   })}`;
@@ -715,8 +658,8 @@ function CompareBridgeSection({ items, pathLink, resource }) {
           <div className="resource-kicker">Path</div>
           <h3>Кратчайший путь между сравниваемыми сущностями</h3>
           <p className="muted-line">
-            Deeplink уже содержит `backlinks=true`, `maxDepth=4` и whitelist
-            ресурсов под текущий compare.
+            Deeplink уже содержит `backlinks=true`, `maxDepth=4` и server-owned
+            whitelist ресурсов, если он задан для текущего compare-сценария.
           </p>
           {pathLink ? (
             <a className="action-link" href={pathLink}>
@@ -752,31 +695,77 @@ function CompareBridgeSection({ items, pathLink, resource }) {
 function ComparePage() {
   const initialQuery = useMemo(() => {
     const queryState = readQueryState({
-      resource: "factions",
-      ids: comparePresets.factions.ids,
-      include: comparePresets.factions.include,
+      include: "",
+      resource: "",
     });
-    const safeResource = comparePresets[queryState.resource]
-      ? queryState.resource
-      : "factions";
-    const safePreset = comparePresets[safeResource];
+    const searchParams =
+      typeof window === "undefined"
+        ? new URLSearchParams()
+        : new URLSearchParams(window.location.search || "");
 
     return {
-      ids: queryState.ids || safePreset.ids,
-      include: queryState.include || safePreset.include,
-      resource: safeResource,
+      fields: queryState.resource
+        ? searchParams.get(`fields[${queryState.resource}]`) || ""
+        : "",
+      hasQuery: searchParams.toString().length > 0,
+      ids:
+        searchParams.get("ids") ||
+        searchParams.get("items") ||
+        searchParams.get("values") ||
+        "",
+      include: queryState.include,
+      resource: queryState.resource,
     };
   }, []);
+  const initialRunRef = useRef(false);
+  const specState = useAsyncData(() => docsApi.getOpenApiSpec(), []);
+  const workbenchState = useAsyncData(
+    () => docsApi.getWorkbenchScenarios(),
+    [],
+  );
+  const compareScenarios = useMemo(
+    () => parseCompareWorkbenchScenarios(workbenchState.data),
+    [workbenchState.data],
+  );
   const [resource, setResource] = useState(initialQuery.resource);
   const [ids, setIds] = useState(initialQuery.ids);
   const [include, setInclude] = useState(initialQuery.include);
+  const [fields, setFields] = useState(initialQuery.fields);
   const [requestPath, setRequestPath] = useState("");
   const [responseData, setResponseData] = useState(null);
   const [submitError, setSubmitError] = useState("");
   const [submitErrorDetails, setSubmitErrorDetails] = useState([]);
   const [loading, setLoading] = useState(false);
+  const docState = useAsyncData(
+    () =>
+      resource
+        ? docsApi.getResourceDoc(resource)
+        : Promise.resolve({ data: { fields: [] } }),
+    [resource],
+  );
 
-  const preset = comparePresets[resource];
+  const preset =
+    findWorkbenchScenarioByResource(compareScenarios, resource) ||
+    createCompareFallbackScenario(resource);
+  const compareParameterMap = useMemo(
+    () => getOpenApiParameterMap(specState.data, "/api/v1/compare/{resource}"),
+    [specState.data],
+  );
+  const fieldPlaceholder = useMemo(() => {
+    const resourceFields = docState.data?.data?.fields || [];
+
+    if (resourceFields.length) {
+      return resourceFields
+        .slice(0, 3)
+        .map((field) => field.name)
+        .join(",");
+    }
+
+    return getOpenApiParameterHint(compareParameterMap.fields, {
+      fallback: "id,name,slug",
+      nestedKey: resource,
+    });
+  }, [compareParameterMap.fields, docState.data, resource]);
   const responseItems = responseData?.data?.items || [];
   const comparison = responseData?.data?.comparison || {};
   const comparisonEntries = useMemo(
@@ -800,19 +789,29 @@ function ComparePage() {
     [comparison],
   );
   const pathLink = useMemo(
-    () => buildPathLink(resource, responseItems),
-    [resource, responseItems],
+    () => buildPathLink(resource, responseItems, preset.pathResources || []),
+    [preset.pathResources, resource, responseItems],
+  );
+  const requestPreviewPath = useMemo(
+    () =>
+      `/api/v1/compare/${resource}${buildQueryString(
+        buildCompareParams(resource, ids, include, fields),
+      )}`,
+    [fields, ids, include, resource],
   );
 
   async function runCompare(
     nextResource = resource,
     nextIds = ids,
     nextInclude = include,
+    nextFields = fields,
   ) {
-    const params = {
-      ids: nextIds,
-      include: nextInclude,
-    };
+    const params = buildCompareParams(
+      nextResource,
+      nextIds,
+      nextInclude,
+      nextFields,
+    );
 
     setLoading(true);
     setSubmitError("");
@@ -836,28 +835,73 @@ function ComparePage() {
         resource: nextResource,
         ids: nextIds,
         include: nextInclude,
+        [`fields[${nextResource}]`]: nextFields,
       });
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    runCompare(initialQuery.resource, initialQuery.ids, initialQuery.include);
-  }, []);
+    if (initialRunRef.current) {
+      return;
+    }
+
+    const hasInitialRequest = Boolean(
+      initialQuery.resource && initialQuery.ids,
+    );
+
+    if (!hasInitialRequest && !compareScenarios.length) {
+      if (workbenchState.loading || workbenchState.error) {
+        return;
+      }
+    }
+
+    const defaultScenario =
+      findWorkbenchScenarioByResource(compareScenarios, "factions") ||
+      compareScenarios[0] ||
+      null;
+    const nextResource =
+      initialQuery.resource || defaultScenario?.resource || "";
+    const resourceScenario =
+      findWorkbenchScenarioByResource(compareScenarios, nextResource) ||
+      defaultScenario;
+    const nextIds = initialQuery.ids || resourceScenario?.ids || "";
+    const nextInclude = initialQuery.include || resourceScenario?.include || "";
+    const nextFields = initialQuery.fields || "";
+
+    if (!nextResource || !nextIds) {
+      return;
+    }
+
+    initialRunRef.current = true;
+    setResource(nextResource);
+    setIds(nextIds);
+    setInclude(nextInclude);
+    setFields(nextFields);
+    runCompare(nextResource, nextIds, nextInclude, nextFields);
+  }, [
+    compareScenarios,
+    initialQuery,
+    workbenchState.error,
+    workbenchState.loading,
+  ]);
 
   function handleResourceChange(event) {
     const nextResource = event.target.value;
-    const nextPreset = comparePresets[nextResource];
+    const nextPreset =
+      findWorkbenchScenarioByResource(compareScenarios, nextResource) ||
+      createCompareFallbackScenario(nextResource);
 
     setResource(nextResource);
     setIds(nextPreset.ids);
     setInclude(nextPreset.include);
-    runCompare(nextResource, nextPreset.ids, nextPreset.include);
+    setFields("");
+    runCompare(nextResource, nextPreset.ids, nextPreset.include, "");
   }
 
   function handleSubmit(event) {
     event.preventDefault();
-    runCompare(resource, ids, include);
+    runCompare(resource, ids, include, fields);
   }
 
   return (
@@ -873,7 +917,9 @@ function ComparePage() {
           </p>
         </div>
         <div className="hero-side">
-          <div className="metric-chip">8 compare ресурсов</div>
+          <div className="metric-chip">
+            {compareScenarios.length || 8} compare ресурсов
+          </div>
           <div className="metric-chip">visual bars</div>
           <div className="metric-chip">shared overlaps</div>
           <div className="metric-chip">summary + included</div>
@@ -885,9 +931,9 @@ function ComparePage() {
           <label>
             <span>Ресурс</span>
             <select value={resource} onChange={handleResourceChange}>
-              {Object.entries(comparePresets).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value.label}
+              {compareScenarios.map((scenario) => (
+                <option key={scenario.resource} value={scenario.resource}>
+                  {scenario.label}
                 </option>
               ))}
             </select>
@@ -898,7 +944,9 @@ function ComparePage() {
             <input
               value={ids}
               onInput={(event) => setIds(event.target.value)}
-              placeholder={preset.ids}
+              placeholder={
+                preset.ids || getOpenApiParameterHint(compareParameterMap.ids)
+              }
             />
           </label>
 
@@ -907,19 +955,49 @@ function ComparePage() {
             <input
               value={include}
               onInput={(event) => setInclude(event.target.value)}
-              placeholder={preset.include}
+              placeholder={
+                preset.include ||
+                getOpenApiParameterHint(compareParameterMap.include)
+              }
+            />
+          </label>
+
+          <label className="label-wide">
+            <span>Fields (advanced)</span>
+            <input
+              value={fields}
+              onInput={(event) => setFields(event.target.value)}
+              placeholder={fieldPlaceholder}
             />
           </label>
         </div>
 
         <div className="compare-form-foot">
-          <p className="muted-line">{preset.description}</p>
+          <p className="muted-line">
+            {preset.description} `fields[...]` сужает payload compare endpoint-а
+            и полезен для SDK/demo-клиентов.
+          </p>
           <button type="submit" className="action-button" disabled={loading}>
             {loading ? "Сравнение выполняется..." : "Выполнить compare"}
           </button>
         </div>
       </form>
 
+      {specState.error && (
+        <StateNotice type="error">{specState.error}</StateNotice>
+      )}
+      {workbenchState.error && (
+        <StateNotice type="error">{workbenchState.error}</StateNotice>
+      )}
+      {specState.data && (
+        <ApiOperationGuide
+          description="Compare UI теперь опирается на OpenAPI-контракт и показывает live snippets для текущего compare request."
+          parameterOrder={["resource", "ids", "include", "fields"]}
+          path="/api/v1/compare/{resource}"
+          requestPath={requestPreviewPath}
+          spec={specState.data}
+        />
+      )}
       <ApiErrorNotice details={submitErrorDetails} message={submitError} />
       {requestPath && <StateNotice>{requestPath}</StateNotice>}
 

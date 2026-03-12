@@ -8,7 +8,7 @@
 ## Что уже есть
 
 - клиент-документация на Preact
-- `api/v1` с `overview`, `catalog/resources`, `query-guide`, `openapi.json`, `search`, `explore/graph`, `explore/path`, `examples/concurrency`
+- `api/v1` с `overview`, `catalog/resources`, `query-guide`, `openapi.json`, `search`, `explore/graph`, `explore/path`, `examples/concurrency`, `examples/workbench`
 - docs-клиент со страницами `Quick Start`, `Resources`, `Query Guide`, `OpenAPI`, `Changelog`, `Deprecation Policy`, `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Concurrency`
 - каноническая схема PostgreSQL для `eras`, `races`, `planets`, `factions`, `characters`, `events`
 - домен расширен ресурсами `organizations`, `relics`, `campaigns`, `star-systems`, `battlefields`, `fleets`, `warp-routes`
@@ -21,6 +21,14 @@
 - `Graph` теперь поддерживает selection узлов, фокус на связях и быстрый переход в `Compare`
 - `Graph` и `Path` поддерживают `resources=...`, чтобы ограничивать шумные типы узлов
 - `Path` показывает кратчайшую цепочку между двумя сущностями и объясняет traversal через relation graph
+- `Playground` теперь использует `/api/v1/openapi.json` для contract hints, поддерживает `page` и `fields[...]` и умеет применять resource sample queries прямо в форму
+- `Compare`, `Graph`, `Path` и `Playground` теперь показывают operation contract и live `curl` / `fetch` / `axios` snippets из текущего request path
+- `Compare`, `Graph` и `Path` теперь также читают placeholders и numeric option ranges из OpenAPI examples/defaults, а не держат их вручную в UI
+- `Compare`, `Graph` и `Path` теперь получают preset-сценарии из server docs endpoint-а `/api/v1/examples/workbench`, а не из локальных констант в клиенте
+- `Compare -> Path` bridge теперь тоже читает whitelist промежуточных ресурсов из server-owned workbench metadata
+- `Resources/:resource` теперь поддерживает `page`, `search`, `fields[...]`, list/detail contract hints и detail-aware error rendering
+- `Stats` и `Resources/:resource` теперь тоже показывают operation contract и live snippets через `/api/v1/openapi.json`
+- главная страница теперь показывает server-owned workbench scenarios как реальные docs deeplink cards
 
 ## Быстрый старт
 
@@ -70,11 +78,13 @@ npm run client-watch
 - `GET /api/v1/campaigns?include=era,planets,factions,characters,organizations`
 - `GET /api/v1/battlefields?include=planet,starSystem,era,factions,characters,campaigns`
 - `GET /api/v1/examples/concurrency`
+- `GET /api/v1/examples/workbench`
 - legacy `/api` now responds with `Deprecation`, `Sunset` and `Link` headers and points clients to `/deprecation-policy`
 - `GET /api/v1/random/character?include=faction,race,homeworld`
 - `GET /api/v1/random/unit?include=factions,weapons,keywords`
 - `GET /api/v1/openapi.json`
 - `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion&include=races,leaders,homeworld`
+- `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion&fields[factions]=id,name,slug`
 - `GET /api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus&include=factions,leaders,homeworld,era`
 - `GET /api/v1/compare/relics?ids=emperors-sword,talon-of-horus&include=faction,bearer,originPlanet,era,keywords`
 - `GET /api/v1/compare/units?ids=terminator-squad,intercessor-squad&include=factions,weapons,keywords`

@@ -34,6 +34,7 @@ const docsApi = {
   getChangelog: () => unwrap(client.get("/changelog")),
   getDeprecationPolicy: () => unwrap(client.get("/deprecation-policy")),
   getConcurrencyExample: () => unwrap(client.get("/examples/concurrency")),
+  getWorkbenchScenarios: () => unwrap(client.get("/examples/workbench")),
   getCompare: (resource, params = {}) =>
     unwrap(client.get(`/compare/${resource}`, { params })),
   getGraph: (params = {}) => unwrap(client.get("/explore/graph", { params })),

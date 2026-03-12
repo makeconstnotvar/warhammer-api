@@ -56,6 +56,10 @@ apiV1Routes.get("/examples/concurrency", (req, res) => {
   res.json(contentApi.getConcurrencyExample());
 });
 
+apiV1Routes.get("/examples/workbench", (req, res) => {
+  res.json(contentApi.getInteractiveScenarios());
+});
+
 apiV1Routes.get("/search", async (req, res, next) => {
   try {
     res.json(await contentApi.searchAll(req.query, req.baseUrl + req.path));

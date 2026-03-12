@@ -55,19 +55,70 @@ async function runDomainApiTests(baseUrl) {
         assert.equal(json.openapi, "3.1.0");
         assert.ok(json.paths["/api/v1/openapi.json"]);
         assert.ok(json.paths["/api/v1/compare/{resource}"]);
+        assert.ok(json.paths["/api/v1/examples/workbench"]);
         assert.ok(json.paths["/api/v1/{resource}"]);
         assert.ok(
           json.paths[
             "/api/v1/{resource}"
           ].get.parameters[0].schema.enum.includes("factions"),
         );
+        assert.equal(json.components.parameters.Page.example, 1);
+        assert.equal(
+          json.components.parameters.Sort.example,
+          "-powerLevel,name",
+        );
+        assert.equal(
+          json.components.parameters.Fields.example.characters,
+          "id,name,slug",
+        );
         assert.ok(json.components.schemas.FactionsResource);
         assert.ok(json.components.schemas.ValidationErrorResponse);
+        assert.ok(json.components.schemas.WorkbenchScenariosResponse);
         assert.equal(
           json.paths["/api/v1/explore/graph"].get.responses["429"].content[
             "application/json"
           ].example.error.code,
           "RATE_LIMIT_EXCEEDED",
+        );
+      },
+    },
+    {
+      name: "workbench scenarios endpoint groups compare graph and path presets",
+      run: async () => {
+        const { json, response } = await getJson(
+          baseUrl,
+          "/api/v1/examples/workbench",
+        );
+
+        assert.equal(response.status, 200);
+        assert.equal(json.meta.total, 23);
+        assert.equal(json.meta.groups.compare, 8);
+        assert.equal(json.meta.groups.graph, 9);
+        assert.equal(json.meta.groups.path, 6);
+        assert.ok(
+          json.data.compare.some(
+            (scenario) =>
+              scenario.id === "factions" &&
+              scenario.path.startsWith("/api/v1/compare/factions") &&
+              scenario.pathResources.includes("campaigns") &&
+              scenario.pathResources.includes("units"),
+          ),
+        );
+        assert.ok(
+          json.data.graph.some(
+            (scenario) =>
+              scenario.id === "characters" &&
+              scenario.path.includes(
+                "/api/v1/explore/graph?resource=characters",
+              ),
+          ),
+        );
+        assert.ok(
+          json.data.path.some(
+            (scenario) =>
+              scenario.id === "hero-to-relic" &&
+              scenario.path.includes("fromResource=characters"),
+          ),
         );
       },
     },
@@ -105,6 +156,16 @@ async function runDomainApiTests(baseUrl) {
         assert.equal(
           overviewJson.data.api.rateLimit.limit,
           config.apiV1RateLimit.maxRequests,
+        );
+        assert.equal(overviewJson.data.interactiveScenarios.compare.length, 8);
+        assert.equal(overviewJson.data.interactiveScenarios.graph.length, 9);
+        assert.equal(overviewJson.data.interactiveScenarios.path.length, 6);
+        assert.ok(
+          overviewJson.data.interactiveScenarios.compare.some(
+            (scenario) =>
+              scenario.id === "characters" &&
+              scenario.pathResources.includes("relics"),
+          ),
         );
         assert.equal(
           overviewJson.data.api.rateLimit.policy,

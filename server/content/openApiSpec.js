@@ -3,6 +3,7 @@ const {
   concurrencyExample,
   dataset,
   featuredQueries,
+  interactiveScenarios,
   gettingStartedSteps,
   queryGuide,
   resourceDefinitions,
@@ -63,6 +64,33 @@ const statsRoutes = [
     summary: "Aggregate star systems by segmentum.",
   },
 ];
+
+const parameterExamples = {
+  Backlinks: true,
+  CompareIds: "imperium-of-man,black-legion",
+  Depth: 2,
+  Fields: {
+    characters: "id,name,slug",
+  },
+  Filter: {
+    faction: "ultramarines",
+  },
+  FromIdentifier: "roboute-guilliman",
+  FromResource: "characters",
+  GraphIdentifier: "imperium-of-man",
+  GraphResource: "factions",
+  Include: "faction,race,events",
+  Limit: 12,
+  LimitPerRelation: 4,
+  MaxDepth: 4,
+  Page: 1,
+  ResourceWhitelist: "campaigns,characters",
+  SearchQuery: "guilliman",
+  SearchQueryOptional: "guilliman",
+  Sort: "-powerLevel,name",
+  ToIdentifier: "emperors-sword",
+  ToResource: "relics",
+};
 
 function buildSchemaName(resourceKey, suffix = "Resource") {
   return `${resourceKey
@@ -210,6 +238,7 @@ function buildOverviewExample(rateLimit) {
       },
       featuredQueries,
       gettingStartedSteps,
+      interactiveScenarios,
       resources: resourceOrder.map(buildResourceStatsExample),
     },
     meta: {
@@ -288,6 +317,25 @@ function buildConcurrencyExample() {
     data: concurrencyExample,
     meta: {
       basePath: apiInfo.basePath,
+    },
+  };
+}
+
+function buildWorkbenchScenariosExample() {
+  return {
+    data: interactiveScenarios,
+    meta: {
+      basePath: apiInfo.basePath,
+      groups: Object.fromEntries(
+        Object.entries(interactiveScenarios).map(([groupKey, scenarios]) => [
+          groupKey,
+          scenarios.length,
+        ]),
+      ),
+      total: Object.values(interactiveScenarios).reduce(
+        (sum, scenarios) => sum + scenarios.length,
+        0,
+      ),
     },
   };
 }
@@ -786,6 +834,24 @@ function buildPaths(rateLimit) {
         },
       },
     },
+    "/api/v1/examples/workbench": {
+      get: {
+        tags: ["Docs"],
+        summary: "Workbench scenarios for interactive docs",
+        operationId: "getWorkbenchScenarios",
+        responses: {
+          200: createJsonResponse(
+            "Structured compare, graph and path scenarios owned by the docs layer.",
+            {
+              $ref: "#/components/schemas/WorkbenchScenariosResponse",
+            },
+            buildWorkbenchScenariosExample(),
+            rateLimitHeaders,
+          ),
+          429: createRateLimitResponse(rateLimit),
+        },
+      },
+    },
     "/api/v1/search": {
       get: {
         tags: ["Search"],
@@ -1152,6 +1218,7 @@ function buildOpenApiSpec(rateLimit) {
           in: "query",
           required: false,
           description: "Page number for paginated list endpoints.",
+          example: parameterExamples.Page,
           schema: {
             type: "integer",
             minimum: 1,
@@ -1163,6 +1230,7 @@ function buildOpenApiSpec(rateLimit) {
           in: "query",
           required: false,
           description: "Page size or search result limit. Maximum 50.",
+          example: parameterExamples.Limit,
           schema: {
             type: "integer",
             minimum: 1,
@@ -1175,6 +1243,7 @@ function buildOpenApiSpec(rateLimit) {
           in: "query",
           required: true,
           description: "Search term used by the global search endpoint.",
+          example: parameterExamples.SearchQuery,
           schema: {
             type: "string",
           },
@@ -1184,6 +1253,7 @@ function buildOpenApiSpec(rateLimit) {
           in: "query",
           required: false,
           description: "Optional full-text search term for list endpoints.",
+          example: parameterExamples.SearchQueryOptional,
           schema: {
             type: "string",
           },
@@ -1194,6 +1264,7 @@ function buildOpenApiSpec(rateLimit) {
           required: false,
           description:
             "Comma-separated sort keys. Prefix with '-' for descending order.",
+          example: parameterExamples.Sort,
           schema: {
             type: "string",
           },
@@ -1204,6 +1275,7 @@ function buildOpenApiSpec(rateLimit) {
           required: false,
           description:
             "Comma-separated relation includes. Returned under the `included` block.",
+          example: parameterExamples.Include,
           schema: {
             type: "string",
           },
@@ -1216,6 +1288,7 @@ function buildOpenApiSpec(rateLimit) {
             "Sparse fieldset map encoded as a deep object, for example `fields[characters]=id,name,slug`.",
           style: "deepObject",
           explode: true,
+          example: parameterExamples.Fields,
           schema: {
             type: "object",
             additionalProperties: {
@@ -1231,6 +1304,7 @@ function buildOpenApiSpec(rateLimit) {
             "Structured filters encoded as a deep object, for example `filter[faction]=ultramarines`.",
           style: "deepObject",
           explode: true,
+          example: parameterExamples.Filter,
           schema: {
             type: "object",
             additionalProperties: {
@@ -1244,6 +1318,7 @@ function buildOpenApiSpec(rateLimit) {
           required: false,
           description:
             "Comma-separated whitelist of resource types used by search and traversal endpoints.",
+          example: parameterExamples.ResourceWhitelist,
           schema: {
             type: "string",
           },
@@ -1254,6 +1329,7 @@ function buildOpenApiSpec(rateLimit) {
           required: true,
           description:
             "Comma-separated identifiers to compare. Legacy aliases `items` and `values` are also accepted by the server.",
+          example: parameterExamples.CompareIds,
           schema: {
             type: "string",
           },
@@ -1263,6 +1339,7 @@ function buildOpenApiSpec(rateLimit) {
           in: "query",
           required: true,
           description: "Root resource type for the graph traversal.",
+          example: parameterExamples.GraphResource,
           schema: {
             type: "string",
             enum: resourceOrder,
@@ -1273,6 +1350,7 @@ function buildOpenApiSpec(rateLimit) {
           in: "query",
           required: true,
           description: "Root entity slug or id for graph traversal.",
+          example: parameterExamples.GraphIdentifier,
           schema: {
             type: "string",
           },
@@ -1282,6 +1360,7 @@ function buildOpenApiSpec(rateLimit) {
           in: "query",
           required: false,
           description: "Maximum depth for `explore/graph`.",
+          example: parameterExamples.Depth,
           schema: {
             type: "integer",
             minimum: 1,
@@ -1294,6 +1373,7 @@ function buildOpenApiSpec(rateLimit) {
           in: "query",
           required: false,
           description: "Maximum traversal depth for `explore/path`.",
+          example: parameterExamples.MaxDepth,
           schema: {
             type: "integer",
             minimum: 1,
@@ -1307,6 +1387,7 @@ function buildOpenApiSpec(rateLimit) {
           required: false,
           description:
             "Maximum number of neighbors to expand per relation edge.",
+          example: parameterExamples.LimitPerRelation,
           schema: {
             type: "integer",
             minimum: 1,
@@ -1320,6 +1401,7 @@ function buildOpenApiSpec(rateLimit) {
           required: false,
           description:
             "When true, reverse relations are also used during traversal.",
+          example: parameterExamples.Backlinks,
           schema: {
             type: "boolean",
             default: false,
@@ -1330,6 +1412,7 @@ function buildOpenApiSpec(rateLimit) {
           in: "query",
           required: true,
           description: "Starting resource type for `explore/path`.",
+          example: parameterExamples.FromResource,
           schema: {
             type: "string",
             enum: resourceOrder,
@@ -1340,6 +1423,7 @@ function buildOpenApiSpec(rateLimit) {
           in: "query",
           required: true,
           description: "Starting entity slug or id for `explore/path`.",
+          example: parameterExamples.FromIdentifier,
           schema: {
             type: "string",
           },
@@ -1349,6 +1433,7 @@ function buildOpenApiSpec(rateLimit) {
           in: "query",
           required: true,
           description: "Target resource type for `explore/path`.",
+          example: parameterExamples.ToResource,
           schema: {
             type: "string",
             enum: resourceOrder,
@@ -1359,6 +1444,7 @@ function buildOpenApiSpec(rateLimit) {
           in: "query",
           required: true,
           description: "Target entity slug or id for `explore/path`.",
+          example: parameterExamples.ToIdentifier,
           schema: {
             type: "string",
           },
@@ -1506,6 +1592,9 @@ function buildOpenApiSpec(rateLimit) {
         ),
         ConcurrencyExampleResponse: inferSchemaFromExample(
           buildConcurrencyExample(),
+        ),
+        WorkbenchScenariosResponse: inferSchemaFromExample(
+          buildWorkbenchScenariosExample(),
         ),
         SearchResponse: inferSchemaFromExample(buildSearchExample()),
         CompareResponse: {

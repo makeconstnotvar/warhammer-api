@@ -2,6 +2,7 @@ const {
   apiInfo,
   concurrencyExample,
   featuredQueries,
+  interactiveScenarios,
   gettingStartedSteps,
   queryGuide,
   resourceDefinitions,
@@ -1724,6 +1725,7 @@ async function getOverview() {
       },
       featuredQueries,
       gettingStartedSteps,
+      interactiveScenarios,
       resources: await Promise.all(
         resourceOrder.map((resourceKey) => buildResourceStats(resourceKey)),
       ),
@@ -1798,6 +1800,25 @@ function getConcurrencyExample() {
     data: concurrencyExample,
     meta: {
       basePath: apiInfo.basePath,
+    },
+  };
+}
+
+function getInteractiveScenarios() {
+  return {
+    data: interactiveScenarios,
+    meta: {
+      basePath: apiInfo.basePath,
+      groups: Object.fromEntries(
+        Object.entries(interactiveScenarios).map(([groupKey, scenarios]) => [
+          groupKey,
+          scenarios.length,
+        ]),
+      ),
+      total: Object.values(interactiveScenarios).reduce(
+        (sum, scenarios) => sum + scenarios.length,
+        0,
+      ),
     },
   };
 }
@@ -2035,6 +2056,7 @@ module.exports = {
   getExplorePath,
   getConcurrencyExample,
   getDeprecationPolicy,
+  getInteractiveScenarios,
   getOverview,
   getOpenApiSpec,
   getQueryGuide,

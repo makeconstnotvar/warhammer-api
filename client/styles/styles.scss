@@ -693,6 +693,24 @@ pre {
   gap: 18px;
 }
 
+.playground-contract-card h3 {
+  margin: 0;
+}
+
+.operation-guide-card h3 {
+  margin: 0;
+}
+
+.operation-guide-code-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.playground-option-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 .resource-preview-form {
   display: flex;
   flex-direction: column;

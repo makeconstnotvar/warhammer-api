@@ -1,82 +1,58 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { docsApi } from '../api/docsApi';
 import { ApiErrorNotice } from '../components/ApiErrorNotice';
+import { ApiOperationGuide } from '../components/ApiOperationGuide';
 import { JsonViewer } from '../components/JsonViewer';
 import { StateNotice } from '../components/StateNotice';
 import { extractError, extractErrorDetails, useAsyncData } from '../hooks/useAsyncData';
+import {
+  buildOpenApiIntegerOptions,
+  getOpenApiParameterHint,
+  getOpenApiParameterMap,
+} from '../lib/openApi';
 import { buildQueryString, parseCsvParam, readQueryState, replaceQueryState, toCsvParam } from '../lib/query';
+import {
+  findWorkbenchScenarioById,
+  parsePathWorkbenchScenarios,
+} from '../lib/workbenchScenarios';
 
-const pathPresets = {
-  campaignToHero: {
+function buildPathParams({
+  backlinks,
+  fromIdentifier,
+  fromResource,
+  limitPerRelation,
+  maxDepth,
+  resourceFilterKeys,
+  toIdentifier,
+  toResource,
+}) {
+  return {
+    backlinks,
+    fromIdentifier,
+    fromResource,
+    limitPerRelation,
+    maxDepth,
+    resources: toCsvParam(resourceFilterKeys),
+    toIdentifier,
+    toResource,
+  };
+}
+
+function createPathFallbackScenario() {
+  return {
     backlinks: 'true',
-    description: 'Кампания к герою через прямое участие в operation graph.',
-    fromIdentifier: 'plague-wars',
-    fromResource: 'campaigns',
-    label: 'Campaign -> Hero',
-    limitPerRelation: '6',
-    maxDepth: '3',
-    toIdentifier: 'roboute-guilliman',
-    toResource: 'characters',
-  },
-  campaignToBattlefield: {
-    backlinks: 'true',
-    description: 'Прямой путь от кампании к tactical battlefield через новую доменную связь.',
-    fromIdentifier: 'plague-wars',
-    fromResource: 'campaigns',
-    label: 'Campaign -> Battlefield',
-    limitPerRelation: '6',
-    maxDepth: '2',
-    resourceFilterKeys: ['battlefields'],
-    toIdentifier: 'hesperon-void-line',
-    toResource: 'battlefields',
-  },
-  fleetToBattlefield: {
-    backlinks: 'true',
-    description: 'Флот к полю битвы через campaign participation без шумных альтернативных веток.',
-    fromIdentifier: 'indomitus-battlegroup',
-    fromResource: 'fleets',
-    label: 'Fleet -> Battlefield',
-    limitPerRelation: '6',
-    maxDepth: '3',
-    resourceFilterKeys: ['campaigns', 'battlefields'],
-    toIdentifier: 'hesperon-void-line',
-    toResource: 'battlefields',
-  },
-  heroToRelic: {
-    backlinks: 'true',
-    description: 'Короткая цепочка от персонажа к его реликвии через backlink relations.',
-    fromIdentifier: 'roboute-guilliman',
-    fromResource: 'characters',
-    label: 'Hero -> Relic',
-    limitPerRelation: '6',
-    maxDepth: '3',
-    toIdentifier: 'emperors-sword',
-    toResource: 'relics',
-  },
-  relicToCampaign: {
-    backlinks: 'true',
-    description: 'Реликвия к кампании через bearer и campaign participants.',
-    fromIdentifier: 'emperors-sword',
-    fromResource: 'relics',
-    label: 'Relic -> Campaign',
+    description:
+      'Укажи start и target вручную, если хочешь собрать traversal вне готовых учебных сценариев.',
+    fromIdentifier: '',
+    fromResource: '',
+    label: 'Custom path',
     limitPerRelation: '6',
     maxDepth: '4',
-    toIdentifier: 'plague-wars',
-    toResource: 'campaigns',
-  },
-  routeToCampaign: {
-    backlinks: 'true',
-    description: 'Варп-маршрут к кампании через shared operational context.',
-    fromIdentifier: 'cadian-breach-lane',
-    fromResource: 'warp-routes',
-    label: 'Route -> Campaign',
-    limitPerRelation: '6',
-    maxDepth: '2',
-    resourceFilterKeys: ['campaigns', 'star-systems'],
-    toIdentifier: 'cadian-gate-counteroffensive',
-    toResource: 'campaigns',
-  },
-};
+    resourceFilterKeys: [],
+    toIdentifier: '',
+    toResource: '',
+  };
+}
 
 function buildGraphLink(node, resourceFilterKeys = []) {
   return `/explore/graph${buildQueryString({
@@ -143,7 +119,7 @@ function PathSequence({ pathEdges, pathNodes, resourceFilterKeys }) {
                 <div className="resource-kicker">{pathEdges[index].label || pathEdges[index].relation}</div>
                 <strong>{pathEdges[index].traversal === 'reverse' ? 'Обратный проход' : 'Прямой проход'}</strong>
                 <p className="muted-line">
-                  {pathEdges[index].from} -> {pathEdges[index].to}
+                  {pathEdges[index].from} -&gt; {pathEdges[index].to}
                 </p>
               </div>
             )}
@@ -156,28 +132,41 @@ function PathSequence({ pathEdges, pathNodes, resourceFilterKeys }) {
 
 function PathPage() {
   const initialQuery = useMemo(() => {
-    const preset = pathPresets.heroToRelic;
     const queryState = readQueryState({
-      backlinks: preset.backlinks,
-      fromIdentifier: preset.fromIdentifier,
-      fromResource: preset.fromResource,
-      limitPerRelation: preset.limitPerRelation,
-      maxDepth: preset.maxDepth,
+      backlinks: 'true',
+      fromIdentifier: '',
+      fromResource: '',
+      limitPerRelation: '',
+      maxDepth: '',
       resources: '',
-      toIdentifier: preset.toIdentifier,
-      toResource: preset.toResource,
+      toIdentifier: '',
+      toResource: '',
     });
 
-    return queryState;
+    return {
+      ...queryState,
+      hasQuery:
+        (typeof window !== 'undefined' &&
+          new URLSearchParams(window.location.search || '').toString().length >
+            0) ||
+        false,
+    };
   }, []);
+  const initialRunRef = useRef(false);
   const catalogState = useAsyncData(() => docsApi.getCatalog(), []);
+  const specState = useAsyncData(() => docsApi.getOpenApiSpec(), []);
+  const workbenchState = useAsyncData(() => docsApi.getWorkbenchScenarios(), []);
+  const pathScenarios = useMemo(
+    () => parsePathWorkbenchScenarios(workbenchState.data),
+    [workbenchState.data],
+  );
   const resources = catalogState.data?.data || [];
   const [fromResource, setFromResource] = useState(initialQuery.fromResource);
   const [fromIdentifier, setFromIdentifier] = useState(initialQuery.fromIdentifier);
   const [toResource, setToResource] = useState(initialQuery.toResource);
   const [toIdentifier, setToIdentifier] = useState(initialQuery.toIdentifier);
-  const [maxDepth, setMaxDepth] = useState(initialQuery.maxDepth);
-  const [limitPerRelation, setLimitPerRelation] = useState(initialQuery.limitPerRelation);
+  const [maxDepth, setMaxDepth] = useState(initialQuery.maxDepth || '4');
+  const [limitPerRelation, setLimitPerRelation] = useState(initialQuery.limitPerRelation || '6');
   const [backlinks, setBacklinks] = useState(initialQuery.backlinks);
   const [resourceFilterKeys, setResourceFilterKeys] = useState(parseCsvParam(initialQuery.resources));
   const [requestPath, setRequestPath] = useState('');
@@ -185,21 +174,58 @@ function PathPage() {
   const [submitError, setSubmitError] = useState('');
   const [submitErrorDetails, setSubmitErrorDetails] = useState([]);
   const [loading, setLoading] = useState(false);
+  const pathParameterMap = useMemo(
+    () => getOpenApiParameterMap(specState.data, '/api/v1/explore/path'),
+    [specState.data],
+  );
+  const maxDepthOptions = useMemo(
+    () => buildOpenApiIntegerOptions(pathParameterMap.maxDepth, [2, 3, 4, 5, 6]),
+    [pathParameterMap.maxDepth],
+  );
+  const limitPerRelationOptions = useMemo(
+    () => buildOpenApiIntegerOptions(pathParameterMap.limitPerRelation, [4, 6, 8]),
+    [pathParameterMap.limitPerRelation],
+  );
 
   const path = responseData?.data?.path;
   const meta = responseData?.meta;
+  const requestPreviewPath = useMemo(
+    () =>
+      `/api/v1/explore/path${buildQueryString(
+        buildPathParams({
+          backlinks,
+          fromIdentifier,
+          fromResource,
+          limitPerRelation,
+          maxDepth,
+          resourceFilterKeys,
+          toIdentifier,
+          toResource,
+        }),
+      )}`,
+    [
+      backlinks,
+      fromIdentifier,
+      fromResource,
+      limitPerRelation,
+      maxDepth,
+      resourceFilterKeys,
+      toIdentifier,
+      toResource,
+    ],
+  );
 
   async function runPath(nextState = {}) {
-    const params = {
+    const params = buildPathParams({
       backlinks: nextState.backlinks ?? backlinks,
       fromIdentifier: nextState.fromIdentifier ?? fromIdentifier,
       fromResource: nextState.fromResource ?? fromResource,
       limitPerRelation: nextState.limitPerRelation ?? limitPerRelation,
       maxDepth: nextState.maxDepth ?? maxDepth,
-      resources: toCsvParam(nextState.resourceFilterKeys ?? resourceFilterKeys),
+      resourceFilterKeys: nextState.resourceFilterKeys ?? resourceFilterKeys,
       toIdentifier: nextState.toIdentifier ?? toIdentifier,
       toResource: nextState.toResource ?? toResource,
-    };
+    });
 
     setLoading(true);
     setSubmitError('');
@@ -221,8 +247,56 @@ function PathPage() {
   }
 
   useEffect(() => {
-    runPath(initialQuery);
-  }, []);
+    if (initialRunRef.current) {
+      return;
+    }
+
+    const hasInitialRequest = Boolean(
+      initialQuery.fromResource &&
+        initialQuery.fromIdentifier &&
+        initialQuery.toResource &&
+        initialQuery.toIdentifier,
+    );
+
+    if (!hasInitialRequest && !pathScenarios.length) {
+      if (workbenchState.loading || workbenchState.error) {
+        return;
+      }
+    }
+
+    const defaultScenario =
+      findWorkbenchScenarioById(pathScenarios, 'hero-to-relic') ||
+      pathScenarios[0] ||
+      createPathFallbackScenario();
+    const nextState = {
+      backlinks: initialQuery.backlinks || defaultScenario.backlinks,
+      fromIdentifier: initialQuery.fromIdentifier || defaultScenario.fromIdentifier,
+      fromResource: initialQuery.fromResource || defaultScenario.fromResource,
+      limitPerRelation:
+        initialQuery.limitPerRelation || defaultScenario.limitPerRelation,
+      maxDepth: initialQuery.maxDepth || defaultScenario.maxDepth,
+      resourceFilterKeys: initialQuery.resources
+        ? parseCsvParam(initialQuery.resources)
+        : defaultScenario.resourceFilterKeys || [],
+      toIdentifier: initialQuery.toIdentifier || defaultScenario.toIdentifier,
+      toResource: initialQuery.toResource || defaultScenario.toResource,
+    };
+
+    if (!nextState.fromResource || !nextState.fromIdentifier || !nextState.toResource || !nextState.toIdentifier) {
+      return;
+    }
+
+    initialRunRef.current = true;
+    setBacklinks(nextState.backlinks);
+    setFromIdentifier(nextState.fromIdentifier);
+    setFromResource(nextState.fromResource);
+    setLimitPerRelation(nextState.limitPerRelation);
+    setMaxDepth(nextState.maxDepth);
+    setResourceFilterKeys(nextState.resourceFilterKeys);
+    setToIdentifier(nextState.toIdentifier);
+    setToResource(nextState.toResource);
+    runPath(nextState);
+  }, [initialQuery, pathScenarios, workbenchState.error, workbenchState.loading]);
 
   function applyPreset(preset) {
     setBacklinks(preset.backlinks);
@@ -268,6 +342,7 @@ function PathPage() {
           <div className="metric-chip">shortest path</div>
           <div className="metric-chip">deep-link ready</div>
           <div className="metric-chip">graph-compatible</div>
+          <div className="metric-chip">{pathScenarios.length || 6} preset scenarios</div>
         </div>
       </section>
 
@@ -279,9 +354,9 @@ function PathPage() {
           </div>
         </div>
         <div className="control-chip-bar">
-          {Object.values(pathPresets).map((preset) => (
+          {pathScenarios.map((preset) => (
             <button
-              key={`${preset.fromResource}-${preset.toResource}-${preset.label}`}
+              key={preset.id}
               type="button"
               className="control-chip"
               onClick={() => applyPreset(preset)}
@@ -305,7 +380,11 @@ function PathPage() {
 
           <label>
             <span>From identifier</span>
-            <input value={fromIdentifier} onInput={(event) => setFromIdentifier(event.target.value)} placeholder="roboute-guilliman" />
+            <input
+              value={fromIdentifier}
+              onInput={(event) => setFromIdentifier(event.target.value)}
+              placeholder={getOpenApiParameterHint(pathParameterMap.fromIdentifier)}
+            />
           </label>
 
           <label>
@@ -319,26 +398,28 @@ function PathPage() {
 
           <label>
             <span>To identifier</span>
-            <input value={toIdentifier} onInput={(event) => setToIdentifier(event.target.value)} placeholder="emperors-sword" />
+            <input
+              value={toIdentifier}
+              onInput={(event) => setToIdentifier(event.target.value)}
+              placeholder={getOpenApiParameterHint(pathParameterMap.toIdentifier)}
+            />
           </label>
 
           <label>
             <span>Max depth</span>
             <select value={maxDepth} onChange={(event) => setMaxDepth(event.target.value)}>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
+              {maxDepthOptions.map((value) => (
+                <option key={value} value={value}>{value}</option>
+              ))}
             </select>
           </label>
 
           <label>
             <span>Limit per relation</span>
             <select value={limitPerRelation} onChange={(event) => setLimitPerRelation(event.target.value)}>
-              <option value="4">4</option>
-              <option value="6">6</option>
-              <option value="8">8</option>
+              {limitPerRelationOptions.map((value) => (
+                <option key={value} value={value}>{value}</option>
+              ))}
             </select>
           </label>
 
@@ -395,6 +476,26 @@ function PathPage() {
         </div>
       </form>
 
+      {specState.error && <StateNotice type="error">{specState.error}</StateNotice>}
+      {workbenchState.error && <StateNotice type="error">{workbenchState.error}</StateNotice>}
+      {specState.data && (
+        <ApiOperationGuide
+          description="Path explorer берет параметры и live snippets из OpenAPI, поэтому contract и UI не расходятся."
+          parameterOrder={[
+            'fromResource',
+            'fromIdentifier',
+            'toResource',
+            'toIdentifier',
+            'maxDepth',
+            'limitPerRelation',
+            'backlinks',
+            'resources',
+          ]}
+          path="/api/v1/explore/path"
+          requestPath={requestPreviewPath}
+          spec={specState.data}
+        />
+      )}
       <ApiErrorNotice details={submitErrorDetails} message={submitError} />
       {requestPath && <StateNotice>{requestPath}</StateNotice>}
 
@@ -408,7 +509,7 @@ function PathPage() {
             </article>
             <article className="stat-card">
               <div className="resource-kicker">Path length</div>
-              <div className="stat-value">{path.length}</div>
+              <div className="stat-value">{path?.edges?.length || 0}</div>
               <p className="muted-line">Количество relation steps.</p>
             </article>
             <article className="stat-card">

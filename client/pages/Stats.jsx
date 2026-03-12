@@ -1,47 +1,55 @@
-import { useMemo, useState } from 'preact/hooks';
-import { docsApi } from '../api/docsApi';
-import { JsonViewer } from '../components/JsonViewer';
-import { StateNotice } from '../components/StateNotice';
-import { useAsyncData } from '../hooks/useAsyncData';
-import { readQueryState, replaceQueryState } from '../lib/query';
+import { useMemo, useState } from "preact/hooks";
+import { docsApi } from "../api/docsApi";
+import { ApiOperationGuide } from "../components/ApiOperationGuide";
+import { JsonViewer } from "../components/JsonViewer";
+import { StateNotice } from "../components/StateNotice";
+import { useAsyncData } from "../hooks/useAsyncData";
+import { readQueryState, replaceQueryState } from "../lib/query";
 
-const chartPalette = ['#d1a35a', '#78a7c5', '#9f70c7', '#c37070', '#7fb381', '#d69255'];
+const chartPalette = [
+  "#d1a35a",
+  "#78a7c5",
+  "#9f70c7",
+  "#c37070",
+  "#7fb381",
+  "#d69255",
+];
 const accentColorMap = {
-  battlefields: '#cf7f55',
-  campaigns: '#7fb381',
-  events: '#c37070',
-  factions: '#9f70c7',
-  relics: '#d69255',
-  'star-systems': '#5aa7a0',
-  units: '#d1a35a',
-  weapons: '#78a7c5',
+  battlefields: "#cf7f55",
+  campaigns: "#7fb381",
+  events: "#c37070",
+  factions: "#9f70c7",
+  relics: "#d69255",
+  "star-systems": "#5aa7a0",
+  units: "#d1a35a",
+  weapons: "#78a7c5",
 };
 
 const statsFocusOptions = [
-  { id: 'all', label: 'Все секции' },
-  { id: 'battlefields-by-faction', label: 'Поля битв' },
-  { id: 'campaigns-by-organization', label: 'Кампании' },
-  { id: 'star-systems-by-segmentum', label: 'Системы' },
-  { id: 'relics-by-faction', label: 'Реликвии' },
-  { id: 'units-by-faction', label: 'Юниты' },
-  { id: 'weapons-by-keyword', label: 'Оружие' },
-  { id: 'factions-by-race', label: 'Фракции' },
-  { id: 'events-by-era', label: 'События' },
+  { id: "all", label: "Все секции" },
+  { id: "battlefields-by-faction", label: "Поля битв" },
+  { id: "campaigns-by-organization", label: "Кампании" },
+  { id: "star-systems-by-segmentum", label: "Системы" },
+  { id: "relics-by-faction", label: "Реликвии" },
+  { id: "units-by-faction", label: "Юниты" },
+  { id: "weapons-by-keyword", label: "Оружие" },
+  { id: "factions-by-race", label: "Фракции" },
+  { id: "events-by-era", label: "События" },
 ];
 
 function formatNumber(value) {
-  return typeof value === 'number' ? value.toLocaleString('ru-RU') : '0';
+  return typeof value === "number" ? value.toLocaleString("ru-RU") : "0";
 }
 
-function sumRows(rows, key = 'count') {
+function sumRows(rows, key = "count") {
   return rows.reduce((sum, row) => sum + (row[key] || 0), 0);
 }
 
-function getPositiveRows(rows, key = 'count') {
+function getPositiveRows(rows, key = "count") {
   return rows.filter((row) => (row[key] || 0) > 0);
 }
 
-function getTopRow(rows, key = 'count') {
+function getTopRow(rows, key = "count") {
   return rows.reduce((best, row) => {
     if (!best || (row[key] || 0) > (best[key] || 0)) {
       return row;
@@ -53,7 +61,7 @@ function getTopRow(rows, key = 'count') {
 
 function aggregateBy(rows, key) {
   const grouped = rows.reduce((result, row) => {
-    const groupKey = row[key] || 'unknown';
+    const groupKey = row[key] || "unknown";
     result[groupKey] = result[groupKey] || {
       count: 0,
       id: groupKey,
@@ -63,12 +71,15 @@ function aggregateBy(rows, key) {
     return result;
   }, {});
 
-  return Object.values(grouped).sort((left, right) => right.count - left.count || left.label.localeCompare(right.label));
+  return Object.values(grouped).sort(
+    (left, right) =>
+      right.count - left.count || left.label.localeCompare(right.label),
+  );
 }
 
 function shortenLabel(value, maxLength = 18) {
   if (!value) {
-    return '';
+    return "";
   }
 
   return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
@@ -84,7 +95,16 @@ function StatHeroCard({ label, value, detail }) {
   );
 }
 
-function RankingList({ rows, metricKey, metricLabel, secondaryLabel, endpoint, title, description, accent = 'count' }) {
+function RankingList({
+  rows,
+  metricKey,
+  metricLabel,
+  secondaryLabel,
+  endpoint,
+  title,
+  description,
+  accent = "count",
+}) {
   const maxMetric = Math.max(...rows.map((row) => row[metricKey] || 0), 1);
 
   return (
@@ -94,7 +114,9 @@ function RankingList({ rows, metricKey, metricLabel, secondaryLabel, endpoint, t
           <h2>{title}</h2>
           <p className="muted-line">{description}</p>
         </div>
-        <a className="query-link" href={endpoint}>{endpoint}</a>
+        <a className="query-link" href={endpoint}>
+          {endpoint}
+        </a>
       </div>
 
       <div className="stats-list">
@@ -108,17 +130,27 @@ function RankingList({ rows, metricKey, metricLabel, secondaryLabel, endpoint, t
                 <div className="stats-row-titleline">
                   <h3>{row.name}</h3>
                   {row.category && <span className="tag">{row.category}</span>}
-                  {row.yearLabel && <span className="tag">{row.yearLabel}</span>}
+                  {row.yearLabel && (
+                    <span className="tag">{row.yearLabel}</span>
+                  )}
                 </div>
                 <div className="stats-track">
-                  <div className={`stats-fill stats-fill-${accent}`} style={{ width }} />
+                  <div
+                    className={`stats-fill stats-fill-${accent}`}
+                    style={{ width }}
+                  />
                 </div>
               </div>
 
               <div className="stats-row-metrics">
-                <span className="metric-chip">{metricLabel}: {formatNumber(metricValue)}</span>
+                <span className="metric-chip">
+                  {metricLabel}: {formatNumber(metricValue)}
+                </span>
                 {secondaryLabel && row[secondaryLabel.key] !== undefined && (
-                  <span className="tag">{secondaryLabel.label}: {formatNumber(row[secondaryLabel.key])}</span>
+                  <span className="tag">
+                    {secondaryLabel.label}:{" "}
+                    {formatNumber(row[secondaryLabel.key])}
+                  </span>
                 )}
               </div>
             </article>
@@ -137,14 +169,23 @@ function ChartCard({ children, endpoint, title, description }) {
           <h2>{title}</h2>
           <p className="muted-line">{description}</p>
         </div>
-        <a className="query-link" href={endpoint}>{endpoint}</a>
+        <a className="query-link" href={endpoint}>
+          {endpoint}
+        </a>
       </div>
       {children}
     </section>
   );
 }
 
-function ColumnChart({ rows, title, description, endpoint, accent, subLabelRenderer }) {
+function ColumnChart({
+  rows,
+  title,
+  description,
+  endpoint,
+  accent,
+  subLabelRenderer,
+}) {
   const positiveRows = getPositiveRows(rows).slice(0, 6);
   const width = 520;
   const height = 260;
@@ -152,13 +193,20 @@ function ColumnChart({ rows, title, description, endpoint, accent, subLabelRende
   const paddingTop = 20;
   const paddingBottom = 68;
   const chartHeight = height - paddingTop - paddingBottom;
-  const columnWidth = positiveRows.length ? (width - paddingX * 2) / positiveRows.length : width;
+  const columnWidth = positiveRows.length
+    ? (width - paddingX * 2) / positiveRows.length
+    : width;
   const maxValue = Math.max(...positiveRows.map((row) => row.count), 1);
   const color = accentColorMap[accent] || chartPalette[0];
 
   return (
     <ChartCard title={title} description={description} endpoint={endpoint}>
-      <svg className="chart-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title}>
+      <svg
+        className="chart-svg"
+        viewBox={`0 0 ${width} ${height}`}
+        role="img"
+        aria-label={title}
+      >
         {[0.25, 0.5, 0.75, 1].map((step) => {
           const y = paddingTop + chartHeight - chartHeight * step;
           return (
@@ -183,7 +231,12 @@ function ColumnChart({ rows, title, description, endpoint, accent, subLabelRende
 
           return (
             <g key={row.slug}>
-              <text className="chart-value-label" x={labelX} y={Math.max(y - 8, 14)} textAnchor="middle">
+              <text
+                className="chart-value-label"
+                x={labelX}
+                y={Math.max(y - 8, 14)}
+                textAnchor="middle"
+              >
                 {value}
               </text>
               <rect
@@ -195,11 +248,21 @@ function ColumnChart({ rows, title, description, endpoint, accent, subLabelRende
                 fill={color}
                 fillOpacity="0.88"
               />
-              <text className="chart-axis-label" x={labelX} y={height - 28} textAnchor="middle">
+              <text
+                className="chart-axis-label"
+                x={labelX}
+                y={height - 28}
+                textAnchor="middle"
+              >
                 {shortenLabel(row.name, 14)}
               </text>
               {subLabelRenderer && (
-                <text className="chart-axis-subtle" x={labelX} y={height - 12} textAnchor="middle">
+                <text
+                  className="chart-axis-subtle"
+                  x={labelX}
+                  y={height - 12}
+                  textAnchor="middle"
+                >
                   {subLabelRenderer(row)}
                 </text>
               )}
@@ -217,7 +280,7 @@ function DonutChart({ rows, title, description, endpoint }) {
   const remainder = positiveRows.slice(5);
   const total = sumRows(positiveRows);
   const displayRows = remainder.length
-    ? [...topRows, { count: sumRows(remainder), name: 'Other', slug: 'other' }]
+    ? [...topRows, { count: sumRows(remainder), name: "Other", slug: "other" }]
     : topRows;
   const radius = 66;
   const circumference = 2 * Math.PI * radius;
@@ -226,10 +289,17 @@ function DonutChart({ rows, title, description, endpoint }) {
   return (
     <ChartCard title={title} description={description} endpoint={endpoint}>
       <div className="chart-split">
-        <svg className="chart-svg chart-svg-donut" viewBox="0 0 220 220" role="img" aria-label={title}>
+        <svg
+          className="chart-svg chart-svg-donut"
+          viewBox="0 0 220 220"
+          role="img"
+          aria-label={title}
+        >
           <circle cx="110" cy="110" r={radius} className="chart-ring-base" />
           {displayRows.map((row, index) => {
-            const segmentLength = total ? (row.count / total) * circumference : 0;
+            const segmentLength = total
+              ? (row.count / total) * circumference
+              : 0;
             const dashArray = `${segmentLength} ${circumference - segmentLength}`;
             const dashOffset = -offset;
             offset += segmentLength;
@@ -250,10 +320,20 @@ function DonutChart({ rows, title, description, endpoint }) {
               />
             );
           })}
-          <text x="110" y="102" textAnchor="middle" className="chart-donut-total">
+          <text
+            x="110"
+            y="102"
+            textAnchor="middle"
+            className="chart-donut-total"
+          >
             {formatNumber(total)}
           </text>
-          <text x="110" y="124" textAnchor="middle" className="chart-donut-label">
+          <text
+            x="110"
+            y="124"
+            textAnchor="middle"
+            className="chart-donut-label"
+          >
             total
           </text>
         </svg>
@@ -261,9 +341,16 @@ function DonutChart({ rows, title, description, endpoint }) {
         <div className="chart-legend">
           {displayRows.map((row, index) => (
             <div key={row.slug || row.name} className="chart-legend-item">
-              <span className="chart-swatch" style={{ backgroundColor: chartPalette[index % chartPalette.length] }} />
+              <span
+                className="chart-swatch"
+                style={{
+                  backgroundColor: chartPalette[index % chartPalette.length],
+                }}
+              />
               <span>{row.name}</span>
-              <span className="chart-legend-value">{formatNumber(row.count)}</span>
+              <span className="chart-legend-value">
+                {formatNumber(row.count)}
+              </span>
             </div>
           ))}
         </div>
@@ -273,7 +360,9 @@ function DonutChart({ rows, title, description, endpoint }) {
 }
 
 function TimelineChart({ rows, title, description, endpoint }) {
-  const orderedRows = [...rows].sort((left, right) => (left.yearOrder || 0) - (right.yearOrder || 0));
+  const orderedRows = [...rows].sort(
+    (left, right) => (left.yearOrder || 0) - (right.yearOrder || 0),
+  );
   const width = 520;
   const height = 260;
   const paddingLeft = 28;
@@ -284,16 +373,28 @@ function TimelineChart({ rows, title, description, endpoint }) {
   const chartHeight = height - paddingTop - paddingBottom;
   const maxValue = Math.max(...orderedRows.map((row) => row.count || 0), 1);
   const points = orderedRows.map((row, index) => {
-    const x = paddingLeft + (orderedRows.length === 1 ? chartWidth / 2 : (chartWidth / (orderedRows.length - 1)) * index);
-    const y = paddingTop + chartHeight - ((row.count || 0) / maxValue) * chartHeight;
+    const x =
+      paddingLeft +
+      (orderedRows.length === 1
+        ? chartWidth / 2
+        : (chartWidth / (orderedRows.length - 1)) * index);
+    const y =
+      paddingTop + chartHeight - ((row.count || 0) / maxValue) * chartHeight;
     return { ...row, x, y };
   });
-  const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+  const path = points
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+    .join(" ");
   const areaPath = `${path} L ${points[points.length - 1]?.x || paddingLeft} ${paddingTop + chartHeight} L ${points[0]?.x || paddingLeft} ${paddingTop + chartHeight} Z`;
 
   return (
     <ChartCard title={title} description={description} endpoint={endpoint}>
-      <svg className="chart-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title}>
+      <svg
+        className="chart-svg"
+        viewBox={`0 0 ${width} ${height}`}
+        role="img"
+        aria-label={title}
+      >
         {[0.25, 0.5, 0.75, 1].map((step) => {
           const y = paddingTop + chartHeight - chartHeight * step;
           return (
@@ -308,19 +409,43 @@ function TimelineChart({ rows, title, description, endpoint }) {
           );
         })}
 
-        {points.length > 1 && <path d={areaPath} className="chart-area chart-area-events" />}
-        {points.length > 1 && <path d={path} className="chart-line chart-line-events" />}
+        {points.length > 1 && (
+          <path d={areaPath} className="chart-area chart-area-events" />
+        )}
+        {points.length > 1 && (
+          <path d={path} className="chart-line chart-line-events" />
+        )}
 
         {points.map((point) => (
           <g key={point.slug}>
-            <circle cx={point.x} cy={point.y} r="6" className="chart-point chart-point-events" />
-            <text className="chart-value-label" x={point.x} y={Math.max(point.y - 10, 16)} textAnchor="middle">
+            <circle
+              cx={point.x}
+              cy={point.y}
+              r="6"
+              className="chart-point chart-point-events"
+            />
+            <text
+              className="chart-value-label"
+              x={point.x}
+              y={Math.max(point.y - 10, 16)}
+              textAnchor="middle"
+            >
               {point.count}
             </text>
-            <text className="chart-axis-label" x={point.x} y={height - 28} textAnchor="middle">
+            <text
+              className="chart-axis-label"
+              x={point.x}
+              y={height - 28}
+              textAnchor="middle"
+            >
               {point.yearLabel || point.name}
             </text>
-            <text className="chart-axis-subtle" x={point.x} y={height - 12} textAnchor="middle">
+            <text
+              className="chart-axis-subtle"
+              x={point.x}
+              y={height - 12}
+              textAnchor="middle"
+            >
               {shortenLabel(point.name, 16)}
             </text>
           </g>
@@ -331,7 +456,7 @@ function TimelineChart({ rows, title, description, endpoint }) {
 }
 
 function StackedCategoryChart({ rows, title, description, endpoint }) {
-  const categoryRows = aggregateBy(getPositiveRows(rows), 'category');
+  const categoryRows = aggregateBy(getPositiveRows(rows), "category");
   const total = sumRows(categoryRows);
 
   return (
@@ -353,9 +478,16 @@ function StackedCategoryChart({ rows, title, description, endpoint }) {
       <div className="chart-legend">
         {categoryRows.map((row, index) => (
           <div key={row.id} className="chart-legend-item">
-            <span className="chart-swatch" style={{ backgroundColor: chartPalette[index % chartPalette.length] }} />
+            <span
+              className="chart-swatch"
+              style={{
+                backgroundColor: chartPalette[index % chartPalette.length],
+              }}
+            />
             <span>{row.label}</span>
-            <span className="chart-legend-value">{formatNumber(row.count)}</span>
+            <span className="chart-legend-value">
+              {formatNumber(row.count)}
+            </span>
           </div>
         ))}
       </div>
@@ -364,40 +496,46 @@ function StackedCategoryChart({ rows, title, description, endpoint }) {
 }
 
 function Stats() {
-  const initialQuery = useMemo(() => readQueryState({ focus: 'all' }), []);
+  const initialQuery = useMemo(() => readQueryState({ focus: "all" }), []);
   const [focus, setFocus] = useState(
-    statsFocusOptions.some((option) => option.id === initialQuery.focus) ? initialQuery.focus : 'all'
+    statsFocusOptions.some((option) => option.id === initialQuery.focus)
+      ? initialQuery.focus
+      : "all",
   );
+  const specState = useAsyncData(() => docsApi.getOpenApiSpec(), []);
   const { data, loading, error } = useAsyncData(
-    () => Promise.all([
-      docsApi.getStats('battlefields', 'by-faction'),
-      docsApi.getStats('campaigns', 'by-organization'),
-      docsApi.getStats('factions', 'by-race'),
-      docsApi.getStats('events', 'by-era'),
-      docsApi.getStats('relics', 'by-faction'),
-      docsApi.getStats('star-systems', 'by-segmentum'),
-      docsApi.getStats('units', 'by-faction'),
-      docsApi.getStats('weapons', 'by-keyword'),
-    ]).then(([
-      battlefieldsByFaction,
-      campaignsByOrganization,
-      factionsByRace,
-      eventsByEra,
-      relicsByFaction,
-      starSystemsBySegmentum,
-      unitsByFaction,
-      weaponsByKeyword,
-    ]) => ({
-      battlefieldsByFaction,
-      campaignsByOrganization,
-      eventsByEra,
-      factionsByRace,
-      relicsByFaction,
-      starSystemsBySegmentum,
-      unitsByFaction,
-      weaponsByKeyword,
-    })),
-    []
+    () =>
+      Promise.all([
+        docsApi.getStats("battlefields", "by-faction"),
+        docsApi.getStats("campaigns", "by-organization"),
+        docsApi.getStats("factions", "by-race"),
+        docsApi.getStats("events", "by-era"),
+        docsApi.getStats("relics", "by-faction"),
+        docsApi.getStats("star-systems", "by-segmentum"),
+        docsApi.getStats("units", "by-faction"),
+        docsApi.getStats("weapons", "by-keyword"),
+      ]).then(
+        ([
+          battlefieldsByFaction,
+          campaignsByOrganization,
+          factionsByRace,
+          eventsByEra,
+          relicsByFaction,
+          starSystemsBySegmentum,
+          unitsByFaction,
+          weaponsByKeyword,
+        ]) => ({
+          battlefieldsByFaction,
+          campaignsByOrganization,
+          eventsByEra,
+          factionsByRace,
+          relicsByFaction,
+          starSystemsBySegmentum,
+          unitsByFaction,
+          weaponsByKeyword,
+        }),
+      ),
+    [],
   );
 
   if (loading) {
@@ -409,130 +547,147 @@ function Stats() {
   }
 
   const stats = data;
-  const topBattlefieldFaction = getTopRow(stats.battlefieldsByFaction.data, 'count');
-  const topCampaignOrganization = getTopRow(stats.campaignsByOrganization.data, 'count');
-  const topSegmentum = getTopRow(stats.starSystemsBySegmentum.data, 'count');
-  const topFactionUnit = getTopRow(stats.unitsByFaction.data, 'count');
-  const topWeaponKeyword = getTopRow(stats.weaponsByKeyword.data, 'count');
-  const busiestEra = getTopRow(stats.eventsByEra.data, 'count');
-  const dominantRace = getTopRow(stats.factionsByRace.data, 'count');
-  const topRelicFaction = getTopRow(stats.relicsByFaction.data, 'count');
+  const topBattlefieldFaction = getTopRow(
+    stats.battlefieldsByFaction.data,
+    "count",
+  );
+  const topCampaignOrganization = getTopRow(
+    stats.campaignsByOrganization.data,
+    "count",
+  );
+  const topSegmentum = getTopRow(stats.starSystemsBySegmentum.data, "count");
+  const topFactionUnit = getTopRow(stats.unitsByFaction.data, "count");
+  const topWeaponKeyword = getTopRow(stats.weaponsByKeyword.data, "count");
+  const busiestEra = getTopRow(stats.eventsByEra.data, "count");
+  const dominantRace = getTopRow(stats.factionsByRace.data, "count");
+  const topRelicFaction = getTopRow(stats.relicsByFaction.data, "count");
   const payloadByFocus = {
-    'battlefields-by-faction': stats.battlefieldsByFaction,
-    'campaigns-by-organization': stats.campaignsByOrganization,
-    'events-by-era': stats.eventsByEra,
-    'factions-by-race': stats.factionsByRace,
-    'relics-by-faction': stats.relicsByFaction,
-    'star-systems-by-segmentum': stats.starSystemsBySegmentum,
-    'units-by-faction': stats.unitsByFaction,
-    'weapons-by-keyword': stats.weaponsByKeyword,
+    "battlefields-by-faction": stats.battlefieldsByFaction,
+    "campaigns-by-organization": stats.campaignsByOrganization,
+    "events-by-era": stats.eventsByEra,
+    "factions-by-race": stats.factionsByRace,
+    "relics-by-faction": stats.relicsByFaction,
+    "star-systems-by-segmentum": stats.starSystemsBySegmentum,
+    "units-by-faction": stats.unitsByFaction,
+    "weapons-by-keyword": stats.weaponsByKeyword,
   };
   const sections = [
     {
-      id: 'battlefields-by-faction',
+      id: "battlefields-by-faction",
       rows: stats.battlefieldsByFaction.data,
-      metricKey: 'count',
-      metricLabel: 'battlefields',
-      secondaryLabel: { key: 'averageIntensityLevel', label: 'avg intensity' },
-      endpoint: '/api/v1/stats/battlefields/by-faction',
-      title: 'Поля битв по фракциям',
-      description: 'Показывает, какие фракции уже сильнее всего представлены в tactical warzone-слое.',
-      accent: 'battlefields',
+      metricKey: "count",
+      metricLabel: "battlefields",
+      secondaryLabel: { key: "averageIntensityLevel", label: "avg intensity" },
+      endpoint: "/api/v1/stats/battlefields/by-faction",
+      title: "Поля битв по фракциям",
+      description:
+        "Показывает, какие фракции уже сильнее всего представлены в tactical warzone-слое.",
+      accent: "battlefields",
     },
     {
-      id: 'campaigns-by-organization',
+      id: "campaigns-by-organization",
       rows: stats.campaignsByOrganization.data,
-      metricKey: 'count',
-      metricLabel: 'campaigns',
-      secondaryLabel: { key: 'activeCount', label: 'active' },
-      endpoint: '/api/v1/stats/campaigns/by-organization',
-      title: 'Кампании по организациям',
-      description: 'Показывает, какие институты чаще всего участвуют в campaign-level данных.',
-      accent: 'campaigns',
+      metricKey: "count",
+      metricLabel: "campaigns",
+      secondaryLabel: { key: "activeCount", label: "active" },
+      endpoint: "/api/v1/stats/campaigns/by-organization",
+      title: "Кампании по организациям",
+      description:
+        "Показывает, какие институты чаще всего участвуют в campaign-level данных.",
+      accent: "campaigns",
     },
     {
-      id: 'relics-by-faction',
+      id: "relics-by-faction",
       rows: stats.relicsByFaction.data,
-      metricKey: 'count',
-      metricLabel: 'relics',
-      secondaryLabel: { key: 'averagePowerLevel', label: 'avg power' },
-      endpoint: '/api/v1/stats/relics/by-faction',
-      title: 'Реликвии по фракциям',
-      description: 'Полезно для inventory dashboards, faction identity UI и power-driven sorting.',
-      accent: 'relics',
+      metricKey: "count",
+      metricLabel: "relics",
+      secondaryLabel: { key: "averagePowerLevel", label: "avg power" },
+      endpoint: "/api/v1/stats/relics/by-faction",
+      title: "Реликвии по фракциям",
+      description:
+        "Полезно для inventory dashboards, faction identity UI и power-driven sorting.",
+      accent: "relics",
     },
     {
-      id: 'star-systems-by-segmentum',
+      id: "star-systems-by-segmentum",
       rows: stats.starSystemsBySegmentum.data,
-      metricKey: 'count',
-      metricLabel: 'systems',
-      secondaryLabel: { key: 'planetCount', label: 'planets' },
-      endpoint: '/api/v1/stats/star-systems/by-segmentum',
-      title: 'Звездные системы по segmentum',
-      description: 'Системный обзор полезен для maps, route planners и sector-level dashboards.',
-      accent: 'star-systems',
+      metricKey: "count",
+      metricLabel: "systems",
+      secondaryLabel: { key: "planetCount", label: "planets" },
+      endpoint: "/api/v1/stats/star-systems/by-segmentum",
+      title: "Звездные системы по segmentum",
+      description:
+        "Системный обзор полезен для maps, route planners и sector-level dashboards.",
+      accent: "star-systems",
     },
     {
-      id: 'units-by-faction',
+      id: "units-by-faction",
       rows: stats.unitsByFaction.data,
-      metricKey: 'count',
-      metricLabel: 'units',
-      secondaryLabel: { key: 'averagePowerLevel', label: 'avg power' },
-      endpoint: '/api/v1/stats/units/by-faction',
-      title: 'Юниты по фракциям',
-      description: 'Подходит для faction dashboards, army builder overview и compare screen.',
-      accent: 'units',
+      metricKey: "count",
+      metricLabel: "units",
+      secondaryLabel: { key: "averagePowerLevel", label: "avg power" },
+      endpoint: "/api/v1/stats/units/by-faction",
+      title: "Юниты по фракциям",
+      description:
+        "Подходит для faction dashboards, army builder overview и compare screen.",
+      accent: "units",
     },
     {
-      id: 'weapons-by-keyword',
+      id: "weapons-by-keyword",
       rows: stats.weaponsByKeyword.data,
-      metricKey: 'count',
-      metricLabel: 'weapons',
-      secondaryLabel: { key: 'averagePowerLevel', label: 'avg power' },
-      endpoint: '/api/v1/stats/weapons/by-keyword',
-      title: 'Оружие по keywords',
-      description: 'Полезно для legend panel, filter analytics и exploration UI по weapon profiles.',
-      accent: 'weapons',
+      metricKey: "count",
+      metricLabel: "weapons",
+      secondaryLabel: { key: "averagePowerLevel", label: "avg power" },
+      endpoint: "/api/v1/stats/weapons/by-keyword",
+      title: "Оружие по keywords",
+      description:
+        "Полезно для legend panel, filter analytics и exploration UI по weapon profiles.",
+      accent: "weapons",
     },
     {
-      id: 'factions-by-race',
+      id: "factions-by-race",
       rows: stats.factionsByRace.data,
-      metricKey: 'count',
-      metricLabel: 'factions',
-      endpoint: '/api/v1/stats/factions/by-race',
-      title: 'Фракции по расам',
-      description: 'Готовый источник для pie chart, stacked summary и доменных обзорных карточек.',
-      accent: 'factions',
+      metricKey: "count",
+      metricLabel: "factions",
+      endpoint: "/api/v1/stats/factions/by-race",
+      title: "Фракции по расам",
+      description:
+        "Готовый источник для pie chart, stacked summary и доменных обзорных карточек.",
+      accent: "factions",
     },
     {
-      id: 'events-by-era',
+      id: "events-by-era",
       rows: stats.eventsByEra.data,
-      metricKey: 'count',
-      metricLabel: 'events',
-      endpoint: '/api/v1/stats/events/by-era',
-      title: 'События по эрам',
-      description: 'Подходит для timeline overview, era compare и activity heatmap.',
-      accent: 'events',
+      metricKey: "count",
+      metricLabel: "events",
+      endpoint: "/api/v1/stats/events/by-era",
+      title: "События по эрам",
+      description:
+        "Подходит для timeline overview, era compare и activity heatmap.",
+      accent: "events",
     },
   ];
-  const visibleSections = focus === 'all'
-    ? sections
-    : sections.filter((section) => section.id === focus);
-  const visiblePayload = focus === 'all'
-    ? {
-      battlefieldsByFaction: stats.battlefieldsByFaction,
-      campaignsByOrganization: stats.campaignsByOrganization,
-      factionsByRace: stats.factionsByRace,
-      eventsByEra: stats.eventsByEra,
-      relicsByFaction: stats.relicsByFaction,
-      starSystemsBySegmentum: stats.starSystemsBySegmentum,
-      unitsByFaction: stats.unitsByFaction,
-      weaponsByKeyword: stats.weaponsByKeyword,
-    }
-    : { [focus]: payloadByFocus[focus] };
+  const visibleSections =
+    focus === "all"
+      ? sections
+      : sections.filter((section) => section.id === focus);
+  const activeGuideSection = visibleSections[0] || sections[0];
+  const visiblePayload =
+    focus === "all"
+      ? {
+          battlefieldsByFaction: stats.battlefieldsByFaction,
+          campaignsByOrganization: stats.campaignsByOrganization,
+          factionsByRace: stats.factionsByRace,
+          eventsByEra: stats.eventsByEra,
+          relicsByFaction: stats.relicsByFaction,
+          starSystemsBySegmentum: stats.starSystemsBySegmentum,
+          unitsByFaction: stats.unitsByFaction,
+          weaponsByKeyword: stats.weaponsByKeyword,
+        }
+      : { [focus]: payloadByFocus[focus] };
   const chartSections = [
     {
-      id: 'battlefields-by-faction',
+      id: "battlefields-by-faction",
       node: (
         <ColumnChart
           rows={stats.battlefieldsByFaction.data}
@@ -540,12 +695,14 @@ function Stats() {
           description="Показывает, какие factions уже дают наибольшую tactical глубину для warzone screens."
           endpoint="/api/v1/stats/battlefields/by-faction"
           accent="battlefields"
-          subLabelRenderer={(row) => `avg ${formatNumber(row.averageIntensityLevel)}`}
+          subLabelRenderer={(row) =>
+            `avg ${formatNumber(row.averageIntensityLevel)}`
+          }
         />
       ),
     },
     {
-      id: 'campaigns-by-organization',
+      id: "campaigns-by-organization",
       node: (
         <ColumnChart
           rows={stats.campaignsByOrganization.data}
@@ -558,7 +715,7 @@ function Stats() {
       ),
     },
     {
-      id: 'relics-by-faction',
+      id: "relics-by-faction",
       node: (
         <ColumnChart
           rows={stats.relicsByFaction.data}
@@ -566,12 +723,14 @@ function Stats() {
           description="Хорошо показывает, где inventory и hero-item модели уже дают богатые экспериментальные сценарии."
           endpoint="/api/v1/stats/relics/by-faction"
           accent="relics"
-          subLabelRenderer={(row) => `avg ${formatNumber(row.averagePowerLevel)}`}
+          subLabelRenderer={(row) =>
+            `avg ${formatNumber(row.averagePowerLevel)}`
+          }
         />
       ),
     },
     {
-      id: 'star-systems-by-segmentum',
+      id: "star-systems-by-segmentum",
       node: (
         <DonutChart
           rows={stats.starSystemsBySegmentum.data}
@@ -582,7 +741,7 @@ function Stats() {
       ),
     },
     {
-      id: 'units-by-faction',
+      id: "units-by-faction",
       node: (
         <ColumnChart
           rows={stats.unitsByFaction.data}
@@ -590,12 +749,14 @@ function Stats() {
           description="Колонки быстро показывают, где модель данных уже достаточно плотная для army builder и squad browser."
           endpoint="/api/v1/stats/units/by-faction"
           accent="units"
-          subLabelRenderer={(row) => `avg ${formatNumber(row.averagePowerLevel)}`}
+          subLabelRenderer={(row) =>
+            `avg ${formatNumber(row.averagePowerLevel)}`
+          }
         />
       ),
     },
     {
-      id: 'weapons-by-keyword',
+      id: "weapons-by-keyword",
       node: (
         <StackedCategoryChart
           rows={stats.weaponsByKeyword.data}
@@ -606,7 +767,7 @@ function Stats() {
       ),
     },
     {
-      id: 'factions-by-race',
+      id: "factions-by-race",
       node: (
         <DonutChart
           rows={stats.factionsByRace.data}
@@ -617,7 +778,7 @@ function Stats() {
       ),
     },
     {
-      id: 'events-by-era',
+      id: "events-by-era",
       node: (
         <TimelineChart
           rows={stats.eventsByEra.data}
@@ -628,14 +789,15 @@ function Stats() {
       ),
     },
   ];
-  const visibleCharts = focus === 'all'
-    ? chartSections
-    : chartSections.filter((section) => section.id === focus);
+  const visibleCharts =
+    focus === "all"
+      ? chartSections
+      : chartSections.filter((section) => section.id === focus);
 
   function handleFocusChange(nextFocus) {
     setFocus(nextFocus);
     replaceQueryState({
-      focus: nextFocus === 'all' ? '' : nextFocus,
+      focus: nextFocus === "all" ? "" : nextFocus,
     });
   }
 
@@ -646,12 +808,17 @@ function Stats() {
           <div className="section-eyebrow">Stats</div>
           <h1>Живые analytics-сценарии поверх API</h1>
           <p className="page-lead">
-            Эта страница показывает, что API уже умеет отдавать агрегаты для dashboard, compare UI,
-            charts и exploration-экранов без клиентской пост-обработки.
+            Эта страница показывает, что API уже умеет отдавать агрегаты для
+            dashboard, compare UI, charts и exploration-экранов без клиентской
+            пост-обработки.
           </p>
           <div className="hero-actions">
-            <a className="action-link" href="/playground">Проверить в Playground</a>
-            <a className="action-link action-link-muted" href="/query-guide">Открыть Query Guide</a>
+            <a className="action-link" href="/playground">
+              Проверить в Playground
+            </a>
+            <a className="action-link action-link-muted" href="/query-guide">
+              Открыть Query Guide
+            </a>
           </div>
         </div>
         <div className="hero-side">
@@ -666,7 +833,8 @@ function Stats() {
           <div>
             <h2>Фокус страницы</h2>
             <p className="muted-line">
-              Сохраняется в query params. Можно открыть нужную analytics-секцию сразу по ссылке.
+              Сохраняется в query params. Можно открыть нужную analytics-секцию
+              сразу по ссылке.
             </p>
           </div>
         </div>
@@ -675,7 +843,7 @@ function Stats() {
             <button
               key={option.id}
               type="button"
-              className={`control-chip${focus === option.id ? ' control-chip-active' : ''}`}
+              className={`control-chip${focus === option.id ? " control-chip-active" : ""}`}
               onClick={() => handleFocusChange(option.id)}
             >
               {option.label}
@@ -684,46 +852,95 @@ function Stats() {
         </div>
       </section>
 
+      {specState.error && (
+        <StateNotice type="error">{specState.error}</StateNotice>
+      )}
+      {specState.data && activeGuideSection && (
+        <ApiOperationGuide
+          description={`Контракт для stats endpoint-а сейчас привязан к секции "${activeGuideSection.title}".`}
+          parameterOrder={["resource", "groupKey"]}
+          path="/api/v1/stats/{resource}/{groupKey}"
+          requestPath={activeGuideSection.endpoint}
+          spec={specState.data}
+        />
+      )}
+
       <section className="stats-hero-grid">
         <StatHeroCard
           label="Топ battlefield faction"
-          value={topBattlefieldFaction ? topBattlefieldFaction.name : 'Нет данных'}
-          detail={topBattlefieldFaction ? `${topBattlefieldFaction.count} полей битв, avg intensity ${topBattlefieldFaction.averageIntensityLevel}` : 'Пока нет записей'}
+          value={
+            topBattlefieldFaction ? topBattlefieldFaction.name : "Нет данных"
+          }
+          detail={
+            topBattlefieldFaction
+              ? `${topBattlefieldFaction.count} полей битв, avg intensity ${topBattlefieldFaction.averageIntensityLevel}`
+              : "Пока нет записей"
+          }
         />
         <StatHeroCard
           label="Топ organization"
-          value={topCampaignOrganization ? topCampaignOrganization.name : 'Нет данных'}
-          detail={topCampaignOrganization ? `${topCampaignOrganization.count} campaigns, active ${topCampaignOrganization.activeCount}` : 'Пока нет записей'}
+          value={
+            topCampaignOrganization
+              ? topCampaignOrganization.name
+              : "Нет данных"
+          }
+          detail={
+            topCampaignOrganization
+              ? `${topCampaignOrganization.count} campaigns, active ${topCampaignOrganization.activeCount}`
+              : "Пока нет записей"
+          }
         />
         <StatHeroCard
           label="Топ segmentum"
-          value={topSegmentum ? topSegmentum.name : 'Нет данных'}
-          detail={topSegmentum ? `${topSegmentum.count} systems, ${topSegmentum.planetCount} planets` : 'Пока нет записей'}
+          value={topSegmentum ? topSegmentum.name : "Нет данных"}
+          detail={
+            topSegmentum
+              ? `${topSegmentum.count} systems, ${topSegmentum.planetCount} planets`
+              : "Пока нет записей"
+          }
         />
         <StatHeroCard
           label="Топ relic faction"
-          value={topRelicFaction ? topRelicFaction.name : 'Нет данных'}
-          detail={topRelicFaction ? `${topRelicFaction.count} relics, avg power ${topRelicFaction.averagePowerLevel}` : 'Пока нет записей'}
+          value={topRelicFaction ? topRelicFaction.name : "Нет данных"}
+          detail={
+            topRelicFaction
+              ? `${topRelicFaction.count} relics, avg power ${topRelicFaction.averagePowerLevel}`
+              : "Пока нет записей"
+          }
         />
         <StatHeroCard
           label="Топ по юнитам"
-          value={topFactionUnit ? topFactionUnit.name : 'Нет данных'}
-          detail={topFactionUnit ? `${topFactionUnit.count} юнитов, avg power ${topFactionUnit.averagePowerLevel}` : 'Пока нет записей'}
+          value={topFactionUnit ? topFactionUnit.name : "Нет данных"}
+          detail={
+            topFactionUnit
+              ? `${topFactionUnit.count} юнитов, avg power ${topFactionUnit.averagePowerLevel}`
+              : "Пока нет записей"
+          }
         />
         <StatHeroCard
           label="Топ keyword оружия"
-          value={topWeaponKeyword ? topWeaponKeyword.name : 'Нет данных'}
-          detail={topWeaponKeyword ? `${topWeaponKeyword.count} weapon matches, avg power ${topWeaponKeyword.averagePowerLevel}` : 'Пока нет записей'}
+          value={topWeaponKeyword ? topWeaponKeyword.name : "Нет данных"}
+          detail={
+            topWeaponKeyword
+              ? `${topWeaponKeyword.count} weapon matches, avg power ${topWeaponKeyword.averagePowerLevel}`
+              : "Пока нет записей"
+          }
         />
         <StatHeroCard
           label="Самая насыщенная эра"
-          value={busiestEra ? busiestEra.name : 'Нет данных'}
-          detail={busiestEra ? `${busiestEra.count} событий, ${busiestEra.yearLabel}` : 'Пока нет записей'}
+          value={busiestEra ? busiestEra.name : "Нет данных"}
+          detail={
+            busiestEra
+              ? `${busiestEra.count} событий, ${busiestEra.yearLabel}`
+              : "Пока нет записей"
+          }
         />
         <StatHeroCard
           label="Самая широкая раса"
-          value={dominantRace ? dominantRace.name : 'Нет данных'}
-          detail={dominantRace ? `${dominantRace.count} фракций` : 'Пока нет записей'}
+          value={dominantRace ? dominantRace.name : "Нет данных"}
+          detail={
+            dominantRace ? `${dominantRace.count} фракций` : "Пока нет записей"
+          }
         />
       </section>
 

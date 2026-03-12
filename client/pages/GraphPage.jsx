@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { docsApi } from "../api/docsApi";
 import { ApiErrorNotice } from "../components/ApiErrorNotice";
+import { ApiOperationGuide } from "../components/ApiOperationGuide";
 import { JsonViewer } from "../components/JsonViewer";
 import { StateNotice } from "../components/StateNotice";
 import {
@@ -9,95 +10,22 @@ import {
   useAsyncData,
 } from "../hooks/useAsyncData";
 import {
+  buildOpenApiIntegerOptions,
+  getOpenApiParameterHint,
+  getOpenApiParameterMap,
+} from "../lib/openApi";
+import {
   buildQueryString,
   parseCsvParam,
   readQueryState,
   replaceQueryState,
   toCsvParam,
 } from "../lib/query";
-
-const graphPresets = {
-  battlefields: {
-    depth: "2",
-    description:
-      "Тактический graph: campaign, planet, star-system, factions и key characters вокруг одного battlefield.",
-    identifier: "hesperon-void-line",
-    label: "Поле битвы",
-    limitPerRelation: "4",
-    resource: "battlefields",
-  },
-  campaigns: {
-    depth: "2",
-    description:
-      "Кампания как точка входа в planets, factions, characters и organizations.",
-    identifier: "plague-wars",
-    label: "Кампания",
-    limitPerRelation: "4",
-    resource: "campaigns",
-  },
-  fleets: {
-    depth: "2",
-    description:
-      "Флот связывает commanders, campaigns, factions и текущую star-system в одном naval graph.",
-    identifier: "indomitus-battlegroup",
-    label: "Флот",
-    limitPerRelation: "4",
-    resource: "fleets",
-  },
-  characters: {
-    depth: "2",
-    description:
-      "Классический detail graph: faction, race, homeworld, events и обратные связи через relics и organizations.",
-    identifier: "roboute-guilliman",
-    label: "Персонаж",
-    limitPerRelation: "4",
-    resource: "characters",
-  },
-  factions: {
-    depth: "2",
-    description:
-      "Фракция быстро показывает characters, units, events, organizations и parent-child связи.",
-    identifier: "imperium-of-man",
-    label: "Фракция",
-    limitPerRelation: "4",
-    resource: "factions",
-  },
-  "star-systems": {
-    depth: "2",
-    description:
-      "Системный graph связывает worlds, campaigns и battlefields в одном космическом контексте.",
-    identifier: "sol-system",
-    label: "Система",
-    limitPerRelation: "4",
-    resource: "star-systems",
-  },
-  organizations: {
-    depth: "2",
-    description: "Institutional graph для dashboards и political-map UI.",
-    identifier: "inquisition",
-    label: "Организация",
-    limitPerRelation: "4",
-    resource: "organizations",
-  },
-  relics: {
-    depth: "2",
-    description:
-      "Легкий inventory graph: bearer, faction, planet origin и ключевые relation tags.",
-    identifier: "emperors-sword",
-    label: "Реликвия",
-    limitPerRelation: "4",
-    resource: "relics",
-  },
-  "warp-routes": {
-    depth: "2",
-    description:
-      "Route graph показывает обе системы, campaigns и factions, завязанные на конкретный варп-маршрут.",
-    identifier: "sol-macragge-corridor",
-    label: "Варп-маршрут",
-    limitPerRelation: "4",
-    resource: "warp-routes",
-  },
-};
+import {
+  findWorkbenchScenarioByResource,
+  parseCompareWorkbenchScenarios,
+  parseGraphWorkbenchScenarios,
+} from "../lib/workbenchScenarios";
 
 const graphResourceColors = {
   battlefields: "#cf7f55",
@@ -118,29 +46,36 @@ const graphResourceColors = {
   weapons: "#78a7c5",
 };
 
-const compareIncludePresets = {
-  battlefields: "planet,starSystem,era,factions,characters,campaigns",
-  campaigns: "era,planets,factions,characters,organizations,battlefields",
-  characters: "faction,race,homeworld,events",
-  factions: "races,leaders,homeworld",
-  organizations: "factions,leaders,homeworld,era",
-  relics: "faction,bearer,originPlanet,era,keywords",
-  "star-systems": "planets,era",
-  units: "factions,weapons,keywords",
-};
+function buildGraphParams({
+  backlinks,
+  depth,
+  identifier,
+  limitPerRelation,
+  resource,
+  resourceFilterKeys,
+}) {
+  return {
+    backlinks,
+    depth,
+    identifier,
+    limitPerRelation,
+    resources: toCsvParam(resourceFilterKeys),
+    resource,
+  };
+}
 
-function getPresetForResource(resource) {
-  return (
-    graphPresets[resource] || {
-      depth: "2",
-      description:
-        "Укажи slug или id вручную и собери graph для любого поддерживаемого ресурса.",
-      identifier: "",
-      label: resource,
-      limitPerRelation: "4",
-      resource,
-    }
-  );
+function createGraphFallbackScenario(resource, label = resource) {
+  return {
+    backlinks: "true",
+    depth: "2",
+    description:
+      "Укажи slug или id вручную и собери graph для любого поддерживаемого ресурса.",
+    identifier: "",
+    label: label || resource || "Ресурс",
+    limitPerRelation: "4",
+    resource,
+    resourceFilterKeys: [],
+  };
 }
 
 function normalizeSelectedKeys(rawValue) {
@@ -195,23 +130,24 @@ function buildDetailLink(node) {
   })}`;
 }
 
-function buildCompareLink(nodes) {
+function buildCompareLink(nodes, compareScenarios) {
   if (nodes.length !== 2) {
     return "";
   }
 
   const [left, right] = nodes;
+  const compareScenario = findWorkbenchScenarioByResource(
+    compareScenarios,
+    left.resource,
+  );
 
-  if (
-    left.resource !== right.resource ||
-    !compareIncludePresets[left.resource]
-  ) {
+  if (left.resource !== right.resource || !compareScenario?.include) {
     return "";
   }
 
   return `/compare${buildQueryString({
     ids: `${getNodeIdentifier(left)},${getNodeIdentifier(right)}`,
-    include: compareIncludePresets[left.resource],
+    include: compareScenario.include,
     resource: left.resource,
   })}`;
 }
@@ -691,36 +627,52 @@ function GraphPage() {
   const initialQuery = useMemo(() => {
     const queryState = readQueryState({
       backlinks: "true",
-      depth: graphPresets.characters.depth,
+      depth: "",
       focus: "",
-      identifier: graphPresets.characters.identifier,
-      limitPerRelation: graphPresets.characters.limitPerRelation,
-      resource: graphPresets.characters.resource,
+      identifier: "",
+      limitPerRelation: "",
+      resource: "",
       resources: "",
       selected: "",
     });
-    const safePreset = getPresetForResource(queryState.resource);
 
     return {
       backlinks: queryState.backlinks,
-      depth: queryState.depth || safePreset.depth,
+      depth: queryState.depth,
       focus: queryState.focus,
-      identifier: queryState.identifier || safePreset.identifier,
-      limitPerRelation:
-        queryState.limitPerRelation || safePreset.limitPerRelation,
+      hasQuery:
+        (typeof window !== "undefined" &&
+          new URLSearchParams(window.location.search || "").toString().length >
+            0) ||
+        false,
+      identifier: queryState.identifier,
+      limitPerRelation: queryState.limitPerRelation,
       resource: queryState.resource,
       resourceFilterKeys: parseCsvParam(queryState.resources),
       selected: normalizeSelectedKeys(queryState.selected),
     };
   }, []);
-
+  const initialRunRef = useRef(false);
   const catalogState = useAsyncData(() => docsApi.getCatalog(), []);
+  const specState = useAsyncData(() => docsApi.getOpenApiSpec(), []);
+  const workbenchState = useAsyncData(
+    () => docsApi.getWorkbenchScenarios(),
+    [],
+  );
+  const graphScenarios = useMemo(
+    () => parseGraphWorkbenchScenarios(workbenchState.data),
+    [workbenchState.data],
+  );
+  const compareScenarios = useMemo(
+    () => parseCompareWorkbenchScenarios(workbenchState.data),
+    [workbenchState.data],
+  );
   const resources = catalogState.data?.data || [];
   const [resource, setResource] = useState(initialQuery.resource);
   const [identifier, setIdentifier] = useState(initialQuery.identifier);
-  const [depth, setDepth] = useState(initialQuery.depth);
+  const [depth, setDepth] = useState(initialQuery.depth || "2");
   const [limitPerRelation, setLimitPerRelation] = useState(
-    initialQuery.limitPerRelation,
+    initialQuery.limitPerRelation || "4",
   );
   const [backlinks, setBacklinks] = useState(initialQuery.backlinks);
   const [resourceFilterKeys, setResourceFilterKeys] = useState(
@@ -736,7 +688,25 @@ function GraphPage() {
   const [submitErrorDetails, setSubmitErrorDetails] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const activePreset = getPresetForResource(resource);
+  const activePreset =
+    findWorkbenchScenarioByResource(graphScenarios, resource) ||
+    createGraphFallbackScenario(resource);
+  const graphParameterMap = useMemo(
+    () => getOpenApiParameterMap(specState.data, "/api/v1/explore/graph"),
+    [specState.data],
+  );
+  const depthOptions = useMemo(
+    () => buildOpenApiIntegerOptions(graphParameterMap.depth, [1, 2, 3]),
+    [graphParameterMap.depth],
+  );
+  const limitPerRelationOptions = useMemo(
+    () =>
+      buildOpenApiIntegerOptions(
+        graphParameterMap.limitPerRelation,
+        [2, 4, 6, 8],
+      ),
+    [graphParameterMap.limitPerRelation],
+  );
   const nodes = responseData?.data?.nodes || [];
   const edges = responseData?.data?.edges || [];
   const meta = responseData?.meta;
@@ -765,8 +735,29 @@ function GraphPage() {
     [edges, focusNode],
   );
   const compareLink = useMemo(
-    () => buildCompareLink(selectedNodes),
-    [selectedNodes],
+    () => buildCompareLink(selectedNodes, compareScenarios),
+    [compareScenarios, selectedNodes],
+  );
+  const requestPreviewPath = useMemo(
+    () =>
+      `/api/v1/explore/graph${buildQueryString(
+        buildGraphParams({
+          backlinks,
+          depth,
+          identifier,
+          limitPerRelation,
+          resource,
+          resourceFilterKeys,
+        }),
+      )}`,
+    [
+      backlinks,
+      depth,
+      identifier,
+      limitPerRelation,
+      resource,
+      resourceFilterKeys,
+    ],
   );
 
   async function runGraph(nextState = {}) {
@@ -777,14 +768,14 @@ function GraphPage() {
     const nextBacklinks = nextState.backlinks ?? backlinks;
     const nextResourceFilterKeys =
       nextState.resourceFilterKeys ?? resourceFilterKeys;
-    const params = {
+    const params = buildGraphParams({
       backlinks: nextBacklinks,
       depth: nextDepth,
       identifier: nextIdentifier,
       limitPerRelation: nextLimitPerRelation,
-      resources: toCsvParam(nextResourceFilterKeys),
       resource: nextResource,
-    };
+      resourceFilterKeys: nextResourceFilterKeys,
+    });
 
     if (nextState.resetSelection) {
       setSelectedNodeKeys([]);
@@ -815,8 +806,65 @@ function GraphPage() {
   }
 
   useEffect(() => {
-    runGraph(initialQuery);
-  }, []);
+    if (initialRunRef.current) {
+      return;
+    }
+
+    const hasInitialRequest = Boolean(
+      initialQuery.resource && initialQuery.identifier,
+    );
+
+    if (!hasInitialRequest && !graphScenarios.length) {
+      if (workbenchState.loading || workbenchState.error) {
+        return;
+      }
+    }
+
+    const defaultScenario =
+      findWorkbenchScenarioByResource(graphScenarios, "characters") ||
+      graphScenarios[0] ||
+      null;
+    const nextResource =
+      initialQuery.resource || defaultScenario?.resource || "";
+    const resourceScenario =
+      findWorkbenchScenarioByResource(graphScenarios, nextResource) ||
+      createGraphFallbackScenario(nextResource);
+    const nextIdentifier =
+      initialQuery.identifier || resourceScenario.identifier;
+    const nextDepth = initialQuery.depth || resourceScenario.depth;
+    const nextLimitPerRelation =
+      initialQuery.limitPerRelation || resourceScenario.limitPerRelation;
+    const nextBacklinks = initialQuery.backlinks || resourceScenario.backlinks;
+    const nextResourceFilterKeys = initialQuery.resourceFilterKeys.length
+      ? initialQuery.resourceFilterKeys
+      : resourceScenario.resourceFilterKeys || [];
+
+    if (!nextResource || !nextIdentifier) {
+      return;
+    }
+
+    initialRunRef.current = true;
+    setResource(nextResource);
+    setIdentifier(nextIdentifier);
+    setDepth(nextDepth);
+    setLimitPerRelation(nextLimitPerRelation);
+    setBacklinks(nextBacklinks);
+    setResourceFilterKeys(nextResourceFilterKeys);
+    runGraph({
+      backlinks: nextBacklinks,
+      depth: nextDepth,
+      identifier: nextIdentifier,
+      limitPerRelation: nextLimitPerRelation,
+      resource: nextResource,
+      resourceFilterKeys: nextResourceFilterKeys,
+      selected: initialQuery.selected,
+    });
+  }, [
+    graphScenarios,
+    initialQuery,
+    workbenchState.error,
+    workbenchState.loading,
+  ]);
 
   useEffect(() => {
     if (!nodes.length) {
@@ -877,23 +925,32 @@ function GraphPage() {
     setIdentifier(preset.identifier);
     setDepth(preset.depth);
     setLimitPerRelation(preset.limitPerRelation);
+    setBacklinks(preset.backlinks);
+    setResourceFilterKeys(preset.resourceFilterKeys || []);
     runGraph({
-      backlinks,
+      backlinks: preset.backlinks,
       depth: preset.depth,
       identifier: preset.identifier,
       limitPerRelation: preset.limitPerRelation,
       resetSelection: true,
       resource: preset.resource,
+      resourceFilterKeys: preset.resourceFilterKeys || [],
     });
   }
 
   function handleResourceChange(event) {
     const nextResource = event.target.value;
-    const preset = getPresetForResource(nextResource);
+    const resourceLabel =
+      resources.find((item) => item.id === nextResource)?.label || nextResource;
+    const preset =
+      findWorkbenchScenarioByResource(graphScenarios, nextResource) ||
+      createGraphFallbackScenario(nextResource, resourceLabel);
     setResource(nextResource);
     setIdentifier(preset.identifier);
     setDepth(preset.depth);
     setLimitPerRelation(preset.limitPerRelation);
+    setBacklinks(preset.backlinks);
+    setResourceFilterKeys(preset.resourceFilterKeys || []);
   }
 
   function handleSubmit(event) {
@@ -989,6 +1046,9 @@ function GraphPage() {
           <div className="metric-chip">nodes + edges</div>
           <div className="metric-chip">root backlinks</div>
           <div className="metric-chip">compare bridge</div>
+          <div className="metric-chip">
+            {graphScenarios.length || 9} preset scenarios
+          </div>
         </div>
       </section>
 
@@ -1003,9 +1063,9 @@ function GraphPage() {
           </div>
         </div>
         <div className="control-chip-bar">
-          {Object.values(graphPresets).map((preset) => (
+          {graphScenarios.map((preset) => (
             <button
-              key={preset.resource}
+              key={preset.id}
               type="button"
               className={`control-chip${preset.resource === resource ? " control-chip-active" : ""}`}
               onClick={() => applyPreset(preset)}
@@ -1035,7 +1095,10 @@ function GraphPage() {
             <input
               value={identifier}
               onInput={(event) => setIdentifier(event.target.value)}
-              placeholder={activePreset.identifier}
+              placeholder={
+                activePreset.identifier ||
+                getOpenApiParameterHint(graphParameterMap.identifier)
+              }
             />
           </label>
 
@@ -1045,9 +1108,11 @@ function GraphPage() {
               value={depth}
               onChange={(event) => setDepth(event.target.value)}
             >
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
+              {depthOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -1057,10 +1122,11 @@ function GraphPage() {
               value={limitPerRelation}
               onChange={(event) => setLimitPerRelation(event.target.value)}
             >
-              <option value="2">2</option>
-              <option value="4">4</option>
-              <option value="6">6</option>
-              <option value="8">8</option>
+              {limitPerRelationOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -1127,6 +1193,28 @@ function GraphPage() {
         </div>
       </form>
 
+      {specState.error && (
+        <StateNotice type="error">{specState.error}</StateNotice>
+      )}
+      {workbenchState.error && (
+        <StateNotice type="error">{workbenchState.error}</StateNotice>
+      )}
+      {specState.data && (
+        <ApiOperationGuide
+          description="Graph explorer читает traversal contract из OpenAPI и показывает live snippets для текущей конфигурации traversal."
+          parameterOrder={[
+            "resource",
+            "identifier",
+            "depth",
+            "limitPerRelation",
+            "backlinks",
+            "resources",
+          ]}
+          path="/api/v1/explore/graph"
+          requestPath={requestPreviewPath}
+          spec={specState.data}
+        />
+      )}
       <ApiErrorNotice details={submitErrorDetails} message={submitError} />
       {requestPath && <StateNotice>{requestPath}</StateNotice>}
 

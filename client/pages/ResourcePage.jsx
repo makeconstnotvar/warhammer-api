@@ -1,51 +1,75 @@
-import { useEffect, useState } from 'preact/hooks';
-import { docsApi } from '../api/docsApi';
-import { JsonViewer } from '../components/JsonViewer';
-import { StateNotice } from '../components/StateNotice';
-import { extractError, useAsyncData } from '../hooks/useAsyncData';
-import { buildQueryString, readQueryState, replaceQueryState } from '../lib/query';
+import { useEffect, useMemo, useState } from "preact/hooks";
+import { docsApi } from "../api/docsApi";
+import { ApiErrorNotice } from "../components/ApiErrorNotice";
+import { ApiOperationGuide } from "../components/ApiOperationGuide";
+import { JsonViewer } from "../components/JsonViewer";
+import { StateNotice } from "../components/StateNotice";
+import {
+  extractError,
+  extractErrorDetails,
+  useAsyncData,
+} from "../hooks/useAsyncData";
+import {
+  getOpenApiParameterHint,
+  getOpenApiParameterMap,
+} from "../lib/openApi";
+import {
+  buildQueryString,
+  readQueryState,
+  replaceQueryState,
+} from "../lib/query";
 
 const emptyPreviewState = {
-  mode: 'list',
-  identifier: '',
-  limit: '',
-  sort: '',
-  include: '',
-  filterKey: '',
-  filterValue: '',
+  page: "",
+  search: "",
+  fields: "",
+  mode: "list",
+  identifier: "",
+  limit: "",
+  sort: "",
+  include: "",
+  filterKey: "",
+  filterValue: "",
 };
 
 function normalizePreviewState(doc, rawState = {}) {
   const previewParams = doc.previewParams || {};
   const filterKeys = (doc.filters || []).map((item) => item.id);
-  const rawMode = rawState.mode === 'detail' ? 'detail' : 'list';
+  const rawMode = rawState.mode === "detail" ? "detail" : "list";
   const nextFilterKey = filterKeys.includes(rawState.filterKey)
     ? rawState.filterKey
-    : (rawState.filterKey ? '' : (filterKeys[0] || ''));
+    : rawState.filterKey
+      ? ""
+      : filterKeys[0] || "";
 
   return {
     mode: rawMode,
-    identifier: rawState.identifier || '',
+    identifier: rawState.identifier || "",
+    page: rawState.page || "1",
+    search: rawState.search || "",
+    fields: rawState.fields || "",
     limit: rawState.limit || String(previewParams.limit || 5),
-    sort: rawState.sort || previewParams.sort || doc.defaultSort || '',
-    include: rawState.include || previewParams.include || '',
+    sort: rawState.sort || previewParams.sort || doc.defaultSort || "",
+    include: rawState.include || previewParams.include || "",
     filterKey: nextFilterKey,
-    filterValue: rawState.filterValue || '',
+    filterValue: rawState.filterValue || "",
   };
 }
 
 function parseSampleQuery(resource, sampleQuery) {
-  const [pathPart, rawQuery = ''] = String(sampleQuery || '').split('?');
-  const normalizedPath = pathPart.replace(/^\/api\/v1\//, '').replace(/^\//, '');
-  const segments = normalizedPath.split('/').filter(Boolean);
+  const [pathPart, rawQuery = ""] = String(sampleQuery || "").split("?");
+  const normalizedPath = pathPart
+    .replace(/^\/api\/v1\//, "")
+    .replace(/^\//, "");
+  const segments = normalizedPath.split("/").filter(Boolean);
 
   if (segments[0] !== resource) {
     return null;
   }
 
   const searchParams = new URLSearchParams(rawQuery);
-  let filterKey = '';
-  let filterValue = '';
+  let filterKey = "";
+  let filterValue = "";
 
   searchParams.forEach((value, key) => {
     const match = key.match(/^filter\[(.+)\]$/);
@@ -59,27 +83,91 @@ function parseSampleQuery(resource, sampleQuery) {
   });
 
   return {
-    mode: segments[1] ? 'detail' : 'list',
-    identifier: segments[1] || '',
-    limit: searchParams.get('limit') || '',
-    sort: searchParams.get('sort') || '',
-    include: searchParams.get('include') || '',
+    page: searchParams.get("page") || "",
+    search: searchParams.get("search") || "",
+    fields: searchParams.get(`fields[${resource}]`) || "",
+    mode: segments[1] ? "detail" : "list",
+    identifier: segments[1] || "",
+    limit: searchParams.get("limit") || "",
+    sort: searchParams.get("sort") || "",
+    include: searchParams.get("include") || "",
     filterKey,
     filterValue,
   };
+}
+
+function buildResourcePreviewParams(resource, previewQuery) {
+  const params = {};
+
+  if (previewQuery.include) {
+    params.include = previewQuery.include;
+  }
+
+  if (previewQuery.fields) {
+    params[`fields[${resource}]`] = previewQuery.fields;
+  }
+
+  if (previewQuery.mode === "list") {
+    if (previewQuery.page) {
+      params.page = previewQuery.page;
+    }
+
+    if (previewQuery.limit) {
+      params.limit = previewQuery.limit;
+    }
+
+    if (previewQuery.search) {
+      params.search = previewQuery.search;
+    }
+
+    if (previewQuery.sort) {
+      params.sort = previewQuery.sort;
+    }
+
+    if (previewQuery.filterKey && previewQuery.filterValue) {
+      params[`filter[${previewQuery.filterKey}]`] = previewQuery.filterValue;
+    }
+  }
+
+  return params;
+}
+
+function buildResourcePreviewPath(resource, previewQuery) {
+  const pathname =
+    previewQuery.mode === "detail"
+      ? `/api/v1/${resource}/${previewQuery.identifier}`
+      : `/api/v1/${resource}`;
+
+  return `${pathname}${buildQueryString(
+    buildResourcePreviewParams(resource, previewQuery),
+  )}`;
+}
+
+function getIdentifierPlaceholder(doc, resource) {
+  const detailSample = (doc.sampleQueries || [])
+    .map((sampleQuery) => parseSampleQuery(resource, sampleQuery))
+    .find(
+      (sampleQuery) => sampleQuery?.mode === "detail" && sampleQuery.identifier,
+    );
+
+  return detailSample?.identifier || "roboute-guilliman";
 }
 
 function IncludedSummary({ included }) {
   const entries = Object.entries(included || {});
 
   if (!entries.length) {
-    return <span className="muted-line">Этот preview не вернул included-блок.</span>;
+    return (
+      <span className="muted-line">Этот preview не вернул included-блок.</span>
+    );
   }
 
   return (
     <div className="tag-list">
       {entries.map(([key, items]) => (
-        <span key={key} className="metric-chip">{key}: {items.length}</span>
+        <span key={key} className="metric-chip">
+          {key}: {items.length}
+        </span>
       ))}
     </div>
   );
@@ -91,7 +179,7 @@ function PreviewCards({ include, items, resource }) {
       {items.map((item) => {
         const identifier = item.slug || item.id;
         const detailLink = `/resources/${resource}${buildQueryString({
-          mode: 'detail',
+          mode: "detail",
           identifier,
           include,
         })}`;
@@ -103,11 +191,17 @@ function PreviewCards({ include, items, resource }) {
             <div className="tag-list">
               {item.slug && <span className="tag">{item.slug}</span>}
               {item.status && <span className="tag">{item.status}</span>}
-              {item.powerLevel !== undefined && <span className="tag">power {item.powerLevel}</span>}
-              {item.influenceLevel !== undefined && <span className="tag">influence {item.influenceLevel}</span>}
+              {item.powerLevel !== undefined && (
+                <span className="tag">power {item.powerLevel}</span>
+              )}
+              {item.influenceLevel !== undefined && (
+                <span className="tag">influence {item.influenceLevel}</span>
+              )}
               {item.yearLabel && <span className="tag">{item.yearLabel}</span>}
             </div>
-            <a className="query-link" href={detailLink}>Открыть detail preview</a>
+            <a className="query-link" href={detailLink}>
+              Открыть detail preview
+            </a>
           </article>
         );
       })}
@@ -117,8 +211,10 @@ function PreviewCards({ include, items, resource }) {
 
 function DetailPreviewCard({ item }) {
   const detailRows = Object.entries(item || {})
-    .filter(([, value]) => value !== null && value !== undefined && value !== '')
-    .filter(([, value]) => !Array.isArray(value) && typeof value !== 'object')
+    .filter(
+      ([, value]) => value !== null && value !== undefined && value !== "",
+    )
+    .filter(([, value]) => !Array.isArray(value) && typeof value !== "object")
     .slice(0, 12);
 
   return (
@@ -130,9 +226,15 @@ function DetailPreviewCard({ item }) {
         </div>
         <div className="tag-list">
           {item.status && <span className="metric-chip">{item.status}</span>}
-          {item.powerLevel !== undefined && <span className="metric-chip">power {item.powerLevel}</span>}
-          {item.influenceLevel !== undefined && <span className="metric-chip">influence {item.influenceLevel}</span>}
-          {item.yearLabel && <span className="metric-chip">{item.yearLabel}</span>}
+          {item.powerLevel !== undefined && (
+            <span className="metric-chip">power {item.powerLevel}</span>
+          )}
+          {item.influenceLevel !== undefined && (
+            <span className="metric-chip">influence {item.influenceLevel}</span>
+          )}
+          {item.yearLabel && (
+            <span className="metric-chip">{item.yearLabel}</span>
+          )}
         </div>
       </div>
 
@@ -151,12 +253,26 @@ function DetailPreviewCard({ item }) {
 }
 
 function ResourcePage({ resource }) {
-  const docState = useAsyncData(() => docsApi.getResourceDoc(resource), [resource]);
+  const docState = useAsyncData(
+    () => docsApi.getResourceDoc(resource),
+    [resource],
+  );
+  const specState = useAsyncData(() => docsApi.getOpenApiSpec(), []);
   const [previewQuery, setPreviewQuery] = useState(emptyPreviewState);
-  const [requestPath, setRequestPath] = useState('');
+  const [requestPath, setRequestPath] = useState("");
   const [responseData, setResponseData] = useState(null);
-  const [submitError, setSubmitError] = useState('');
+  const [submitError, setSubmitError] = useState("");
+  const [submitErrorDetails, setSubmitErrorDetails] = useState([]);
   const [loading, setLoading] = useState(false);
+  const listParameterMap = useMemo(
+    () => getOpenApiParameterMap(specState.data, "/api/v1/{resource}"),
+    [specState.data],
+  );
+  const detailParameterMap = useMemo(
+    () =>
+      getOpenApiParameterMap(specState.data, "/api/v1/{resource}/{idOrSlug}"),
+    [specState.data],
+  );
 
   async function runPreview(nextPreviewQuery = previewQuery) {
     const doc = docState.data?.data;
@@ -166,76 +282,80 @@ function ResourcePage({ resource }) {
     }
 
     const resolvedQuery = normalizePreviewState(doc, nextPreviewQuery);
-    const params = {};
+    const params = buildResourcePreviewParams(resource, resolvedQuery);
 
-    if (resolvedQuery.include) {
-      params.include = resolvedQuery.include;
-    }
+    const pathname =
+      resolvedQuery.mode === "detail"
+        ? `/api/v1/${resource}/${resolvedQuery.identifier}`
+        : `/api/v1/${resource}`;
 
-    if (resolvedQuery.mode === 'list') {
-      if (resolvedQuery.limit) {
-        params.limit = resolvedQuery.limit;
-      }
-
-      if (resolvedQuery.sort) {
-        params.sort = resolvedQuery.sort;
-      }
-
-      if (resolvedQuery.filterKey && resolvedQuery.filterValue) {
-        params[`filter[${resolvedQuery.filterKey}]`] = resolvedQuery.filterValue;
-      }
-    }
-
-    const pathname = resolvedQuery.mode === 'detail'
-      ? `/api/v1/${resource}/${resolvedQuery.identifier}`
-      : `/api/v1/${resource}`;
-
-    if (resolvedQuery.mode === 'detail' && !resolvedQuery.identifier) {
+    if (resolvedQuery.mode === "detail" && !resolvedQuery.identifier) {
       setRequestPath(pathname);
       setResponseData(null);
-      setSubmitError('Для detail preview нужен id или slug.');
+      setSubmitError("Для detail preview нужен id или slug.");
+      setSubmitErrorDetails([]);
       replaceQueryState({
+        page: "",
+        search: "",
+        [`fields[${resource}]`]: resolvedQuery.fields,
         mode: resolvedQuery.mode,
         identifier: resolvedQuery.identifier,
         include: resolvedQuery.include,
+        limit: "",
+        sort: "",
+        filterKey: "",
+        filterValue: "",
       });
       return;
     }
 
     setLoading(true);
-    setSubmitError('');
+    setSubmitError("");
+    setSubmitErrorDetails([]);
 
     try {
-      const result = resolvedQuery.mode === 'detail'
-        ? await docsApi.getResourceDetail(resource, resolvedQuery.identifier, params)
-        : await docsApi.getResourceList(resource, params);
+      const result =
+        resolvedQuery.mode === "detail"
+          ? await docsApi.getResourceDetail(
+              resource,
+              resolvedQuery.identifier,
+              params,
+            )
+          : await docsApi.getResourceList(resource, params);
 
       setRequestPath(`${pathname}${buildQueryString(params)}`);
       setResponseData(result);
       setPreviewQuery(resolvedQuery);
     } catch (error) {
       setSubmitError(extractError(error));
+      setSubmitErrorDetails(extractErrorDetails(error));
       setResponseData(null);
       setRequestPath(`${pathname}${buildQueryString(params)}`);
       setPreviewQuery(resolvedQuery);
     } finally {
       replaceQueryState({
+        page: resolvedQuery.mode === "list" ? resolvedQuery.page : "",
+        search: resolvedQuery.mode === "list" ? resolvedQuery.search : "",
+        [`fields[${resource}]`]: resolvedQuery.fields,
         mode: resolvedQuery.mode,
-        identifier: resolvedQuery.mode === 'detail' ? resolvedQuery.identifier : '',
-        limit: resolvedQuery.mode === 'list' ? resolvedQuery.limit : '',
-        sort: resolvedQuery.mode === 'list' ? resolvedQuery.sort : '',
+        identifier:
+          resolvedQuery.mode === "detail" ? resolvedQuery.identifier : "",
+        limit: resolvedQuery.mode === "list" ? resolvedQuery.limit : "",
+        sort: resolvedQuery.mode === "list" ? resolvedQuery.sort : "",
         include: resolvedQuery.include,
-        filterKey: resolvedQuery.mode === 'list' ? resolvedQuery.filterKey : '',
-        filterValue: resolvedQuery.mode === 'list' ? resolvedQuery.filterValue : '',
+        filterKey: resolvedQuery.mode === "list" ? resolvedQuery.filterKey : "",
+        filterValue:
+          resolvedQuery.mode === "list" ? resolvedQuery.filterValue : "",
       });
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    setRequestPath('');
+    setRequestPath("");
     setResponseData(null);
-    setSubmitError('');
+    setSubmitError("");
+    setSubmitErrorDetails([]);
   }, [resource]);
 
   useEffect(() => {
@@ -243,10 +363,15 @@ function ResourcePage({ resource }) {
       return;
     }
 
-    const nextPreviewQuery = normalizePreviewState(
-      docState.data.data,
-      readQueryState(emptyPreviewState)
-    );
+    const searchParams =
+      typeof window === "undefined"
+        ? new URLSearchParams()
+        : new URLSearchParams(window.location.search || "");
+
+    const nextPreviewQuery = normalizePreviewState(docState.data.data, {
+      ...readQueryState(emptyPreviewState),
+      fields: searchParams.get(`fields[${resource}]`) || "",
+    });
 
     setPreviewQuery(nextPreviewQuery);
     runPreview(nextPreviewQuery);
@@ -288,8 +413,47 @@ function ResourcePage({ resource }) {
   }
 
   const doc = docState.data.data;
-  const previewItems = Array.isArray(responseData?.data) ? responseData.data : [];
-  const previewDetail = responseData?.data && !Array.isArray(responseData.data) ? responseData.data : null;
+  const fieldPlaceholder = doc.fields.length
+    ? doc.fields
+        .slice(0, 3)
+        .map((field) => field.name)
+        .join(",")
+    : "id,name,slug";
+  const identifierPlaceholder = getOpenApiParameterHint(
+    detailParameterMap.idOrSlug,
+    {
+      fallback: getIdentifierPlaceholder(doc, resource),
+    },
+  );
+  const requestPreviewPath = buildResourcePreviewPath(resource, previewQuery);
+  const guideRequestPath =
+    previewQuery.mode === "detail" && !previewQuery.identifier
+      ? ""
+      : requestPreviewPath;
+  const guidePath =
+    previewQuery.mode === "detail"
+      ? "/api/v1/{resource}/{idOrSlug}"
+      : "/api/v1/{resource}";
+  const guideParameterOrder =
+    previewQuery.mode === "detail"
+      ? ["resource", "idOrSlug", "include", "fields"]
+      : [
+          "resource",
+          "page",
+          "limit",
+          "search",
+          "sort",
+          "include",
+          "fields",
+          "filter",
+        ];
+  const previewItems = Array.isArray(responseData?.data)
+    ? responseData.data
+    : [];
+  const previewDetail =
+    responseData?.data && !Array.isArray(responseData.data)
+      ? responseData.data
+      : null;
 
   return (
     <div className="page-stack">
@@ -311,22 +475,25 @@ function ResourcePage({ resource }) {
           <div>
             <h2>Live preview</h2>
             <p className="muted-line">
-              Можно переключаться между `list` и `detail`, менять `include`, фильтры и сразу делиться ссылкой
-              на конкретное состояние документации ресурса.
+              Можно переключаться между `list` и `detail`, менять `include`,
+              фильтры и сразу делиться ссылкой на конкретное состояние
+              документации ресурса.
             </p>
           </div>
           <div className="control-chip-bar">
             <button
               type="button"
-              className={`control-chip${previewQuery.mode === 'list' ? ' control-chip-active' : ''}`}
-              onClick={() => updatePreviewQuery({ mode: 'list', identifier: '' })}
+              className={`control-chip${previewQuery.mode === "list" ? " control-chip-active" : ""}`}
+              onClick={() =>
+                updatePreviewQuery({ mode: "list", identifier: "" })
+              }
             >
               list
             </button>
             <button
               type="button"
-              className={`control-chip${previewQuery.mode === 'detail' ? ' control-chip-active' : ''}`}
-              onClick={() => updatePreviewQuery({ mode: 'detail' })}
+              className={`control-chip${previewQuery.mode === "detail" ? " control-chip-active" : ""}`}
+              onClick={() => updatePreviewQuery({ mode: "detail" })}
             >
               detail
             </button>
@@ -337,29 +504,51 @@ function ResourcePage({ resource }) {
           <div className="form-grid">
             <label>
               <span>Mode</span>
-              <select value={previewQuery.mode} onChange={(event) => updatePreviewQuery({ mode: event.target.value })}>
+              <select
+                value={previewQuery.mode}
+                onChange={(event) =>
+                  updatePreviewQuery({ mode: event.target.value })
+                }
+              >
                 <option value="list">list</option>
                 <option value="detail">detail</option>
               </select>
             </label>
 
-            {previewQuery.mode === 'detail' ? (
+            {previewQuery.mode === "detail" ? (
               <label className="label-wide">
                 <span>ID or slug</span>
                 <input
                   value={previewQuery.identifier}
-                  onInput={(event) => updatePreviewQuery({ identifier: event.target.value })}
-                  placeholder="roboute-guilliman"
+                  onInput={(event) =>
+                    updatePreviewQuery({ identifier: event.target.value })
+                  }
+                  placeholder={identifierPlaceholder}
                 />
               </label>
             ) : (
               <>
                 <label>
+                  <span>Page</span>
+                  <input
+                    value={previewQuery.page}
+                    onInput={(event) =>
+                      updatePreviewQuery({ page: event.target.value })
+                    }
+                    placeholder={getOpenApiParameterHint(listParameterMap.page)}
+                  />
+                </label>
+
+                <label>
                   <span>Limit</span>
                   <input
                     value={previewQuery.limit}
-                    onInput={(event) => updatePreviewQuery({ limit: event.target.value })}
-                    placeholder="5"
+                    onInput={(event) =>
+                      updatePreviewQuery({ limit: event.target.value })
+                    }
+                    placeholder={getOpenApiParameterHint(
+                      listParameterMap.limit,
+                    )}
                   />
                 </label>
 
@@ -367,8 +556,26 @@ function ResourcePage({ resource }) {
                   <span>Sort</span>
                   <input
                     value={previewQuery.sort}
-                    onInput={(event) => updatePreviewQuery({ sort: event.target.value })}
-                    placeholder={doc.defaultSort}
+                    onInput={(event) =>
+                      updatePreviewQuery({ sort: event.target.value })
+                    }
+                    placeholder={
+                      doc.defaultSort ||
+                      getOpenApiParameterHint(listParameterMap.sort)
+                    }
+                  />
+                </label>
+
+                <label className="label-wide">
+                  <span>Search</span>
+                  <input
+                    value={previewQuery.search}
+                    onInput={(event) =>
+                      updatePreviewQuery({ search: event.target.value })
+                    }
+                    placeholder={getOpenApiParameterHint(
+                      listParameterMap.search,
+                    )}
                   />
                 </label>
               </>
@@ -378,21 +585,41 @@ function ResourcePage({ resource }) {
               <span>Include</span>
               <input
                 value={previewQuery.include}
-                onInput={(event) => updatePreviewQuery({ include: event.target.value })}
-                placeholder={doc.previewParams?.include || 'faction,era'}
+                onInput={(event) =>
+                  updatePreviewQuery({ include: event.target.value })
+                }
+                placeholder={
+                  doc.previewParams?.include ||
+                  getOpenApiParameterHint(listParameterMap.include)
+                }
               />
             </label>
 
-            {previewQuery.mode === 'list' && (
+            <label className="label-wide">
+              <span>Fields</span>
+              <input
+                value={previewQuery.fields}
+                onInput={(event) =>
+                  updatePreviewQuery({ fields: event.target.value })
+                }
+                placeholder={fieldPlaceholder}
+              />
+            </label>
+
+            {previewQuery.mode === "list" && doc.filters.length > 0 && (
               <>
                 <label>
                   <span>Filter key</span>
                   <select
                     value={previewQuery.filterKey}
-                    onChange={(event) => updatePreviewQuery({ filterKey: event.target.value })}
+                    onChange={(event) =>
+                      updatePreviewQuery({ filterKey: event.target.value })
+                    }
                   >
                     {(doc.filters || []).map((item) => (
-                      <option key={item.id} value={item.id}>{item.id}</option>
+                      <option key={item.id} value={item.id}>
+                        {item.id}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -401,8 +628,16 @@ function ResourcePage({ resource }) {
                   <span>Filter value</span>
                   <input
                     value={previewQuery.filterValue}
-                    onInput={(event) => updatePreviewQuery({ filterValue: event.target.value })}
-                    placeholder="imperium-of-man"
+                    onInput={(event) =>
+                      updatePreviewQuery({ filterValue: event.target.value })
+                    }
+                    placeholder={getOpenApiParameterHint(
+                      listParameterMap.filter,
+                      {
+                        fallback: "imperium-of-man",
+                        nestedKey: previewQuery.filterKey,
+                      },
+                    )}
                   />
                 </label>
               </>
@@ -411,30 +646,58 @@ function ResourcePage({ resource }) {
 
           <div className="resource-preview-foot">
             <p className="muted-line">
-              Это тот же публичный API. Отдельный sandbox-слой на клиенте не нужен.
+              Это тот же публичный API. Отдельный sandbox-слой на клиенте не
+              нужен.
             </p>
             <button type="submit" className="action-button" disabled={loading}>
-              {loading ? 'Загрузка...' : 'Обновить preview'}
+              {loading ? "Загрузка..." : "Обновить preview"}
             </button>
           </div>
         </form>
       </section>
+
+      {specState.error && (
+        <StateNotice type="error">{specState.error}</StateNotice>
+      )}
+      {specState.data && (
+        <ApiOperationGuide
+          description={
+            previewQuery.mode === "detail"
+              ? "Detail preview теперь опирается на OpenAPI-контракт и live request path."
+              : "List preview теперь показывает полный contract layer: page, search, fields, filter и live snippets."
+          }
+          parameterOrder={guideParameterOrder}
+          path={guidePath}
+          requestPath={guideRequestPath}
+          spec={specState.data}
+        />
+      )}
 
       <div className="panel-grid">
         <section className="section-card">
           <h2>Фильтры</h2>
           <div className="tag-list">
             {doc.filters.map((filter) => (
-              <span key={filter.id} className="tag">{filter.id}</span>
+              <span key={filter.id} className="tag">
+                {filter.id}
+              </span>
             ))}
           </div>
         </section>
         <section className="section-card">
           <h2>Include</h2>
           <div className="tag-list">
-            {doc.includes.length ? doc.includes.map((include) => (
-              <span key={include.id} className="tag">{include.id}</span>
-            )) : <span className="muted-line">Для этого ресурса include не нужен.</span>}
+            {doc.includes.length ? (
+              doc.includes.map((include) => (
+                <span key={include.id} className="tag">
+                  {include.id}
+                </span>
+              ))
+            ) : (
+              <span className="muted-line">
+                Для этого ресурса include не нужен.
+              </span>
+            )}
           </div>
         </section>
       </div>
@@ -462,9 +725,15 @@ function ResourcePage({ resource }) {
         <div className="resource-sample-grid">
           {doc.sampleQueries.map((sampleQuery) => (
             <article key={sampleQuery} className="sample-query-card">
-              <a className="query-link" href={sampleQuery}>{sampleQuery}</a>
+              <a className="query-link" href={sampleQuery}>
+                {sampleQuery}
+              </a>
               <div className="sample-query-actions">
-                <button type="button" className="action-button" onClick={() => handleSampleApply(sampleQuery)}>
+                <button
+                  type="button"
+                  className="action-button"
+                  onClick={() => handleSampleApply(sampleQuery)}
+                >
                   Применить в preview
                 </button>
               </div>
@@ -473,7 +742,7 @@ function ResourcePage({ resource }) {
         </div>
       </section>
 
-      {submitError && <StateNotice type="error">{submitError}</StateNotice>}
+      <ApiErrorNotice details={submitErrorDetails} message={submitError} />
       {requestPath && <StateNotice>{requestPath}</StateNotice>}
 
       {responseData && (
@@ -483,16 +752,23 @@ function ResourcePage({ resource }) {
               <div>
                 <h2>Результат preview</h2>
                 <p className="muted-line">
-                  Можно использовать как образец для list page, detail screen или data-fetching примера.
+                  Можно использовать как образец для list page, detail screen
+                  или data-fetching примера.
                 </p>
               </div>
-              <a className="query-link" href={requestPath}>{requestPath}</a>
+              <a className="query-link" href={requestPath}>
+                {requestPath}
+              </a>
             </div>
 
             <IncludedSummary included={responseData.included} />
 
             {previewItems.length > 0 && (
-              <PreviewCards items={previewItems} resource={resource} include={previewQuery.include} />
+              <PreviewCards
+                items={previewItems}
+                resource={resource}
+                include={previewQuery.include}
+              />
             )}
 
             {previewDetail && <DetailPreviewCard item={previewDetail} />}

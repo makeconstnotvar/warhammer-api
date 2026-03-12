@@ -183,6 +183,211 @@ const featuredQueries = [
   },
 ];
 
+const interactiveScenarios = {
+  compare: [
+    {
+      id: "battlefields",
+      label: "Поля битв",
+      description:
+        "Сравни боевые зоны по intensity, terrain, campaign ties и общим участникам.",
+      path: "/api/v1/compare/battlefields?ids=hesperon-void-line,kasr-partox-ruins&include=planet,starSystem,era,factions,characters,campaigns",
+      pathResources: [
+        "campaigns",
+        "characters",
+        "factions",
+        "planets",
+        "star-systems",
+      ],
+    },
+    {
+      id: "campaigns",
+      label: "Кампании",
+      description:
+        "Сравни campaign-level данные по time span, planets, factions, organizations и общим участникам.",
+      path: "/api/v1/compare/campaigns?ids=plague-wars,cadian-gate-counteroffensive&include=era,planets,factions,characters,organizations,battlefields",
+      pathResources: [
+        "battlefields",
+        "characters",
+        "factions",
+        "organizations",
+        "planets",
+      ],
+    },
+    {
+      id: "factions",
+      label: "Фракции",
+      description:
+        "Сравни большие доменные блоки по alignment, races, leaders, homeworld и power spread.",
+      path: "/api/v1/compare/factions?ids=imperium-of-man,black-legion&include=races,leaders,homeworld",
+      pathResources: [
+        "campaigns",
+        "characters",
+        "events",
+        "organizations",
+        "planets",
+        "units",
+      ],
+    },
+    {
+      id: "characters",
+      label: "Персонажи",
+      description:
+        "Сравни персонажей по alignment, faction, events, keywords и power level.",
+      path: "/api/v1/compare/characters?ids=roboute-guilliman,abaddon-the-despoiler&include=faction,race,homeworld,events",
+      pathResources: [
+        "campaigns",
+        "events",
+        "factions",
+        "organizations",
+        "planets",
+        "relics",
+      ],
+    },
+    {
+      id: "organizations",
+      label: "Организации",
+      description:
+        "Сравни институции по influence level, faction ties, leaders и homeworld.",
+      path: "/api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus&include=factions,leaders,homeworld,era",
+      pathResources: [
+        "campaigns",
+        "characters",
+        "factions",
+        "planets",
+        "relics",
+      ],
+    },
+    {
+      id: "relics",
+      label: "Реликвии",
+      description: "Сравни реликвии по bearer, faction, origin и power spread.",
+      path: "/api/v1/compare/relics?ids=emperors-sword,talon-of-horus&include=faction,bearer,originPlanet,era,keywords",
+      pathResources: ["campaigns", "characters", "factions", "planets"],
+    },
+    {
+      id: "star-systems",
+      label: "Системы",
+      description:
+        "Сравни системы по segmentum, числу миров и общему системному контексту.",
+      path: "/api/v1/compare/star-systems?ids=sol-system,macragge-system&include=planets,era",
+      pathResources: ["battlefields", "campaigns", "planets"],
+    },
+    {
+      id: "units",
+      label: "Юниты",
+      description:
+        "Сравни squad-ы и specialist units по faction, weapons, keywords и power spread.",
+      path: "/api/v1/compare/units?ids=terminator-squad,intercessor-squad&include=factions,weapons,keywords",
+      pathResources: ["factions", "keywords", "weapons"],
+    },
+  ],
+  graph: [
+    {
+      id: "battlefields",
+      label: "Поле битвы",
+      description:
+        "Тактический graph: campaign, planet, star-system, factions и key characters вокруг одного battlefield.",
+      path: "/api/v1/explore/graph?resource=battlefields&identifier=hesperon-void-line&depth=2&limitPerRelation=4&backlinks=true",
+    },
+    {
+      id: "campaigns",
+      label: "Кампания",
+      description:
+        "Кампания как точка входа в planets, factions, characters и organizations.",
+      path: "/api/v1/explore/graph?resource=campaigns&identifier=plague-wars&depth=2&limitPerRelation=4&backlinks=true",
+    },
+    {
+      id: "fleets",
+      label: "Флот",
+      description:
+        "Флот связывает commanders, campaigns, factions и текущую star-system в одном naval graph.",
+      path: "/api/v1/explore/graph?resource=fleets&identifier=indomitus-battlegroup&depth=2&limitPerRelation=4&backlinks=true",
+    },
+    {
+      id: "characters",
+      label: "Персонаж",
+      description:
+        "Классический detail graph: faction, race, homeworld, events и обратные связи через relics и organizations.",
+      path: "/api/v1/explore/graph?resource=characters&identifier=roboute-guilliman&depth=2&limitPerRelation=4&backlinks=true",
+    },
+    {
+      id: "factions",
+      label: "Фракция",
+      description:
+        "Фракция быстро показывает characters, units, events, organizations и parent-child связи.",
+      path: "/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4&backlinks=true",
+    },
+    {
+      id: "star-systems",
+      label: "Система",
+      description:
+        "Системный graph связывает worlds, campaigns и battlefields в одном космическом контексте.",
+      path: "/api/v1/explore/graph?resource=star-systems&identifier=sol-system&depth=2&limitPerRelation=4&backlinks=true",
+    },
+    {
+      id: "organizations",
+      label: "Организация",
+      description: "Institutional graph для dashboards и political-map UI.",
+      path: "/api/v1/explore/graph?resource=organizations&identifier=inquisition&depth=2&limitPerRelation=4&backlinks=true",
+    },
+    {
+      id: "relics",
+      label: "Реликвия",
+      description:
+        "Легкий inventory graph: bearer, faction, planet origin и ключевые relation tags.",
+      path: "/api/v1/explore/graph?resource=relics&identifier=emperors-sword&depth=2&limitPerRelation=4&backlinks=true",
+    },
+    {
+      id: "warp-routes",
+      label: "Варп-маршрут",
+      description:
+        "Route graph показывает обе системы, campaigns и factions, завязанные на конкретный варп-маршрут.",
+      path: "/api/v1/explore/graph?resource=warp-routes&identifier=sol-macragge-corridor&depth=2&limitPerRelation=4&backlinks=true",
+    },
+  ],
+  path: [
+    {
+      id: "campaign-to-hero",
+      label: "Campaign -> Hero",
+      description: "Кампания к герою через прямое участие в operation graph.",
+      path: "/api/v1/explore/path?fromResource=campaigns&fromIdentifier=plague-wars&toResource=characters&toIdentifier=roboute-guilliman&maxDepth=3&limitPerRelation=6&backlinks=true",
+    },
+    {
+      id: "campaign-to-battlefield",
+      label: "Campaign -> Battlefield",
+      description:
+        "Прямой путь от кампании к tactical battlefield через новую доменную связь.",
+      path: "/api/v1/explore/path?fromResource=campaigns&fromIdentifier=plague-wars&toResource=battlefields&toIdentifier=hesperon-void-line&maxDepth=2&limitPerRelation=6&backlinks=true&resources=battlefields",
+    },
+    {
+      id: "fleet-to-battlefield",
+      label: "Fleet -> Battlefield",
+      description:
+        "Флот к полю битвы через campaign participation без шумных альтернативных веток.",
+      path: "/api/v1/explore/path?fromResource=fleets&fromIdentifier=indomitus-battlegroup&toResource=battlefields&toIdentifier=hesperon-void-line&maxDepth=3&limitPerRelation=6&backlinks=true&resources=campaigns,battlefields",
+    },
+    {
+      id: "hero-to-relic",
+      label: "Hero -> Relic",
+      description:
+        "Короткая цепочка от персонажа к его реликвии через backlink relations.",
+      path: "/api/v1/explore/path?fromResource=characters&fromIdentifier=roboute-guilliman&toResource=relics&toIdentifier=emperors-sword&maxDepth=3&limitPerRelation=6&backlinks=true",
+    },
+    {
+      id: "relic-to-campaign",
+      label: "Relic -> Campaign",
+      description: "Реликвия к кампании через bearer и campaign participants.",
+      path: "/api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true",
+    },
+    {
+      id: "route-to-campaign",
+      label: "Route -> Campaign",
+      description: "Варп-маршрут к кампании через shared operational context.",
+      path: "/api/v1/explore/path?fromResource=warp-routes&fromIdentifier=cadian-breach-lane&toResource=campaigns&toIdentifier=cadian-gate-counteroffensive&maxDepth=2&limitPerRelation=6&backlinks=true&resources=campaigns,star-systems",
+    },
+  ],
+};
+
 const queryGuide = {
   params: [
     { name: "page", example: "page=1", description: "Номер страницы." },
@@ -3498,6 +3703,7 @@ module.exports = {
   concurrencyExample,
   dataset,
   featuredQueries,
+  interactiveScenarios,
   gettingStartedSteps,
   queryGuide,
   resourceDefinitions,
