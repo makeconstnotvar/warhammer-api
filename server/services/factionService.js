@@ -1,4 +1,5 @@
 const factionRepository = require("../repositories/factionRepository");
+const { createLegacyNotFoundError } = require("../lib/legacyApi");
 
 class FactionService {
   async getAll(options = {}) {
@@ -8,7 +9,7 @@ class FactionService {
   async getById(id) {
     const faction = await factionRepository.findById(id);
     if (!faction) {
-      throw new Error("Faction not found");
+      throw createLegacyNotFoundError("Faction");
     }
     return faction;
   }
@@ -20,7 +21,7 @@ class FactionService {
   async update(id, factionData) {
     const updated = await factionRepository.update(id, factionData);
     if (!updated) {
-      throw new Error("Faction not found");
+      throw createLegacyNotFoundError("Faction");
     }
     return updated;
   }
@@ -28,7 +29,7 @@ class FactionService {
   async delete(id) {
     const deleted = await factionRepository.delete(id);
     if (!deleted) {
-      throw new Error("Faction not found");
+      throw createLegacyNotFoundError("Faction");
     }
     return deleted;
   }

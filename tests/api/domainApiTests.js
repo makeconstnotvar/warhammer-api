@@ -108,11 +108,16 @@ async function runDomainApiTests(baseUrl) {
             (parameter) => parameter.$ref === "#/components/parameters/LegacyFactionIdFilter"
           )
         );
+        assert.ok(json.paths["/api/characters/{id}"].get.responses["404"]);
+        assert.ok(json.paths["/api/characters/{id}"].put.responses["400"]);
+        assert.ok(json.paths["/api/factions"].post.responses["409"]);
         assert.equal(json.components.headers.Deprecation.example, "@1772841600");
         assert.equal(json.components.headers.Sunset.example, "Wed, 30 Sep 2026 23:59:59 GMT");
         assert.ok(json.components.schemas.LegacyFactionResource);
         assert.ok(json.components.schemas.LegacyCharacterWritePayload);
         assert.ok(json.components.schemas.LegacyStringErrorResponse);
+        assert.ok(json.components.schemas.LegacyStringErrorResponse.properties.details);
+        assert.ok(json.components.schemas.LegacyErrorDetail);
       },
     },
     {

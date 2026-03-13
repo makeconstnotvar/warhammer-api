@@ -3,6 +3,7 @@ const { factionHandler } = require("./handlers/factionHandler");
 const { characterHandler } = require("./handlers/characterHandler");
 const { raceHandler } = require("./handlers/raceHandler");
 const { buildLegacyOpenApiSpec } = require("./content/legacyOpenApiSpec");
+const { sendLegacyError } = require("./lib/legacyApi");
 
 // Фракции
 const apiRoutes = express.Router();
@@ -32,8 +33,11 @@ apiRoutes.put("/races/:id", raceHandler.update);
 apiRoutes.delete("/races/:id", raceHandler.delete);
 
 apiRoutes.use((err, req, res, _next) => {
-  console.error(err);
-  res.status(500).json({ error: "Internal Server Error" });
+  if (!res.headersSent && (!err.status || err.status >= 500)) {
+    console.error(err);
+  }
+
+  return sendLegacyError(res, err);
 });
 
 module.exports = { apiRoutes };

@@ -136,6 +136,14 @@ function LegacyApiPage() {
             клиенты не теряли контекст миграции.
           </p>
         </section>
+        <section className="stat-card">
+          <div className="section-eyebrow">Errors</div>
+          <div className="stat-value">400 / 404</div>
+          <p>
+            Legacy handlers теперь валидируют `id`, pagination и basic write payload заранее и
+            возвращают явные `400` с `details`, а missing records стабильно отвечают `404`.
+          </p>
+        </section>
       </div>
 
       <section className="section-card">
@@ -217,6 +225,20 @@ function LegacyApiPage() {
         <CodeBlock label="legacy read">{`curl -i "http://localhost:3000/api/characters?page=1&limit=10&name=guilliman"`}</CodeBlock>
         <CodeBlock label="preferred v1 read">{`curl -i "http://localhost:3000/api/v1/characters?search=guilliman&include=faction,race&limit=10"`}</CodeBlock>
         <CodeBlock label="legacy response headers">{headerSnippet}</CodeBlock>
+        <CodeBlock label="legacy validation error">{`HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{
+  "error": "Invalid request parameters",
+  "details": [
+    {
+      "field": "id",
+      "code": "INVALID_POSITIVE_INTEGER",
+      "message": "Parameter \\"id\\" must be a positive integer",
+      "value": "not-a-number"
+    }
+  ]
+}`}</CodeBlock>
       </div>
 
       <section className="section-card">

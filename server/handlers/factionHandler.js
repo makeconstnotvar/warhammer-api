@@ -1,19 +1,13 @@
 const factionService = require("../services/factionService");
+const { parseLegacyId, parseLegacyListQuery, parseLegacyWriteBody } = require("../lib/legacyApi");
 
 const factionHandler = {
   async getAll(req, res, next) {
     try {
-      // Извлекаем параметры пагинации и фильтрации из запроса
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 20;
-
-      // Собираем фильтры из query параметров
-      const filters = {};
-      if (req.query.name) filters.name = req.query.name;
-
-      // Получаем данные с учетом пагинации и фильтрации
-      const result = await factionService.getAll({ page, limit, filters });
-      res.json(result); // Возвращаем { data, total }
+      const result = await factionService.getAll(
+        parseLegacyListQuery(req.query, [{ source: "name", target: "name", type: "string" }])
+      );
+      res.json(result);
     } catch (error) {
       next(error);
     }
@@ -21,38 +15,35 @@ const factionHandler = {
 
   async getById(req, res, next) {
     try {
-      const { id } = req.params;
-      const faction = await factionService.getById(id);
-      if (!faction) {
-        res.status(404).json({ error: "Faction not found" });
-      } else {
-        res.json(faction);
-      }
+      const faction = await factionService.getById(parseLegacyId(req.params.id));
+      res.json(faction);
     } catch (error) {
       next(error);
     }
   },
 
-  async create(req, res) {
+  async create(req, res, next) {
     try {
-      const factionData = req.body;
-      const faction = await factionService.create(factionData);
+      const faction = await factionService.create(
+        parseLegacyWriteBody(req.body, {
+          numericFields: ["powerLevel", "raceId"],
+        })
+      );
       res.status(201).json(faction);
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      next(error);
     }
   },
 
   async update(req, res, next) {
     try {
-      const { id } = req.params;
-      const factionData = req.body;
-      const updated = await factionService.update(id, factionData);
-      if (!updated) {
-        res.status(404).json({ error: "Faction not found" });
-      } else {
-        res.json(updated);
-      }
+      const updated = await factionService.update(
+        parseLegacyId(req.params.id),
+        parseLegacyWriteBody(req.body, {
+          numericFields: ["powerLevel", "raceId"],
+        })
+      );
+      res.json(updated);
     } catch (error) {
       next(error);
     }
@@ -60,13 +51,8 @@ const factionHandler = {
 
   async delete(req, res, next) {
     try {
-      const { id } = req.params;
-      const deleted = await factionService.delete(id);
-      if (!deleted) {
-        res.status(404).json({ error: "Faction not found" });
-      } else {
-        res.json(deleted);
-      }
+      const deleted = await factionService.delete(parseLegacyId(req.params.id));
+      res.json(deleted);
     } catch (error) {
       next(error);
     }

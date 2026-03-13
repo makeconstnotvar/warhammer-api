@@ -1,4 +1,5 @@
 const characterRepository = require("../repositories/characterRepository");
+const { createLegacyNotFoundError } = require("../lib/legacyApi");
 
 class CharacterService {
   async getAll(options = {}) {
@@ -8,7 +9,7 @@ class CharacterService {
   async getById(id) {
     const character = await characterRepository.findById(id);
     if (!character) {
-      throw new Error("Character not found");
+      throw createLegacyNotFoundError("Character");
     }
     return character;
   }
@@ -20,7 +21,7 @@ class CharacterService {
   async update(id, characterData) {
     const updated = await characterRepository.update(id, characterData);
     if (!updated) {
-      throw new Error("Character not found");
+      throw createLegacyNotFoundError("Character");
     }
     return updated;
   }
@@ -28,7 +29,7 @@ class CharacterService {
   async delete(id) {
     const deleted = await characterRepository.delete(id);
     if (!deleted) {
-      throw new Error("Character not found");
+      throw createLegacyNotFoundError("Character");
     }
     return deleted;
   }

@@ -1,4 +1,5 @@
 const raceRepository = require("../repositories/raceRepository");
+const { createLegacyNotFoundError } = require("../lib/legacyApi");
 
 class RaceService {
   async getAll(options = {}) {
@@ -8,7 +9,7 @@ class RaceService {
   async getById(id) {
     const race = await raceRepository.findById(id);
     if (!race) {
-      throw new Error("Race not found");
+      throw createLegacyNotFoundError("Race");
     }
     return race;
   }
@@ -20,7 +21,7 @@ class RaceService {
   async update(id, raceData) {
     const updated = await raceRepository.update(id, raceData);
     if (!updated) {
-      throw new Error("Race not found");
+      throw createLegacyNotFoundError("Race");
     }
     return updated;
   }
@@ -28,7 +29,7 @@ class RaceService {
   async delete(id) {
     const deleted = await raceRepository.delete(id);
     if (!deleted) {
-      throw new Error("Race not found");
+      throw createLegacyNotFoundError("Race");
     }
     return deleted;
   }

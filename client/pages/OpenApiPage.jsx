@@ -33,9 +33,6 @@ function OpenApiPage() {
             <a className="action-link" href="/openapi/reference">
               Открыть Reference UI
             </a>
-            <a className="action-link action-link-muted" href="/legacy-api">
-              Legacy contract
-            </a>
             <a className="action-link action-link-muted" href="/sdk/warhammerApiV1Client.mjs">
               Generated SDK
             </a>
@@ -96,14 +93,6 @@ function OpenApiPage() {
             response bodies и typed сигнатурами клиента.
           </p>
         </section>
-        <section className="stat-card">
-          <div className="section-eyebrow">Parallel Contract</div>
-          <div className="stat-value">Legacy `/api`</div>
-          <p>
-            Deprecated CRUD-слой теперь тоже описан отдельным `/api/openapi.json` и локальным
-            reference UI, чтобы миграция не опиралась на чтение исходников.
-          </p>
-        </section>
       </div>
 
       <section className="section-card">
@@ -116,21 +105,6 @@ function OpenApiPage() {
           generators и tooling.
         </p>
       </section>
-
-      <section className="section-card">
-        <h2>Legacy contract</h2>
-        <a className="query-link" href="/api/openapi.json">
-          /api/openapi.json
-        </a>
-        <a className="query-link" href="/legacy/reference">
-          /legacy/reference
-        </a>
-        <p className="muted-line">
-          Deprecated CRUD surface живет рядом как отдельный контракт и reference viewer, чтобы
-          старые `/api` сценарии можно было мигрировать осознанно.
-        </p>
-      </section>
-
       <div className="panel-grid">
         <CodeBlock label="generated sdk">{`import { createWarhammerApiClient } from "/sdk/warhammerApiV1Client.mjs";
 

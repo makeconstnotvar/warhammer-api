@@ -1,9 +1,16 @@
 # Warhammer 40K API
 
-Учебный проект с двумя слоями:
+Целевое состояние продукта теперь зафиксировано явно:
 
-- `api/v1` - богатый read API на PostgreSQL и публичная документация через клиент
-- `/api` - старый CRUD-слой для `races`, `factions`, `characters`
+- один публичный API под `/api/v1`
+- docs-first клиент и generated SDK вокруг этого же контракта
+- без постоянного legacy surface как части конечного результата
+
+Канонический target doc:
+
+- [API_TARGET.md](/C:/Github/warhammer-api/API_TARGET.md)
+
+Текущее transitional состояние репозитория все еще содержит legacy `/api`, но это больше не продуктовая цель и должно быть удалено по мере консолидации.
 
 ## Что уже есть
 
@@ -26,6 +33,7 @@
 - `Compare`, `Graph` и `Path` теперь также читают placeholders и numeric option ranges из OpenAPI examples/defaults, а не держат их вручную в UI
 - `OpenAPI` теперь имеет локальный interactive reference viewer на `/openapi/reference`
 - deprecated `/api` теперь тоже имеет отдельный machine-readable contract на `/api/openapi.json` и локальный reference viewer на `/legacy/reference`
+- legacy `/api` теперь также валидирует `id`, pagination и basic write payload заранее, возвращая стабильные `400`/`404` вместо случайных `500` на обычных пользовательских ошибках
 - рядом со spec теперь есть generated SDK pair:
   - `/sdk/warhammerApiV1Client.mjs`
   - `/sdk/warhammerApiV1Client.d.ts`
@@ -144,6 +152,7 @@ Rate limiting для `api/v1` по умолчанию настроен как `1
 Ошибки валидации query-параметров теперь приходят как `VALIDATION_ERROR` с детальным массивом `details` по каждому некорректному полю.
 `/openapi/reference` отдает локальный Swagger UI поверх того же `/api/v1/openapi.json`, без внешней CDN.
 `/legacy/reference` отдает отдельный локальный Swagger UI поверх `/api/openapi.json`, чтобы deprecated CRUD-слой был задокументирован как явный контракт, а не только как набор старых handlers.
+legacy `/api` теперь также стабильно отвечает `400` для невалидных `id`/query/body и `404` для отсутствующих сущностей, сохраняя legacy response shape `{ "error": "..." }` и добавляя `details` для validation-ошибок.
 `/sdk/warhammerApiV1Client.mjs` отдает generated ESM client с `createWarhammerApiClient()`, deep-object query serialization и единым `WarhammerApiError`.
 `/sdk/warhammerApiV1Client.d.ts` отдает typed surface для того же клиента: operation ids, option types, response bodies и `WarhammerApiClient`.
 Если пакет подключать как dependency, SDK также доступен через `import { createWarhammerApiClient } from "warhammer-api/sdk"`.

@@ -151,17 +151,87 @@ function buildResponseContent(schemaName, example) {
   };
 }
 
-function buildLegacyErrorResponse(description, schemaName = "LegacyStringErrorResponse") {
+function buildLegacyErrorContent(example) {
+  return {
+    "application/json": {
+      schema: {
+        $ref: "#/components/schemas/LegacyStringErrorResponse",
+      },
+      example,
+    },
+  };
+}
+
+function buildLegacyValidationErrorResponse(description, field = "id") {
   return {
     description,
     headers: sharedDeprecationHeaders,
-    content: {
-      "application/json": {
-        schema: {
-          $ref: `#/components/schemas/${schemaName}`,
+    content: buildLegacyErrorContent({
+      error: "Invalid request parameters",
+      details: [
+        {
+          code:
+            field === "powerLevel" ? "INVALID_NON_NEGATIVE_INTEGER" : "INVALID_POSITIVE_INTEGER",
+          field,
+          message: `Parameter "${field}" must be a ${field === "powerLevel" ? "non-negative" : "positive"} integer`,
+          value: "invalid",
         },
-      },
-    },
+      ],
+    }),
+  };
+}
+
+function buildLegacyPayloadErrorResponse(description) {
+  return {
+    description,
+    headers: sharedDeprecationHeaders,
+    content: buildLegacyErrorContent({
+      error: "Invalid request payload",
+      details: [
+        {
+          code: "REQUIRED",
+          field: "name",
+          message: 'Field "name" is required',
+        },
+      ],
+    }),
+  };
+}
+
+function buildLegacyNotFoundResponse(entityLabel) {
+  return {
+    description: `${entityLabel} was not found in the legacy CRUD surface.`,
+    headers: sharedDeprecationHeaders,
+    content: buildLegacyErrorContent({
+      error: `${entityLabel} not found`,
+    }),
+  };
+}
+
+function buildLegacyConflictResponse() {
+  return {
+    description: "Unique constraint conflict while writing to the legacy CRUD surface.",
+    headers: sharedDeprecationHeaders,
+    content: buildLegacyErrorContent({
+      error: "Record already exists",
+      details: [
+        {
+          code: "UNIQUE_VIOLATION",
+          field: "database",
+          message: "Unique constraint violation",
+        },
+      ],
+    }),
+  };
+}
+
+function buildLegacyInternalErrorResponse(description) {
+  return {
+    description,
+    headers: sharedDeprecationHeaders,
+    content: buildLegacyErrorContent({
+      error: "Internal Server Error",
+    }),
   };
 }
 
@@ -212,7 +282,11 @@ function buildListPath(config) {
             }
           ),
         },
-        default: buildLegacyErrorResponse(
+        400: buildLegacyValidationErrorResponse(
+          "Invalid list query parameters for the legacy endpoint.",
+          "page"
+        ),
+        500: buildLegacyInternalErrorResponse(
           "Legacy error response. Read failures can surface as a generic string error."
         ),
       },
@@ -240,8 +314,12 @@ function buildListPath(config) {
           headers: sharedDeprecationHeaders,
           content: buildResponseContent(config.itemSchema, config.example),
         },
-        default: buildLegacyErrorResponse(
-          "Legacy write error response. Status codes are not fully normalized on `/api`."
+        400: buildLegacyPayloadErrorResponse(
+          "Invalid legacy request payload or foreign key reference."
+        ),
+        409: buildLegacyConflictResponse(),
+        500: buildLegacyInternalErrorResponse(
+          "Unexpected write failure in the legacy CRUD surface."
         ),
       },
     },
@@ -249,6 +327,8 @@ function buildListPath(config) {
 }
 
 function buildDetailPath(config) {
+  const entityLabel = config.operationBase;
+
   return {
     get: {
       tags: [config.tag],
@@ -268,7 +348,9 @@ function buildDetailPath(config) {
           headers: sharedDeprecationHeaders,
           content: buildResponseContent(config.itemSchema, config.example),
         },
-        default: buildLegacyErrorResponse(
+        400: buildLegacyValidationErrorResponse("Invalid legacy resource id.", "id"),
+        404: buildLegacyNotFoundResponse(entityLabel),
+        500: buildLegacyInternalErrorResponse(
           "Legacy detail error response. Missing entities may bubble through the generic error middleware."
         ),
       },
@@ -301,7 +383,12 @@ function buildDetailPath(config) {
           headers: sharedDeprecationHeaders,
           content: buildResponseContent(config.itemSchema, config.example),
         },
-        default: buildLegacyErrorResponse(
+        400: buildLegacyPayloadErrorResponse(
+          "Invalid update payload, id or related resource reference."
+        ),
+        404: buildLegacyNotFoundResponse(entityLabel),
+        409: buildLegacyConflictResponse(),
+        500: buildLegacyInternalErrorResponse(
           "Legacy write error response. Missing entities and validation failures are not fully normalized."
         ),
       },
@@ -323,7 +410,9 @@ function buildDetailPath(config) {
           headers: sharedDeprecationHeaders,
           content: buildResponseContent(config.itemSchema, config.example),
         },
-        default: buildLegacyErrorResponse(
+        400: buildLegacyValidationErrorResponse("Invalid legacy resource id.", "id"),
+        404: buildLegacyNotFoundResponse(entityLabel),
+        500: buildLegacyInternalErrorResponse(
           "Legacy delete error response. Missing entities can still resolve through the generic middleware."
         ),
       },
@@ -604,9 +693,34 @@ function buildLegacyOpenApiSpec() {
             error: {
               type: "string",
             },
+            details: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/LegacyErrorDetail",
+              },
+            },
           },
           example: {
             error: "Faction not found",
+          },
+        },
+        LegacyErrorDetail: {
+          type: "object",
+          additionalProperties: false,
+          required: ["code", "field", "message"],
+          properties: {
+            code: {
+              type: "string",
+            },
+            field: {
+              type: "string",
+            },
+            message: {
+              type: "string",
+            },
+            value: {
+              oneOf: [{ type: "string" }, { type: "integer" }, { type: "null" }],
+            },
           },
         },
       },

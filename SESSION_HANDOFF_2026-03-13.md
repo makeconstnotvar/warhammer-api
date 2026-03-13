@@ -5,8 +5,15 @@
 - Project: `warhammer-api`
 - Runtime: Node.js + Express server, Preact docs-first client, PostgreSQL backend for `api/v1`
 - Main public API: `/api/v1`
-- Legacy API: `/api`
+- Legacy API: `/api` still exists in the repo, but is no longer the accepted product target
 - Repository path: `C:\Github\warhammer-api`
+
+## Product Decision
+
+- Final product target is now explicitly fixed as one public API with no legacy public surface.
+- Canonical target document: `API_TARGET.md`
+- `/api/v1` remains the only accepted long-term public contract.
+- Legacy `/api` and its docs are now transitional cleanup work, not product scope.
 
 ## Recent Completed Work
 
@@ -253,12 +260,24 @@
   - docs page `/legacy-api`
   - integration coverage for legacy spec + reference routes
   - OpenAPI docs page now links to both primary `/api/v1` and legacy `/api` contracts
+- Added legacy runtime parity baseline:
+  - shared legacy validation/error helper in `server/lib/legacyApi.js`
+  - all three legacy handlers now validate `id`, pagination and basic write payloads before hitting Postgres
+  - missing legacy entities now return stable `404` instead of leaking into generic `500`
+  - validation failures keep legacy shape `{ error: "..." }` and now also expose `details`
+  - legacy OpenAPI contract now documents explicit `400` / `404` / `409` responses
+  - integration tests now cover legacy runtime validation and not-found behavior
 - Verified after the legacy contract parity cycle:
   - `npm run lint` passes
   - `npm run build-dev` passes
   - `npm test` passes
   - `/api/openapi.json` is served and covered by tests
   - `/legacy/reference` is served and covered by tests
+- Verified after the legacy runtime parity cycle:
+  - `npm run lint` passes
+  - `npm test` passes
+  - legacy `/api` now returns `400` for invalid ids/query/body with validation details
+  - legacy `/api` now returns `404` for missing entities on detail/update paths
 - After the DB config fix:
   - config can be required without preloading dotenv elsewhere
   - existing running server must be restarted to pick up the new config code
@@ -270,8 +289,8 @@
 ## Best Next Steps
 
 1. If runtime issues continue after restart, re-check effective DB env values loaded from `server/.env` and confirm the server was actually restarted after the `server/config.js` fix.
-2. The previous docs-first wave is effectively complete; the next product expansion can move from legacy docs parity to runtime parity for legacy `/api` errors and write behavior, route-specific rate limits, or stronger SDK ergonomics such as package publishing.
-3. If delivery hardening continues, the next logical layer is optional lint rule tightening, branch protection wired to the new CI workflow, and package publishing strategy for the generated SDK.
+2. The next implementation track should remove legacy surface from public docs/navigation first, then delete legacy routes/reference/tests in controlled steps.
+3. After the one-API consolidation starts, the other natural next track is package publishing strategy for the generated SDK, followed by optional branch protection and stricter CI policy.
 
 ## Resume Notes
 
