@@ -1,4 +1,4 @@
-const { getLegacyApiDeprecationHeaders } = require('../content/apiLifecycle');
+const { getLegacyApiDeprecationHeaders } = require("../content/apiLifecycle");
 
 function legacyDeprecationHeaders(req, res, next) {
   const headers = getLegacyApiDeprecationHeaders();

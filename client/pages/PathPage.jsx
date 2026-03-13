@@ -1,20 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { docsApi } from '../api/docsApi';
-import { ApiErrorNotice } from '../components/ApiErrorNotice';
-import { ApiOperationGuide } from '../components/ApiOperationGuide';
-import { JsonViewer } from '../components/JsonViewer';
-import { StateNotice } from '../components/StateNotice';
-import { extractError, extractErrorDetails, useAsyncData } from '../hooks/useAsyncData';
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { docsApi } from "../api/docsApi";
+import { ApiErrorNotice } from "../components/ApiErrorNotice";
+import { ApiOperationGuide } from "../components/ApiOperationGuide";
+import { JsonViewer } from "../components/JsonViewer";
+import { StateNotice } from "../components/StateNotice";
+import { extractError, extractErrorDetails, useAsyncData } from "../hooks/useAsyncData";
 import {
   buildOpenApiIntegerOptions,
   getOpenApiParameterHint,
   getOpenApiParameterMap,
-} from '../lib/openApi';
-import { buildQueryString, parseCsvParam, readQueryState, replaceQueryState, toCsvParam } from '../lib/query';
+} from "../lib/openApi";
 import {
-  findWorkbenchScenarioById,
-  parsePathWorkbenchScenarios,
-} from '../lib/workbenchScenarios';
+  buildQueryString,
+  parseCsvParam,
+  readQueryState,
+  replaceQueryState,
+  toCsvParam,
+} from "../lib/query";
+import { findWorkbenchScenarioById, parsePathWorkbenchScenarios } from "../lib/workbenchScenarios";
 
 function buildPathParams({
   backlinks,
@@ -40,23 +43,23 @@ function buildPathParams({
 
 function createPathFallbackScenario() {
   return {
-    backlinks: 'true',
+    backlinks: "true",
     description:
-      'Укажи start и target вручную, если хочешь собрать traversal вне готовых учебных сценариев.',
-    fromIdentifier: '',
-    fromResource: '',
-    label: 'Custom path',
-    limitPerRelation: '6',
-    maxDepth: '4',
+      "Укажи start и target вручную, если хочешь собрать traversal вне готовых учебных сценариев.",
+    fromIdentifier: "",
+    fromResource: "",
+    label: "Custom path",
+    limitPerRelation: "6",
+    maxDepth: "4",
     resourceFilterKeys: [],
-    toIdentifier: '',
-    toResource: '',
+    toIdentifier: "",
+    toResource: "",
   };
 }
 
 function buildGraphLink(node, resourceFilterKeys = []) {
   return `/explore/graph${buildQueryString({
-    backlinks: 'true',
+    backlinks: "true",
     depth: 2,
     identifier: node.slug || node.id,
     limitPerRelation: 4,
@@ -75,7 +78,7 @@ function toggleResourceFilterKey(currentKeys, resourceKey) {
 
 function PathNodeCard({ active, node, resourceFilterKeys }) {
   return (
-    <article className={`path-node-card${active ? ' path-node-card-active' : ''}`}>
+    <article className={`path-node-card${active ? " path-node-card-active" : ""}`}>
       <div className="resource-kicker">{node.resource}</div>
       <h3>{node.name}</h3>
       {node.summary && <p>{node.summary}</p>}
@@ -86,13 +89,15 @@ function PathNodeCard({ active, node, resourceFilterKeys }) {
         {node.slug && <span className="tag">{node.slug}</span>}
       </div>
       <div className="graph-card-actions">
-        <a className="query-link" href={buildGraphLink(node, resourceFilterKeys)}>Открыть в Graph</a>
+        <a className="query-link" href={buildGraphLink(node, resourceFilterKeys)}>
+          Открыть в Graph
+        </a>
         <a
           className="query-link"
           href={`/resources/${node.resource}${buildQueryString({
             identifier: node.slug || node.id,
-            include: '',
-            mode: 'detail',
+            include: "",
+            mode: "detail",
           })}`}
         >
           Открыть detail preview
@@ -113,11 +118,19 @@ function PathSequence({ pathEdges, pathNodes, resourceFilterKeys }) {
       <div className="path-sequence">
         {pathNodes.map((node, index) => (
           <div key={node.key} className="path-sequence-block">
-            <PathNodeCard active={index === 0 || index === pathNodes.length - 1} node={node} resourceFilterKeys={resourceFilterKeys} />
+            <PathNodeCard
+              active={index === 0 || index === pathNodes.length - 1}
+              node={node}
+              resourceFilterKeys={resourceFilterKeys}
+            />
             {pathEdges[index] && (
               <div className="path-edge-card">
-                <div className="resource-kicker">{pathEdges[index].label || pathEdges[index].relation}</div>
-                <strong>{pathEdges[index].traversal === 'reverse' ? 'Обратный проход' : 'Прямой проход'}</strong>
+                <div className="resource-kicker">
+                  {pathEdges[index].label || pathEdges[index].relation}
+                </div>
+                <strong>
+                  {pathEdges[index].traversal === "reverse" ? "Обратный проход" : "Прямой проход"}
+                </strong>
                 <p className="muted-line">
                   {pathEdges[index].from} -&gt; {pathEdges[index].to}
                 </p>
@@ -133,22 +146,21 @@ function PathSequence({ pathEdges, pathNodes, resourceFilterKeys }) {
 function PathPage() {
   const initialQuery = useMemo(() => {
     const queryState = readQueryState({
-      backlinks: 'true',
-      fromIdentifier: '',
-      fromResource: '',
-      limitPerRelation: '',
-      maxDepth: '',
-      resources: '',
-      toIdentifier: '',
-      toResource: '',
+      backlinks: "true",
+      fromIdentifier: "",
+      fromResource: "",
+      limitPerRelation: "",
+      maxDepth: "",
+      resources: "",
+      toIdentifier: "",
+      toResource: "",
     });
 
     return {
       ...queryState,
       hasQuery:
-        (typeof window !== 'undefined' &&
-          new URLSearchParams(window.location.search || '').toString().length >
-            0) ||
+        (typeof window !== "undefined" &&
+          new URLSearchParams(window.location.search || "").toString().length > 0) ||
         false,
     };
   }, []);
@@ -158,33 +170,35 @@ function PathPage() {
   const workbenchState = useAsyncData(() => docsApi.getWorkbenchScenarios(), []);
   const pathScenarios = useMemo(
     () => parsePathWorkbenchScenarios(workbenchState.data),
-    [workbenchState.data],
+    [workbenchState.data]
   );
   const resources = catalogState.data?.data || [];
   const [fromResource, setFromResource] = useState(initialQuery.fromResource);
   const [fromIdentifier, setFromIdentifier] = useState(initialQuery.fromIdentifier);
   const [toResource, setToResource] = useState(initialQuery.toResource);
   const [toIdentifier, setToIdentifier] = useState(initialQuery.toIdentifier);
-  const [maxDepth, setMaxDepth] = useState(initialQuery.maxDepth || '4');
-  const [limitPerRelation, setLimitPerRelation] = useState(initialQuery.limitPerRelation || '6');
+  const [maxDepth, setMaxDepth] = useState(initialQuery.maxDepth || "4");
+  const [limitPerRelation, setLimitPerRelation] = useState(initialQuery.limitPerRelation || "6");
   const [backlinks, setBacklinks] = useState(initialQuery.backlinks);
-  const [resourceFilterKeys, setResourceFilterKeys] = useState(parseCsvParam(initialQuery.resources));
-  const [requestPath, setRequestPath] = useState('');
+  const [resourceFilterKeys, setResourceFilterKeys] = useState(
+    parseCsvParam(initialQuery.resources)
+  );
+  const [requestPath, setRequestPath] = useState("");
   const [responseData, setResponseData] = useState(null);
-  const [submitError, setSubmitError] = useState('');
+  const [submitError, setSubmitError] = useState("");
   const [submitErrorDetails, setSubmitErrorDetails] = useState([]);
   const [loading, setLoading] = useState(false);
   const pathParameterMap = useMemo(
-    () => getOpenApiParameterMap(specState.data, '/api/v1/explore/path'),
-    [specState.data],
+    () => getOpenApiParameterMap(specState.data, "/api/v1/explore/path"),
+    [specState.data]
   );
   const maxDepthOptions = useMemo(
     () => buildOpenApiIntegerOptions(pathParameterMap.maxDepth, [2, 3, 4, 5, 6]),
-    [pathParameterMap.maxDepth],
+    [pathParameterMap.maxDepth]
   );
   const limitPerRelationOptions = useMemo(
     () => buildOpenApiIntegerOptions(pathParameterMap.limitPerRelation, [4, 6, 8]),
-    [pathParameterMap.limitPerRelation],
+    [pathParameterMap.limitPerRelation]
   );
 
   const path = responseData?.data?.path;
@@ -201,7 +215,7 @@ function PathPage() {
           resourceFilterKeys,
           toIdentifier,
           toResource,
-        }),
+        })
       )}`,
     [
       backlinks,
@@ -212,7 +226,7 @@ function PathPage() {
       resourceFilterKeys,
       toIdentifier,
       toResource,
-    ],
+    ]
   );
 
   async function runPath(nextState = {}) {
@@ -228,7 +242,7 @@ function PathPage() {
     });
 
     setLoading(true);
-    setSubmitError('');
+    setSubmitError("");
     setSubmitErrorDetails([]);
 
     try {
@@ -253,9 +267,9 @@ function PathPage() {
 
     const hasInitialRequest = Boolean(
       initialQuery.fromResource &&
-        initialQuery.fromIdentifier &&
-        initialQuery.toResource &&
-        initialQuery.toIdentifier,
+      initialQuery.fromIdentifier &&
+      initialQuery.toResource &&
+      initialQuery.toIdentifier
     );
 
     if (!hasInitialRequest && !pathScenarios.length) {
@@ -265,15 +279,14 @@ function PathPage() {
     }
 
     const defaultScenario =
-      findWorkbenchScenarioById(pathScenarios, 'hero-to-relic') ||
+      findWorkbenchScenarioById(pathScenarios, "hero-to-relic") ||
       pathScenarios[0] ||
       createPathFallbackScenario();
     const nextState = {
       backlinks: initialQuery.backlinks || defaultScenario.backlinks,
       fromIdentifier: initialQuery.fromIdentifier || defaultScenario.fromIdentifier,
       fromResource: initialQuery.fromResource || defaultScenario.fromResource,
-      limitPerRelation:
-        initialQuery.limitPerRelation || defaultScenario.limitPerRelation,
+      limitPerRelation: initialQuery.limitPerRelation || defaultScenario.limitPerRelation,
       maxDepth: initialQuery.maxDepth || defaultScenario.maxDepth,
       resourceFilterKeys: initialQuery.resources
         ? parseCsvParam(initialQuery.resources)
@@ -282,7 +295,12 @@ function PathPage() {
       toResource: initialQuery.toResource || defaultScenario.toResource,
     };
 
-    if (!nextState.fromResource || !nextState.fromIdentifier || !nextState.toResource || !nextState.toIdentifier) {
+    if (
+      !nextState.fromResource ||
+      !nextState.fromIdentifier ||
+      !nextState.toResource ||
+      !nextState.toIdentifier
+    ) {
       return;
     }
 
@@ -334,8 +352,9 @@ function PathPage() {
           <div className="section-eyebrow">Path</div>
           <h1>Кратчайшая цепочка между двумя сущностями</h1>
           <p className="page-lead">
-            `explore/path` находит маршрут через текущий relation graph. Это удобно для lore explorer,
-            connected UI и учебных задач про traversal без ручной сборки множества запросов.
+            `explore/path` находит маршрут через текущий relation graph. Это удобно для lore
+            explorer, connected UI и учебных задач про traversal без ручной сборки множества
+            запросов.
           </p>
         </div>
         <div className="hero-side">
@@ -373,7 +392,9 @@ function PathPage() {
             <span>From resource</span>
             <select value={fromResource} onChange={(event) => setFromResource(event.target.value)}>
               {resources.map((item) => (
-                <option key={item.id} value={item.id}>{item.label}</option>
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
               ))}
             </select>
           </label>
@@ -391,7 +412,9 @@ function PathPage() {
             <span>To resource</span>
             <select value={toResource} onChange={(event) => setToResource(event.target.value)}>
               {resources.map((item) => (
-                <option key={item.id} value={item.id}>{item.label}</option>
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
               ))}
             </select>
           </label>
@@ -409,16 +432,23 @@ function PathPage() {
             <span>Max depth</span>
             <select value={maxDepth} onChange={(event) => setMaxDepth(event.target.value)}>
               {maxDepthOptions.map((value) => (
-                <option key={value} value={value}>{value}</option>
+                <option key={value} value={value}>
+                  {value}
+                </option>
               ))}
             </select>
           </label>
 
           <label>
             <span>Limit per relation</span>
-            <select value={limitPerRelation} onChange={(event) => setLimitPerRelation(event.target.value)}>
+            <select
+              value={limitPerRelation}
+              onChange={(event) => setLimitPerRelation(event.target.value)}
+            >
               {limitPerRelationOptions.map((value) => (
-                <option key={value} value={value}>{value}</option>
+                <option key={value} value={value}>
+                  {value}
+                </option>
               ))}
             </select>
           </label>
@@ -437,18 +467,23 @@ function PathPage() {
             <div>
               <h2>Resource filter</h2>
               <p className="muted-line">
-                Ограничивает traversal промежуточными типами ресурсов. `from` и `to` всегда остаются доступными.
+                Ограничивает traversal промежуточными типами ресурсов. `from` и `to` всегда остаются
+                доступными.
               </p>
             </div>
             <div className="tag-list">
-              <span className="metric-chip">{resourceFilterKeys.length || resources.length} resource types</span>
-              <span className="metric-chip">{resourceFilterKeys.length ? 'filtered' : 'all visible'}</span>
+              <span className="metric-chip">
+                {resourceFilterKeys.length || resources.length} resource types
+              </span>
+              <span className="metric-chip">
+                {resourceFilterKeys.length ? "filtered" : "all visible"}
+              </span>
             </div>
           </div>
           <div className="control-chip-bar">
             <button
               type="button"
-              className={`control-chip${!resourceFilterKeys.length ? ' control-chip-active' : ''}`}
+              className={`control-chip${!resourceFilterKeys.length ? " control-chip-active" : ""}`}
               onClick={() => setResourceFilterKeys([])}
             >
               Все ресурсы
@@ -457,7 +492,7 @@ function PathPage() {
               <button
                 key={item.id}
                 type="button"
-                className={`control-chip${resourceFilterKeys.includes(item.id) ? ' control-chip-active' : ''}`}
+                className={`control-chip${resourceFilterKeys.includes(item.id) ? " control-chip-active" : ""}`}
                 onClick={() => togglePathResourceFilter(item.id)}
               >
                 {item.label}
@@ -468,10 +503,11 @@ function PathPage() {
 
         <div className="resource-preview-foot">
           <p className="muted-line">
-            Для сложных связей почти всегда нужен `backlinks=true`. Deeplink сохраняет фильтр в `resources=...`.
+            Для сложных связей почти всегда нужен `backlinks=true`. Deeplink сохраняет фильтр в
+            `resources=...`.
           </p>
           <button type="submit" className="action-button" disabled={loading}>
-            {loading ? 'Ищем путь...' : 'Найти путь'}
+            {loading ? "Ищем путь..." : "Найти путь"}
           </button>
         </div>
       </form>
@@ -482,14 +518,14 @@ function PathPage() {
         <ApiOperationGuide
           description="Path explorer берет параметры и live snippets из OpenAPI, поэтому contract и UI не расходятся."
           parameterOrder={[
-            'fromResource',
-            'fromIdentifier',
-            'toResource',
-            'toIdentifier',
-            'maxDepth',
-            'limitPerRelation',
-            'backlinks',
-            'resources',
+            "fromResource",
+            "fromIdentifier",
+            "toResource",
+            "toIdentifier",
+            "maxDepth",
+            "limitPerRelation",
+            "backlinks",
+            "resources",
           ]}
           path="/api/v1/explore/path"
           requestPath={requestPreviewPath}
@@ -504,7 +540,7 @@ function PathPage() {
           <section className="stats-hero-grid">
             <article className="stat-card">
               <div className="resource-kicker">Found</div>
-              <div className="stat-value">{responseData.data.found ? 'yes' : 'no'}</div>
+              <div className="stat-value">{responseData.data.found ? "yes" : "no"}</div>
               <p className="muted-line">Удалось ли найти маршрут.</p>
             </article>
             <article className="stat-card">
@@ -524,7 +560,11 @@ function PathPage() {
             </article>
           </section>
 
-          <PathSequence pathEdges={path.edges} pathNodes={path.nodes} resourceFilterKeys={resourceFilterKeys} />
+          <PathSequence
+            pathEdges={path.edges}
+            pathNodes={path.nodes}
+            resourceFilterKeys={resourceFilterKeys}
+          />
 
           <section className="section-card">
             <h2>Route summary</h2>
@@ -532,12 +572,22 @@ function PathPage() {
               <article className="path-summary-card">
                 <div className="resource-kicker">From</div>
                 <h3>{responseData.data.from.name}</h3>
-                <a className="query-link" href={buildGraphLink(responseData.data.from, resourceFilterKeys)}>Открыть start node в Graph</a>
+                <a
+                  className="query-link"
+                  href={buildGraphLink(responseData.data.from, resourceFilterKeys)}
+                >
+                  Открыть start node в Graph
+                </a>
               </article>
               <article className="path-summary-card">
                 <div className="resource-kicker">To</div>
                 <h3>{responseData.data.to.name}</h3>
-                <a className="query-link" href={buildGraphLink(responseData.data.to, resourceFilterKeys)}>Открыть target node в Graph</a>
+                <a
+                  className="query-link"
+                  href={buildGraphLink(responseData.data.to, resourceFilterKeys)}
+                >
+                  Открыть target node в Graph
+                </a>
               </article>
             </div>
           </section>
@@ -547,7 +597,10 @@ function PathPage() {
             {meta.truncatedRelations.length ? (
               <div className="graph-truncation-list">
                 {meta.truncatedRelations.map((item) => (
-                  <article key={`${item.from}-${item.relation}-${item.hiddenCount}`} className="sample-query-card">
+                  <article
+                    key={`${item.from}-${item.relation}-${item.hiddenCount}`}
+                    className="sample-query-card"
+                  >
                     <div className="resource-kicker">{item.relation}</div>
                     <strong>{item.hiddenCount} скрытых связей</strong>
                     <p className="muted-line">from: {item.from}</p>

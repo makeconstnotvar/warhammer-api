@@ -1,6 +1,6 @@
-import {get} from "./utils";
+import { get } from "./utils";
 
 const factionsApi = {
-  getFactions: get('/factions')
-}
-export {factionsApi}
+  getFactions: get("/factions"),
+};
+export { factionsApi };

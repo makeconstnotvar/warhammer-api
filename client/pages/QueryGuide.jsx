@@ -1,15 +1,33 @@
+import { useMemo } from "preact/hooks";
 import { docsApi } from "../api/docsApi";
 import { JsonViewer } from "../components/JsonViewer";
 import { StateNotice } from "../components/StateNotice";
+import { WorkbenchScenarioSection } from "../components/WorkbenchScenarioSection";
 import { useAsyncData } from "../hooks/useAsyncData";
+import { parseWorkbenchScenarios, selectWorkbenchScenarios } from "../lib/workbenchScenarios";
 
 function QueryGuide() {
   const { data, loading, error } = useAsyncData(
-    () => docsApi.getQueryGuide(),
-    [],
+    () =>
+      Promise.all([docsApi.getQueryGuide(), docsApi.getWorkbenchScenarios()]).then(
+        ([guide, workbench]) => ({ guide, workbench })
+      ),
+    []
   );
-  const guide = data?.data;
+  const guide = data?.guide?.data;
   const rateLimit = guide?.rateLimit;
+  const workbenchScenarios = useMemo(() => parseWorkbenchScenarios(data?.workbench), [data]);
+  const queryPatternScenarios = useMemo(
+    () =>
+      selectWorkbenchScenarios(workbenchScenarios, {
+        difficulty: ["starter", "intermediate"],
+        featuredOnly: true,
+        groupLimit: 2,
+        limit: 6,
+        tags: ["include", "backlinks", "relations", "whitelist"],
+      }),
+    [workbenchScenarios]
+  );
 
   if (loading) {
     return <StateNotice>Загрузка руководства по запросам...</StateNotice>;
@@ -26,10 +44,9 @@ function QueryGuide() {
           <div className="section-eyebrow">Query Guide</div>
           <h1>Единые правила запросов</h1>
           <p className="page-lead">
-            Все основные ресурсы используют одни и те же паттерны: `page`,
-            `limit`, `sort`, `search`, `filter[...]`, `include` и `fields[...]`.
-            Ошибки валидации приходят как `VALIDATION_ERROR` с детальными
-            `details` по каждому проблемному параметру.
+            Все основные ресурсы используют одни и те же паттерны: `page`, `limit`, `sort`,
+            `search`, `filter[...]`, `include` и `fields[...]`. Ошибки валидации приходят как
+            `VALIDATION_ERROR` с детальными `details` по каждому проблемному параметру.
           </p>
         </div>
       </section>
@@ -58,10 +75,7 @@ function QueryGuide() {
           <article className="stat-card">
             <div className="section-eyebrow">Scope</div>
             <div className="stat-value">{rateLimit.scope}</div>
-            <p>
-              Rate limit применяется ко всем endpoint-ам внутри публичного
-              `api/v1`.
-            </p>
+            <p>Rate limit применяется ко всем endpoint-ам внутри публичного `api/v1`.</p>
           </article>
           <article className="stat-card">
             <div className="section-eyebrow">Limit</div>
@@ -71,10 +85,7 @@ function QueryGuide() {
           <article className="stat-card">
             <div className="section-eyebrow">Window</div>
             <div className="stat-value">{rateLimit.windowSeconds}s</div>
-            <p>
-              Длина окна ограничения в секундах. Значение совпадает с reset
-              policy в headers.
-            </p>
+            <p>Длина окна ограничения в секундах. Значение совпадает с reset policy в headers.</p>
           </article>
           <article className="stat-card">
             <div className="section-eyebrow">Policy</div>
@@ -119,15 +130,19 @@ function QueryGuide() {
         </div>
       </section>
 
+      <WorkbenchScenarioSection
+        title="Workbench Query Patterns"
+        description="Это те же server-owned deeplink-сценарии, но отобранные по metadata для типовых query-паттернов: `include`, `backlinks`, relation traversal и whitelist traversal."
+        scenarios={queryPatternScenarios}
+        summary={`${queryPatternScenarios.length} live patterns`}
+      />
+
       <div className="panel-grid">
         <JsonViewer label="Ответ списка" data={guide.responseShapes.list} />
         <JsonViewer label="Ответ ошибки" data={guide.responseShapes.error} />
       </div>
 
-      <JsonViewer
-        label="Ответ при rate limit"
-        data={guide.responseShapes.rateLimitError}
-      />
+      <JsonViewer label="Ответ при rate limit" data={guide.responseShapes.rateLimitError} />
     </div>
   );
 }

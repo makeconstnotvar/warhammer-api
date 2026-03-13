@@ -19,10 +19,7 @@ function normalizeDetailValue(value) {
 function getDetailMetaEntries(detail = {}) {
   return Object.entries(detail).filter(
     ([key, value]) =>
-      !["field", "message"].includes(key) &&
-      value !== undefined &&
-      value !== null &&
-      value !== "",
+      !["field", "message"].includes(key) && value !== undefined && value !== null && value !== ""
   );
 }
 
@@ -46,9 +43,7 @@ function ApiErrorNotice({ details = [], message }) {
                   className="api-error-item"
                 >
                   <div className="api-error-item-head">
-                    {detail.field ? (
-                      <code className="api-error-field">{detail.field}</code>
-                    ) : null}
+                    {detail.field ? <code className="api-error-field">{detail.field}</code> : null}
                     <span>{detail.message || detail.code || "Invalid input."}</span>
                   </div>
                   {metaEntries.length ? (

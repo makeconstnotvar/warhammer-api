@@ -24,10 +24,18 @@
 - `Playground` теперь использует `/api/v1/openapi.json` для contract hints, поддерживает `page` и `fields[...]` и умеет применять resource sample queries прямо в форму
 - `Compare`, `Graph`, `Path` и `Playground` теперь показывают operation contract и live `curl` / `fetch` / `axios` snippets из текущего request path
 - `Compare`, `Graph` и `Path` теперь также читают placeholders и numeric option ranges из OpenAPI examples/defaults, а не держат их вручную в UI
+- `OpenAPI` теперь имеет локальный interactive reference viewer на `/openapi/reference`
+- рядом со spec теперь есть generated ESM SDK на `/sdk/warhammerApiV1Client.mjs`, который собирается из того же OpenAPI-контракта
+- OpenAPI schemas для `included`, `graph`, `path` и `stats` теперь описаны точнее и больше не держатся на generic `object`
+- в репозитории теперь есть рабочий quality/delivery слой: `ESLint`, `Prettier`, `npm run verify`, GitHub Actions CI и release checklist
 - `Compare`, `Graph` и `Path` теперь получают preset-сценарии из server docs endpoint-а `/api/v1/examples/workbench`, а не из локальных констант в клиенте
 - `Compare -> Path` bridge теперь тоже читает whitelist промежуточных ресурсов из server-owned workbench metadata
+- workbench-сценарии теперь несут `featured`, `difficulty` и `tags`, а `Home`, `Quick Start` и `Query Guide` используют эти metadata для живых deeplink cards
 - `Resources/:resource` теперь поддерживает `page`, `search`, `fields[...]`, list/detail contract hints и detail-aware error rendering
 - `Stats` и `Resources/:resource` теперь тоже показывают operation contract и live snippets через `/api/v1/openapi.json`
+- `Stats` и `Resources/:resource` теперь также показывают related workbench flows, отобранные по связанным ресурсам из общего metadata-contract
+- `Stats` и `Resources/:resource` теперь также отдают prefilled pivot links в `detail`, `graph`, `compare`, `path` и отфильтрованные list-view сценарии
+- `Stats` hero cards и `Resources/:resource` hero panel теперь тоже дают быстрые prefilled переходы в docs flows, а не только row/detail cards
 - главная страница теперь показывает server-owned workbench scenarios как реальные docs deeplink cards
 
 ## Быстрый старт
@@ -37,9 +45,12 @@
 ```bash
 npm install
 npm run db:setup
+npm run verify
 npm run build-dev
 npm run server
 ```
+
+Сейчас `npm run build-dev` собирает клиент без webpack/Sass warnings.
 
 В отдельном окне:
 
@@ -52,10 +63,22 @@ npm run client-watch
 - `npm run db:migrate` - применить migrations
 - `npm run db:seed` - перезаписать учебные данные
 - `npm run db:setup` - миграции + сиды
+- `npm run lint` - прогнать ESLint по серверу, клиенту и тестам
+- `npm run lint:fix` - автоматически исправить безопасные lint-проблемы
+- `npm run format` - отформатировать репозиторий через Prettier
+- `npm run format:check` - проверить форматирование без изменений
+- `npm run sdk:generate` - пересобрать generated ESM SDK из `/api/v1/openapi.json`
+- `npm run sdk:check` - проверить, что committed SDK синхронизирован с текущим spec
 - `npm run build-dev` - собрать клиент
-- `npm test` - прогнать integration tests для `explore`, `compare`, `stats` и новых доменных ресурсов
+- `npm test` - прогнать integration tests для `api/v1` и lightweight client-helper tests для docs pivot links
+- `npm run verify` - полный локальный quality gate: lint + format check + sdk check + build + test
 - `npm run server` - запустить Express
 - `npm run client-watch` - запустить клиент в watch-режиме
+
+CI:
+
+- GitHub Actions workflow `.github/workflows/ci.yml` поднимает PostgreSQL 16, выполняет `npm run db:setup`, затем `npm run verify`
+- релизный ручной smoke-checklist лежит в `RELEASE_CHECKLIST.md`
 
 ## Ключевые маршруты
 
@@ -83,6 +106,8 @@ npm run client-watch
 - `GET /api/v1/random/character?include=faction,race,homeworld`
 - `GET /api/v1/random/unit?include=factions,weapons,keywords`
 - `GET /api/v1/openapi.json`
+- `GET /openapi/reference`
+- `GET /sdk/warhammerApiV1Client.mjs`
 - `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion&include=races,leaders,homeworld`
 - `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion&fields[factions]=id,name,slug`
 - `GET /api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus&include=factions,leaders,homeworld,era`
@@ -108,7 +133,9 @@ npm run client-watch
 `GET /api/v1/stats/events/by-era` теперь также возвращает `yearLabel` и `yearOrder`, чтобы клиент мог строить timeline charts по эрам.
 Rate limiting для `api/v1` по умолчанию настроен как `120` запросов на `60` секунд и может быть переопределен через `API_V1_RATE_LIMIT_MAX_REQUESTS` и `API_V1_RATE_LIMIT_WINDOW_MS`.
 Ошибки валидации query-параметров теперь приходят как `VALIDATION_ERROR` с детальным массивом `details` по каждому некорректному полю.
-`npm test` поднимает приложение на временном порту и прогоняет HTTP integration tests для `explore/graph`, `explore/path`, `compare`, `stats`, `star-systems`, `battlefields`, `fleets`, `warp-routes` и `campaigns -> battlefields` на реальной PostgreSQL.
+`/openapi/reference` отдает локальный Swagger UI поверх того же `/api/v1/openapi.json`, без внешней CDN.
+`/sdk/warhammerApiV1Client.mjs` отдает generated ESM client с `createWarhammerApiClient()`, deep-object query serialization и единым `WarhammerApiError`.
+`npm test` поднимает приложение на временном порту и прогоняет HTTP integration tests для `explore/graph`, `explore/path`, `compare`, `stats`, `star-systems`, `battlefields`, `fleets`, `warp-routes`, `campaigns -> battlefields`, `openapi/reference` и client-helper tests для deeplink/pivot-генерации на реальной PostgreSQL.
 
 ## Shareable docs links
 

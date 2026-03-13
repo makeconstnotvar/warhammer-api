@@ -4,15 +4,8 @@ import { ApiErrorNotice } from "../components/ApiErrorNotice";
 import { ApiOperationGuide } from "../components/ApiOperationGuide";
 import { JsonViewer } from "../components/JsonViewer";
 import { StateNotice } from "../components/StateNotice";
-import {
-  extractError,
-  extractErrorDetails,
-  useAsyncData,
-} from "../hooks/useAsyncData";
-import {
-  formatOpenApiValue,
-  getOpenApiParameterMap,
-} from "../lib/openApi";
+import { extractError, extractErrorDetails, useAsyncData } from "../hooks/useAsyncData";
+import { formatOpenApiValue, getOpenApiParameterMap } from "../lib/openApi";
 import {
   buildQueryString,
   hasSearchParams,
@@ -22,15 +15,7 @@ import {
   toCsvParam,
 } from "../lib/query";
 
-const playgroundParameterOrder = [
-  "page",
-  "limit",
-  "search",
-  "sort",
-  "include",
-  "fields",
-  "filter",
-];
+const playgroundParameterOrder = ["page", "limit", "search", "sort", "include", "fields", "filter"];
 
 function extractOperationalHeaders(headers = {}) {
   const headerEntries = [
@@ -41,9 +26,7 @@ function extractOperationalHeaders(headers = {}) {
     ["Retry-After", headers["retry-after"]],
   ];
 
-  return headerEntries.filter(
-    ([, value]) => value !== undefined && value !== null && value !== "",
-  );
+  return headerEntries.filter(([, value]) => value !== undefined && value !== null && value !== "");
 }
 
 function buildFilterParamKey(filterKey) {
@@ -100,9 +83,7 @@ function toggleSortField(rawSort, fieldName) {
   const descValue = `-${fieldName}`;
 
   if (values.includes(ascValue)) {
-    return toCsvParam(
-      values.map((value) => (value === ascValue ? descValue : value)),
-    );
+    return toCsvParam(values.map((value) => (value === ascValue ? descValue : value)));
   }
 
   if (values.includes(descValue)) {
@@ -124,16 +105,14 @@ function sanitizeCsvAgainstAllowed(rawValue, allowedValues = [], fallbackValue =
 }
 
 function sanitizeSortValue(rawValue, allowedSortFields = [], fallbackValue = "") {
-  const allowedSet = new Set(
-    (allowedSortFields || []).map((value) => String(value)),
-  );
+  const allowedSet = new Set((allowedSortFields || []).map((value) => String(value)));
 
   if (!allowedSet.size) {
     return fallbackValue;
   }
 
   const values = parseCsvParam(rawValue).filter((value) =>
-    allowedSet.has(String(value).replace(/^-/, "")),
+    allowedSet.has(String(value).replace(/^-/, ""))
   );
 
   return values.length ? toCsvParam(values) : fallbackValue;
@@ -144,9 +123,7 @@ function parseSampleQueryState(samplePath) {
   const pathParts = url.pathname.split("/").filter(Boolean);
   const resource = pathParts[2] || "characters";
   const searchParams = url.searchParams;
-  const filterEntry = [...searchParams.entries()].find(([key]) =>
-    key.startsWith("filter["),
-  );
+  const filterEntry = [...searchParams.entries()].find(([key]) => key.startsWith("filter["));
 
   return {
     fields: searchParams.get(`fields[${resource}]`) || "",
@@ -175,7 +152,7 @@ function Playground() {
         search: "",
         sort: "",
       }),
-    [],
+    []
   );
   const hasInitialQuery = useMemo(() => hasSearchParams(), []);
   const didRunInitialQuery = useRef(false);
@@ -183,10 +160,7 @@ function Playground() {
   const specState = useAsyncData(() => docsApi.getOpenApiSpec(), []);
   const resources = catalogState.data?.data || [];
   const [resource, setResource] = useState(initialQuery.resource);
-  const docState = useAsyncData(
-    () => docsApi.getResourceDoc(resource),
-    [resource],
-  );
+  const docState = useAsyncData(() => docsApi.getResourceDoc(resource), [resource]);
   const [search, setSearch] = useState(initialQuery.search);
   const [page, setPage] = useState(initialQuery.page);
   const [limit, setLimit] = useState(initialQuery.limit);
@@ -205,7 +179,7 @@ function Playground() {
   const doc = docState.data?.data;
   const parameterMap = useMemo(
     () => getOpenApiParameterMap(specState.data, "/api/v1/{resource}"),
-    [specState.data],
+    [specState.data]
   );
   const operationalHeaders = extractOperationalHeaders(responseMeta?.headers);
   const availableIncludes = doc?.includes || [];
@@ -220,7 +194,7 @@ function Playground() {
             .map((field) => field.name)
             .join(",")
         : "id,name,slug",
-    [availableFields],
+    [availableFields]
   );
   const requestPreviewPath = useMemo(() => {
     const requestState = {
@@ -235,9 +209,7 @@ function Playground() {
       sort,
     };
 
-    return `/api/v1/${resource}${buildQueryString(
-      buildRequestParams(requestState),
-    )}`;
+    return `/api/v1/${resource}${buildQueryString(buildRequestParams(requestState))}`;
   }, [fields, filterKey, filterValue, include, limit, page, resource, search, sort]);
 
   useEffect(() => {
@@ -249,36 +221,27 @@ function Playground() {
     const includeFallback = doc.previewParams?.include || "";
 
     setPage((current) => current || "1");
-    setSort((current) =>
-      sanitizeSortValue(current, availableSortFields, doc.defaultSort || ""),
-    );
+    setSort((current) => sanitizeSortValue(current, availableSortFields, doc.defaultSort || ""));
     setInclude((current) =>
       sanitizeCsvAgainstAllowed(
         current,
         availableIncludes.map((item) => item.id),
-        includeFallback,
-      ),
+        includeFallback
+      )
     );
     setFields((current) =>
       sanitizeCsvAgainstAllowed(
         current,
         availableFields.map((field) => field.name),
-        "",
-      ),
+        ""
+      )
     );
 
     if (!availableFilters.some((item) => item.id === filterKey)) {
       setFilterKey(nextFilterKey);
       setFilterValue("");
     }
-  }, [
-    availableFields,
-    availableFilters,
-    availableIncludes,
-    availableSortFields,
-    doc,
-    filterKey,
-  ]);
+  }, [availableFields, availableFilters, availableIncludes, availableSortFields, doc, filterKey]);
 
   async function runRequest(nextState = {}) {
     const requestState = {
@@ -299,13 +262,8 @@ function Playground() {
     setSubmitErrorDetails([]);
 
     try {
-      const result = await docsApi.getResourceListResponse(
-        requestState.resource,
-        params,
-      );
-      setRequestPath(
-        `/api/v1/${requestState.resource}${buildQueryString(params)}`,
-      );
+      const result = await docsApi.getResourceListResponse(requestState.resource, params);
+      setRequestPath(`/api/v1/${requestState.resource}${buildQueryString(params)}`);
       setResponseData(result.data);
       setResponseMeta({
         headers: result.headers,
@@ -321,11 +279,9 @@ function Playground() {
               headers: error.response.headers,
               status: error.response.status,
             }
-          : null,
+          : null
       );
-      setRequestPath(
-        `/api/v1/${requestState.resource}${buildQueryString(params)}`,
-      );
+      setRequestPath(`/api/v1/${requestState.resource}${buildQueryString(params)}`);
     } finally {
       replaceQueryState(requestState);
       setLoading(false);
@@ -375,11 +331,10 @@ function Playground() {
       <section className="hero-panel hero-panel-compact">
         <div>
           <div className="section-eyebrow">Playground</div>
-          <h1>Contract-driven playground поверх `/api/v1/{'{resource}'}`</h1>
+          <h1>Contract-driven playground поверх `/api/v1/{"{resource}"}`</h1>
           <p className="page-lead">
-            Эта форма теперь опирается на `/api/v1/openapi.json` и metadata
-            ресурса. Параметры, defaults и quick toggles больше не живут как
-            набор ручных строк вне контракта.
+            Эта форма теперь опирается на `/api/v1/openapi.json` и metadata ресурса. Параметры,
+            defaults и quick toggles больше не живут как набор ручных строк вне контракта.
           </p>
         </div>
         <div className="hero-side">
@@ -393,10 +348,7 @@ function Playground() {
         <div className="form-grid">
           <label>
             <span>Ресурс</span>
-            <select
-              value={resource}
-              onChange={(event) => setResource(event.target.value)}
-            >
+            <select value={resource} onChange={(event) => setResource(event.target.value)}>
               {resources.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.label}
@@ -420,7 +372,7 @@ function Playground() {
               value={page}
               onInput={(event) => setPage(event.target.value)}
               placeholder={formatOpenApiValue(
-                parameterMap.page?.schema?.default || parameterMap.page?.example,
+                parameterMap.page?.schema?.default || parameterMap.page?.example
               )}
             />
           </label>
@@ -431,7 +383,7 @@ function Playground() {
               value={limit}
               onInput={(event) => setLimit(event.target.value)}
               placeholder={formatOpenApiValue(
-                parameterMap.limit?.schema?.default || parameterMap.limit?.example,
+                parameterMap.limit?.schema?.default || parameterMap.limit?.example
               )}
             />
           </label>
@@ -451,8 +403,7 @@ function Playground() {
               value={include}
               onInput={(event) => setInclude(event.target.value)}
               placeholder={
-                doc?.previewParams?.include ||
-                formatOpenApiValue(parameterMap.include?.example)
+                doc?.previewParams?.include || formatOpenApiValue(parameterMap.include?.example)
               }
             />
           </label>
@@ -468,10 +419,7 @@ function Playground() {
 
           <label>
             <span>Filter key</span>
-            <select
-              value={filterKey}
-              onChange={(event) => setFilterKey(event.target.value)}
-            >
+            <select value={filterKey} onChange={(event) => setFilterKey(event.target.value)}>
               {(availableFilters || []).map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.id}
@@ -492,25 +440,18 @@ function Playground() {
 
         <div className="resource-preview-foot">
           <p className="muted-line">
-            `page`, `limit`, `sort`, `include`, `fields` и `filter[...]`
-            сохраняются в URL. Для текущего ресурса доступны {availableSortFields.length} sort
-            fields, {availableIncludes.length} includes и {availableFields.length} selectable
-            fields.
+            `page`, `limit`, `sort`, `include`, `fields` и `filter[...]` сохраняются в URL. Для
+            текущего ресурса доступны {availableSortFields.length} sort fields,{" "}
+            {availableIncludes.length} includes и {availableFields.length} selectable fields.
           </p>
-          <button
-            type="submit"
-            className="action-button"
-            disabled={loading || docState.loading}
-          >
+          <button type="submit" className="action-button" disabled={loading || docState.loading}>
             {loading ? "Загрузка..." : "Выполнить запрос"}
           </button>
         </div>
       </form>
 
       {docState.error && <StateNotice type="error">{docState.error}</StateNotice>}
-      {specState.error && (
-        <StateNotice type="error">{specState.error}</StateNotice>
-      )}
+      {specState.error && <StateNotice type="error">{specState.error}</StateNotice>}
       <ApiErrorNotice details={submitErrorDetails} message={submitError} />
       {requestPath && <StateNotice>{requestPath}</StateNotice>}
 
@@ -531,7 +472,7 @@ function Playground() {
               <div>
                 <h2>Quick toggles</h2>
                 <p className="muted-line">
-                  Клик по sort field переключает `asc -> desc -> off`.
+                  Клик по sort field переключает <code>asc -&gt; desc -&gt; off</code>.
                 </p>
               </div>
             </div>
@@ -671,10 +612,7 @@ function Playground() {
             <article className="stat-card">
               <div className="section-eyebrow">Status</div>
               <div className="stat-value">{responseMeta.status}</div>
-              <p>
-                Последний ответ Playground. При превышении лимита здесь будет
-                `429`.
-              </p>
+              <p>Последний ответ Playground. При превышении лимита здесь будет `429`.</p>
             </article>
             {operationalHeaders.map(([name, value]) => (
               <article key={name} className="stat-card">

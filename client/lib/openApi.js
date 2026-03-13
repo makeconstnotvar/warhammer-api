@@ -32,13 +32,10 @@ function getOpenApiParameters(spec, path, method = "get") {
 }
 
 function getOpenApiParameterMap(spec, path, method = "get") {
-  return getOpenApiParameters(spec, path, method).reduce(
-    (result, parameter) => {
-      result[parameter.name] = parameter;
-      return result;
-    },
-    {},
-  );
+  return getOpenApiParameters(spec, path, method).reduce((result, parameter) => {
+    result[parameter.name] = parameter;
+    return result;
+  }, {});
 }
 
 function formatOpenApiValue(value) {
@@ -57,18 +54,10 @@ function formatOpenApiValue(value) {
   return String(value);
 }
 
-function getOpenApiParameterExample(
-  parameter,
-  { fallback = "", nestedKey } = {},
-) {
+function getOpenApiParameterExample(parameter, { fallback = "", nestedKey } = {}) {
   const example = parameter?.example;
 
-  if (
-    nestedKey &&
-    example &&
-    typeof example === "object" &&
-    !Array.isArray(example)
-  ) {
+  if (nestedKey && example && typeof example === "object" && !Array.isArray(example)) {
     return example[nestedKey] ?? fallback;
   }
 
@@ -106,9 +95,7 @@ function buildOpenApiIntegerOptions(parameter, fallback = []) {
     return fallback.map((value) => String(value));
   }
 
-  return Array.from({ length: maximum - minimum + 1 }, (_, index) =>
-    String(minimum + index),
-  );
+  return Array.from({ length: maximum - minimum + 1 }, (_, index) => String(minimum + index));
 }
 
 function getOpenApiConstraintChips(parameter) {

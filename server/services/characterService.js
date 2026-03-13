@@ -1,37 +1,37 @@
-const characterRepository = require('../repositories/characterRepository');
+const characterRepository = require("../repositories/characterRepository");
 
 class CharacterService {
-	async getAll(options = {}) {
-		return await characterRepository.findAll(options);
-	}
+  async getAll(options = {}) {
+    return await characterRepository.findAll(options);
+  }
 
-	async getById(id) {
-		const character = await characterRepository.findById(id);
-		if (!character) {
-			throw new Error('Character not found');
-		}
-		return character;
-	}
+  async getById(id) {
+    const character = await characterRepository.findById(id);
+    if (!character) {
+      throw new Error("Character not found");
+    }
+    return character;
+  }
 
-	async create(characterData) {
-		return await characterRepository.create(characterData);
-	}
+  async create(characterData) {
+    return await characterRepository.create(characterData);
+  }
 
-	async update(id, characterData) {
-		const updated = await characterRepository.update(id, characterData);
-		if (!updated) {
-			throw new Error('Character not found');
-		}
-		return updated;
-	}
+  async update(id, characterData) {
+    const updated = await characterRepository.update(id, characterData);
+    if (!updated) {
+      throw new Error("Character not found");
+    }
+    return updated;
+  }
 
-	async delete(id) {
-		const deleted = await characterRepository.delete(id);
-		if (!deleted) {
-			throw new Error('Character not found');
-		}
-		return deleted;
-	}
+  async delete(id) {
+    const deleted = await characterRepository.delete(id);
+    if (!deleted) {
+      throw new Error("Character not found");
+    }
+    return deleted;
+  }
 }
 
 module.exports = new CharacterService();

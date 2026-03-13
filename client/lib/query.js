@@ -2,7 +2,7 @@ function buildQueryString(params = {}) {
   const query = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === '') {
+    if (value === undefined || value === null || value === "") {
       return;
     }
 
@@ -10,15 +10,15 @@ function buildQueryString(params = {}) {
   });
 
   const queryString = query.toString();
-  return queryString ? `?${queryString}` : '';
+  return queryString ? `?${queryString}` : "";
 }
 
 function getCurrentSearchParams() {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return new URLSearchParams();
   }
 
-  return new URLSearchParams(window.location.search || '');
+  return new URLSearchParams(window.location.search || "");
 }
 
 function hasSearchParams() {
@@ -36,14 +36,14 @@ function readQueryState(defaults = {}) {
 }
 
 function replaceQueryState(params = {}) {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return;
   }
 
   const nextSearchParams = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === '') {
+    if (value === undefined || value === null || value === "") {
       return;
     }
 
@@ -51,21 +51,30 @@ function replaceQueryState(params = {}) {
   });
 
   const nextQuery = nextSearchParams.toString();
-  const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}`;
-  window.history.replaceState({}, '', nextUrl);
+  const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`;
+  window.history.replaceState({}, "", nextUrl);
 }
 
 function parseCsvParam(value) {
-  return [...new Set(
-    String(value || '')
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean)
-  )];
+  return [
+    ...new Set(
+      String(value || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    ),
+  ];
 }
 
 function toCsvParam(values = []) {
-  return [...new Set((values || []).map((item) => String(item).trim()).filter(Boolean))].join(',');
+  return [...new Set((values || []).map((item) => String(item).trim()).filter(Boolean))].join(",");
 }
 
-export { buildQueryString, hasSearchParams, parseCsvParam, readQueryState, replaceQueryState, toCsvParam };
+export {
+  buildQueryString,
+  hasSearchParams,
+  parseCsvParam,
+  readQueryState,
+  replaceQueryState,
+  toCsvParam,
+};

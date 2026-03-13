@@ -1,4 +1,4 @@
-const { isApiError } = require('./apiErrors');
+const { isApiError } = require("./apiErrors");
 
 function sendError(res, error) {
   if (isApiError(error)) {
@@ -15,8 +15,8 @@ function sendError(res, error) {
 
   return res.status(500).json({
     error: {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'Internal Server Error',
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Internal Server Error",
       details: [],
     },
   });

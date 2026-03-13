@@ -89,27 +89,6 @@ function splitCsv(value) {
     .filter(Boolean);
 }
 
-function parseResourceWhitelist(value, requiredResourceKeys = []) {
-  const requestedResourceTypes = uniqueValues(
-    splitCsv(value).map((resourceKey) => normalizeResourceKey(resourceKey)),
-  );
-
-  if (!requestedResourceTypes.length) {
-    return {
-      allowedResourceKeys: [],
-      requestedResourceTypes,
-    };
-  }
-
-  return {
-    allowedResourceKeys: uniqueValues([
-      ...requestedResourceTypes,
-      ...requiredResourceKeys,
-    ]),
-    requestedResourceTypes,
-  };
-}
-
 function pickFields(record, requestedFields) {
   if (!requestedFields || requestedFields.length === 0) {
     return record;
@@ -128,11 +107,7 @@ function getResourceConfig(resourceKey) {
   const config = resourceDefinitions[normalizedResourceKey];
 
   if (!config) {
-    throw createApiError(
-      404,
-      "RESOURCE_NOT_FOUND",
-      `Unknown resource "${resourceKey}"`,
-    );
+    throw createApiError(404, "RESOURCE_NOT_FOUND", `Unknown resource "${resourceKey}"`);
   }
 
   return config;
@@ -167,9 +142,7 @@ function parsePositiveInt(value, fallback) {
 }
 
 function getResourceFieldNames(resourceKey) {
-  return new Set(
-    (getResourceConfig(resourceKey).fields || []).map((field) => field.name),
-  );
+  return new Set((getResourceConfig(resourceKey).fields || []).map((field) => field.name));
 }
 
 function normalizeQueryResourceKey(resourceKey, field, details) {
@@ -185,8 +158,8 @@ function normalizeQueryResourceKey(resourceKey, field, details) {
         field,
         "UNKNOWN_RESOURCE",
         `Unknown resource "${resourceKey}"`,
-        resourceKey,
-      ),
+        resourceKey
+      )
     );
     return null;
   }
@@ -207,10 +180,8 @@ function parseRequiredQueryResourceKey(value, field, details) {
 function parseValidatedResourceWhitelist(value, requiredResourceKeys, details) {
   const requestedResourceTypes = uniqueValues(
     splitCsv(value)
-      .map((resourceKey) =>
-        normalizeQueryResourceKey(resourceKey, "resources", details),
-      )
-      .filter(Boolean),
+      .map((resourceKey) => normalizeQueryResourceKey(resourceKey, "resources", details))
+      .filter(Boolean)
   );
 
   if (!requestedResourceTypes.length) {
@@ -230,48 +201,45 @@ function parseValidatedResourceWhitelist(value, requiredResourceKeys, details) {
 }
 
 function normalizeFieldMap(fieldMap, details) {
-  return Object.entries(fieldMap).reduce(
-    (result, [resourceKey, requestedFields]) => {
-      const normalizedResourceKey = normalizeQueryResourceKey(
-        resourceKey,
-        `fields[${resourceKey}]`,
-        details,
-      );
+  return Object.entries(fieldMap).reduce((result, [resourceKey, requestedFields]) => {
+    const normalizedResourceKey = normalizeQueryResourceKey(
+      resourceKey,
+      `fields[${resourceKey}]`,
+      details
+    );
 
-      if (!normalizedResourceKey) {
-        return result;
-      }
-
-      const allowedFieldNames = getResourceFieldNames(normalizedResourceKey);
-      const validFieldNames = [];
-
-      requestedFields.forEach((fieldName) => {
-        if (!allowedFieldNames.has(fieldName)) {
-          details.push(
-            createValidationDetail(
-              `fields[${resourceKey}]`,
-              "UNKNOWN_FIELD",
-              `Unknown field "${fieldName}" for resource "${normalizedResourceKey}"`,
-              fieldName,
-            ),
-          );
-          return;
-        }
-
-        validFieldNames.push(fieldName);
-      });
-
-      if (validFieldNames.length) {
-        result[normalizedResourceKey] = uniqueValues([
-          ...(result[normalizedResourceKey] || []),
-          ...validFieldNames,
-        ]);
-      }
-
+    if (!normalizedResourceKey) {
       return result;
-    },
-    {},
-  );
+    }
+
+    const allowedFieldNames = getResourceFieldNames(normalizedResourceKey);
+    const validFieldNames = [];
+
+    requestedFields.forEach((fieldName) => {
+      if (!allowedFieldNames.has(fieldName)) {
+        details.push(
+          createValidationDetail(
+            `fields[${resourceKey}]`,
+            "UNKNOWN_FIELD",
+            `Unknown field "${fieldName}" for resource "${normalizedResourceKey}"`,
+            fieldName
+          )
+        );
+        return;
+      }
+
+      validFieldNames.push(fieldName);
+    });
+
+    if (validFieldNames.length) {
+      result[normalizedResourceKey] = uniqueValues([
+        ...(result[normalizedResourceKey] || []),
+        ...validFieldNames,
+      ]);
+    }
+
+    return result;
+  }, {});
 }
 
 function parseListQuery(resourceKey, query) {
@@ -293,12 +261,13 @@ function parseListQuery(resourceKey, query) {
   const sort = splitCsv(query.sort || resourceConfig.defaultSort);
   const include = splitCsv(query.include);
   const filters = extractBracketValues(query, "filter");
-  const rawFieldMap = Object.entries(
-    extractBracketValues(query, "fields"),
-  ).reduce((result, [key, value]) => {
-    result[key] = splitCsv(value);
-    return result;
-  }, {});
+  const rawFieldMap = Object.entries(extractBracketValues(query, "fields")).reduce(
+    (result, [key, value]) => {
+      result[key] = splitCsv(value);
+      return result;
+    },
+    {}
+  );
   const fieldMap = normalizeFieldMap(rawFieldMap, details);
 
   include.forEach((includeKey) => {
@@ -308,8 +277,8 @@ function parseListQuery(resourceKey, query) {
           "include",
           "UNKNOWN_INCLUDE",
           `Unknown include "${includeKey}" for resource "${normalizedResourceKey}"`,
-          includeKey,
-        ),
+          includeKey
+        )
       );
     }
   });
@@ -321,16 +290,14 @@ function parseListQuery(resourceKey, query) {
           `filter[${filterKey}]`,
           "UNKNOWN_FILTER",
           `Unknown filter "${filterKey}" for resource "${normalizedResourceKey}"`,
-          filterKey,
-        ),
+          filterKey
+        )
       );
     }
   });
 
   sort.forEach((sortKey) => {
-    const normalizedSortKey = sortKey.startsWith("-")
-      ? sortKey.slice(1)
-      : sortKey;
+    const normalizedSortKey = sortKey.startsWith("-") ? sortKey.slice(1) : sortKey;
 
     if (!resourceConfig.sortFields.includes(normalizedSortKey)) {
       details.push(
@@ -338,8 +305,8 @@ function parseListQuery(resourceKey, query) {
           "sort",
           "UNKNOWN_SORT_FIELD",
           `Unknown sort field "${normalizedSortKey}" for resource "${normalizedResourceKey}"`,
-          normalizedSortKey,
-        ),
+          normalizedSortKey
+        )
       );
     }
   });
@@ -424,7 +391,7 @@ function createGraphEdge(
   relationLabel,
   sourceResource,
   targetResource,
-  direction,
+  direction
 ) {
   return {
     direction,
@@ -448,15 +415,11 @@ function cacheGraphItem(resourceKey, item, itemCache) {
 }
 
 function uniqueValues(values) {
-  return [
-    ...new Set(values.filter((value) => value !== null && value !== undefined)),
-  ];
+  return [...new Set(values.filter((value) => value !== null && value !== undefined))];
 }
 
 function isResourceAllowed(allowedResourceKeys, resourceKey) {
-  return (
-    !allowedResourceKeys.length || allowedResourceKeys.includes(resourceKey)
-  );
+  return !allowedResourceKeys.length || allowedResourceKeys.includes(resourceKey);
 }
 
 function intersectArrays(arrays) {
@@ -465,7 +428,7 @@ function intersectArrays(arrays) {
   }
 
   return uniqueValues(arrays[0]).filter((candidate) =>
-    arrays.every((array) => (array || []).includes(candidate)),
+    arrays.every((array) => (array || []).includes(candidate))
   );
 }
 
@@ -496,11 +459,8 @@ async function buildIncluded(resourceKey, items, includeKeys, fieldMap) {
       continue;
     }
 
-    const loadedItems = await loadResourcesByIds(targetResource, [
-      ...targetIds,
-    ]);
-    seenByResource[targetResource] =
-      seenByResource[targetResource] || new Set();
+    const loadedItems = await loadResourcesByIds(targetResource, [...targetIds]);
+    seenByResource[targetResource] = seenByResource[targetResource] || new Set();
     included[targetResource] = included[targetResource] || [];
 
     loadedItems.forEach((loadedItem) => {
@@ -509,9 +469,7 @@ async function buildIncluded(resourceKey, items, includeKeys, fieldMap) {
       }
 
       seenByResource[targetResource].add(loadedItem.id);
-      included[targetResource].push(
-        serializeResource(targetResource, loadedItem, fieldMap),
-      );
+      included[targetResource].push(serializeResource(targetResource, loadedItem, fieldMap));
     });
   }
 
@@ -558,15 +516,8 @@ async function listResource(resourceKey, query, pathname) {
   const totalPages = Math.max(1, Math.ceil(result.total / parsed.limit));
 
   return {
-    data: result.rows.map((item) =>
-      serializeResource(parsed.resourceKey, item, parsed.fieldMap),
-    ),
-    included: await buildIncluded(
-      parsed.resourceKey,
-      result.rows,
-      parsed.include,
-      parsed.fieldMap,
-    ),
+    data: result.rows.map((item) => serializeResource(parsed.resourceKey, item, parsed.fieldMap)),
+    included: await buildIncluded(parsed.resourceKey, result.rows, parsed.include, parsed.fieldMap),
     links: buildLinks(pathname, query, parsed.page, parsed.limit, totalPages),
     meta: {
       appliedFilters: parsed.filters,
@@ -590,18 +541,13 @@ async function getResourceDetail(resourceKey, idOrSlug, query) {
     throw createApiError(
       404,
       "ENTITY_NOT_FOUND",
-      `Resource "${parsed.resourceKey}" entry "${idOrSlug}" was not found`,
+      `Resource "${parsed.resourceKey}" entry "${idOrSlug}" was not found`
     );
   }
 
   return {
     data: serializeResource(parsed.resourceKey, item, parsed.fieldMap),
-    included: await buildIncluded(
-      parsed.resourceKey,
-      [item],
-      parsed.include,
-      parsed.fieldMap,
-    ),
+    included: await buildIncluded(parsed.resourceKey, [item], parsed.include, parsed.fieldMap),
     meta: {
       include: parsed.include,
       resource: parsed.resourceKey,
@@ -611,15 +557,11 @@ async function getResourceDetail(resourceKey, idOrSlug, query) {
 
 function parseGraphQuery(query) {
   const details = [];
-  const resourceKey = parseRequiredQueryResourceKey(
-    query.resource,
-    "resource",
-    details,
-  );
+  const resourceKey = parseRequiredQueryResourceKey(query.resource, "resource", details);
   const identifier = parseRequiredString(
     query.identifier || query.id || query.slug,
     "identifier",
-    details,
+    details
   );
   const depth = parseOptionalPositiveInt(query.depth, {
     defaultValue: 2,
@@ -634,18 +576,13 @@ function parseGraphQuery(query) {
       details,
       field: "limitPerRelation",
       maxValue: MAX_GRAPH_RELATION_LIMIT,
-    },
+    }
   );
-  const backlinks = parseOptionalBoolean(
-    query.backlinks,
-    "backlinks",
-    true,
-    details,
-  );
+  const backlinks = parseOptionalBoolean(query.backlinks, "backlinks", true, details);
   const resourceWhitelist = parseValidatedResourceWhitelist(
     query.resources,
     [resourceKey],
-    details,
+    details
   );
 
   throwIfValidationErrors(details);
@@ -666,8 +603,7 @@ function sortItemsByIdOrder(items, orderedIds) {
 
   return [...items].sort((left, right) => {
     const leftOrder = orderMap.get(String(left.id)) ?? Number.MAX_SAFE_INTEGER;
-    const rightOrder =
-      orderMap.get(String(right.id)) ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = orderMap.get(String(right.id)) ?? Number.MAX_SAFE_INTEGER;
     return leftOrder - rightOrder;
   });
 }
@@ -677,25 +613,18 @@ async function buildGraphBacklinks(
   rootItem,
   limitPerRelation,
   itemCache,
-  allowedResourceKeys = [],
+  allowedResourceKeys = []
 ) {
   const backlinkRecords = [];
   const rootIdentifier = rootItem.slug || String(rootItem.id);
 
-  for (const [sourceResourceKey, sourceConfig] of Object.entries(
-    resourceDefinitions,
-  )) {
+  for (const [sourceResourceKey, sourceConfig] of Object.entries(resourceDefinitions)) {
     if (!isResourceAllowed(allowedResourceKeys, sourceResourceKey)) {
       continue;
     }
 
-    for (const [filterKey, filterConfig] of Object.entries(
-      sourceConfig.filters || {},
-    )) {
-      if (
-        filterConfig.type !== "relation" ||
-        filterConfig.resource !== rootResourceKey
-      ) {
+    for (const [filterKey, filterConfig] of Object.entries(sourceConfig.filters || {})) {
+      if (filterConfig.type !== "relation" || filterConfig.resource !== rootResourceKey) {
         continue;
       }
 
@@ -711,13 +640,10 @@ async function buildGraphBacklinks(
       });
 
       const items = result.rows.filter(
-        (item) =>
-          !(sourceResourceKey === rootResourceKey && item.id === rootItem.id),
+        (item) => !(sourceResourceKey === rootResourceKey && item.id === rootItem.id)
       );
 
-      items.forEach((item) =>
-        cacheGraphItem(sourceResourceKey, item, itemCache),
-      );
+      items.forEach((item) => cacheGraphItem(sourceResourceKey, item, itemCache));
 
       backlinkRecords.push({
         filterKey,
@@ -766,24 +692,19 @@ async function buildForwardNeighborRecords(
   item,
   limitPerRelation,
   itemCache,
-  allowedResourceKeys = [],
+  allowedResourceKeys = []
 ) {
   const resourceConfig = getResourceConfig(resourceKey);
   const currentNodeKey = buildGraphNodeKey(resourceKey, item.id);
   const neighborRecords = [];
   const truncatedRelations = [];
 
-  for (const [relationKey, relationConfig] of Object.entries(
-    resourceConfig.includes || {},
-  )) {
+  for (const [relationKey, relationConfig] of Object.entries(resourceConfig.includes || {})) {
     if (!isResourceAllowed(allowedResourceKeys, relationConfig.resource)) {
       continue;
     }
 
-    const rawRelationIds = toRelationIds(
-      item[relationConfig.localField],
-      relationConfig.many,
-    );
+    const rawRelationIds = toRelationIds(item[relationConfig.localField], relationConfig.many);
 
     if (!rawRelationIds.length) {
       continue;
@@ -804,7 +725,7 @@ async function buildForwardNeighborRecords(
     const relatedItems = await loadGraphItemsByIds(
       relationConfig.resource,
       limitedRelationIds,
-      itemCache,
+      itemCache
     );
 
     relatedItems.forEach((relatedItem) => {
@@ -816,7 +737,7 @@ async function buildForwardNeighborRecords(
           relationConfig.label,
           resourceKey,
           relationConfig.resource,
-          "outgoing",
+          "outgoing"
         ),
         item: relatedItem,
         resourceKey: relationConfig.resource,
@@ -832,14 +753,14 @@ async function buildBacklinkNeighborRecords(
   item,
   limitPerRelation,
   itemCache,
-  allowedResourceKeys = [],
+  allowedResourceKeys = []
 ) {
   const backlinkRecords = await buildGraphBacklinks(
     resourceKey,
     item,
     limitPerRelation,
     itemCache,
-    allowedResourceKeys,
+    allowedResourceKeys
   );
   const currentNodeKey = buildGraphNodeKey(resourceKey, item.id);
   const neighborRecords = [];
@@ -862,11 +783,11 @@ async function buildBacklinkNeighborRecords(
           buildGraphNodeKey(record.sourceResourceKey, relatedItem.id),
           currentNodeKey,
           record.filterKey,
-          getResourceConfig(record.sourceResourceKey).filters[record.filterKey]
-            ?.label || record.filterKey,
+          getResourceConfig(record.sourceResourceKey).filters[record.filterKey]?.label ||
+            record.filterKey,
           record.sourceResourceKey,
           resourceKey,
-          "incoming",
+          "incoming"
         ),
         item: relatedItem,
         resourceKey: record.sourceResourceKey,
@@ -883,7 +804,7 @@ async function buildPathNeighborRecords(resourceKey, item, options, itemCache) {
     item,
     options.limitPerRelation,
     itemCache,
-    options.allowedResourceKeys,
+    options.allowedResourceKeys
   );
 
   if (!options.backlinks) {
@@ -895,15 +816,12 @@ async function buildPathNeighborRecords(resourceKey, item, options, itemCache) {
     item,
     options.limitPerRelation,
     itemCache,
-    options.allowedResourceKeys,
+    options.allowedResourceKeys
   );
 
   return {
     neighborRecords: [...forward.neighborRecords, ...backlinks.neighborRecords],
-    truncatedRelations: [
-      ...forward.truncatedRelations,
-      ...backlinks.truncatedRelations,
-    ],
+    truncatedRelations: [...forward.truncatedRelations, ...backlinks.truncatedRelations],
   };
 }
 
@@ -912,22 +830,22 @@ function parseExplorePathQuery(query) {
   const fromResourceKey = parseRequiredQueryResourceKey(
     query.fromResource || query.sourceResource || query.from,
     "fromResource",
-    details,
+    details
   );
   const toResourceKey = parseRequiredQueryResourceKey(
     query.toResource || query.targetResource || query.to,
     "toResource",
-    details,
+    details
   );
   const fromIdentifier = parseRequiredString(
     query.fromIdentifier || query.sourceIdentifier || query.fromId,
     "fromIdentifier",
-    details,
+    details
   );
   const toIdentifier = parseRequiredString(
     query.toIdentifier || query.targetIdentifier || query.toId,
     "toIdentifier",
-    details,
+    details
   );
   const maxDepth = parseOptionalPositiveInt(query.maxDepth || query.depth, {
     defaultValue: 4,
@@ -942,18 +860,13 @@ function parseExplorePathQuery(query) {
       details,
       field: "limitPerRelation",
       maxValue: MAX_GRAPH_RELATION_LIMIT,
-    },
+    }
   );
-  const backlinks = parseOptionalBoolean(
-    query.backlinks,
-    "backlinks",
-    true,
-    details,
-  );
+  const backlinks = parseOptionalBoolean(query.backlinks, "backlinks", true, details);
   const resourceWhitelist = parseValidatedResourceWhitelist(
     query.resources,
     [fromResourceKey, toResourceKey],
-    details,
+    details
   );
 
   throwIfValidationErrors(details);
@@ -979,12 +892,7 @@ function buildPathNodesFromKeys(nodeKeys, itemCache) {
   });
 }
 
-function reconstructGraphPath(
-  fromNodeKey,
-  toNodeKey,
-  parentByNodeKey,
-  itemCache,
-) {
+function reconstructGraphPath(fromNodeKey, toNodeKey, parentByNodeKey, itemCache) {
   const nodeKeys = [toNodeKey];
   const pathEdges = [];
   let cursor = toNodeKey;
@@ -1002,10 +910,7 @@ function reconstructGraphPath(
 
     pathEdges.push({
       ...parentInfo.edge,
-      traversal:
-        parentInfo.previousNodeKey === parentInfo.edge.from
-          ? "forward"
-          : "reverse",
+      traversal: parentInfo.previousNodeKey === parentInfo.edge.from ? "forward" : "reverse",
     });
     cursor = parentInfo.previousNodeKey;
     nodeKeys.push(cursor);
@@ -1033,15 +938,13 @@ async function getExploreGraph(query) {
     throw createApiError(
       404,
       "ENTITY_NOT_FOUND",
-      `Resource "${parsed.resourceKey}" entry "${parsed.identifier}" was not found`,
+      `Resource "${parsed.resourceKey}" entry "${parsed.identifier}" was not found`
     );
   }
 
   const nodeMap = new Map();
   const edgeMap = new Map();
-  const queue = [
-    { distance: 0, item: rootItem, resourceKey: parsed.resourceKey },
-  ];
+  const queue = [{ distance: 0, item: rootItem, resourceKey: parsed.resourceKey }];
   const queuedNodeKeys = new Set();
   const truncatedRelations = [];
   cacheGraphItem(parsed.resourceKey, rootItem, itemCache);
@@ -1062,35 +965,25 @@ async function getExploreGraph(query) {
       current.item,
       parsed.limitPerRelation,
       itemCache,
-      parsed.allowedResourceKeys,
+      parsed.allowedResourceKeys
     );
 
     truncatedRelations.push(...neighborResult.truncatedRelations);
 
     neighborResult.neighborRecords.forEach((neighborRecord) => {
-      const relatedNodeKey = buildGraphNodeKey(
-        neighborRecord.resourceKey,
-        neighborRecord.item.id,
-      );
+      const relatedNodeKey = buildGraphNodeKey(neighborRecord.resourceKey, neighborRecord.item.id);
       const existingNode = nodeMap.get(relatedNodeKey);
 
       if (!existingNode) {
         nodeMap.set(
           relatedNodeKey,
-          createGraphNode(
-            neighborRecord.resourceKey,
-            neighborRecord.item,
-            current.distance + 1,
-          ),
+          createGraphNode(neighborRecord.resourceKey, neighborRecord.item, current.distance + 1)
         );
       }
 
       edgeMap.set(neighborRecord.edge.id, neighborRecord.edge);
 
-      if (
-        !queuedNodeKeys.has(relatedNodeKey) &&
-        current.distance + 1 < parsed.depth
-      ) {
+      if (!queuedNodeKeys.has(relatedNodeKey) && current.distance + 1 < parsed.depth) {
         queue.push({
           distance: current.distance + 1,
           item: neighborRecord.item,
@@ -1107,21 +1000,18 @@ async function getExploreGraph(query) {
       rootItem,
       parsed.limitPerRelation,
       itemCache,
-      parsed.allowedResourceKeys,
+      parsed.allowedResourceKeys
     );
 
     truncatedRelations.push(...backlinkResult.truncatedRelations);
 
     backlinkResult.neighborRecords.forEach((neighborRecord) => {
-      const sourceNodeKey = buildGraphNodeKey(
-        neighborRecord.resourceKey,
-        neighborRecord.item.id,
-      );
+      const sourceNodeKey = buildGraphNodeKey(neighborRecord.resourceKey, neighborRecord.item.id);
 
       if (!nodeMap.has(sourceNodeKey)) {
         nodeMap.set(
           sourceNodeKey,
-          createGraphNode(neighborRecord.resourceKey, neighborRecord.item, 1),
+          createGraphNode(neighborRecord.resourceKey, neighborRecord.item, 1)
         );
       }
 
@@ -1167,20 +1057,14 @@ async function getExploreGraph(query) {
 async function getExplorePath(query) {
   const parsed = parseExplorePathQuery(query);
   const itemCache = new Map();
-  const fromItem = await getResourceRow(
-    parsed.fromResourceKey,
-    parsed.fromIdentifier,
-  );
-  const toItem = await getResourceRow(
-    parsed.toResourceKey,
-    parsed.toIdentifier,
-  );
+  const fromItem = await getResourceRow(parsed.fromResourceKey, parsed.fromIdentifier);
+  const toItem = await getResourceRow(parsed.toResourceKey, parsed.toIdentifier);
 
   if (!fromItem) {
     throw createApiError(
       404,
       "ENTITY_NOT_FOUND",
-      `Resource "${parsed.fromResourceKey}" entry "${parsed.fromIdentifier}" was not found`,
+      `Resource "${parsed.fromResourceKey}" entry "${parsed.fromIdentifier}" was not found`
     );
   }
 
@@ -1188,7 +1072,7 @@ async function getExplorePath(query) {
     throw createApiError(
       404,
       "ENTITY_NOT_FOUND",
-      `Resource "${parsed.toResourceKey}" entry "${parsed.toIdentifier}" was not found`,
+      `Resource "${parsed.toResourceKey}" entry "${parsed.toIdentifier}" was not found`
     );
   }
 
@@ -1227,9 +1111,7 @@ async function getExplorePath(query) {
     };
   }
 
-  const queue = [
-    { distance: 0, item: fromItem, resourceKey: parsed.fromResourceKey },
-  ];
+  const queue = [{ distance: 0, item: fromItem, resourceKey: parsed.fromResourceKey }];
   const visitedNodeKeys = new Set([fromNodeKey]);
   const parentByNodeKey = new Map();
   const truncatedRelations = [];
@@ -1250,16 +1132,13 @@ async function getExplorePath(query) {
         allowedResourceKeys: parsed.allowedResourceKeys,
         limitPerRelation: parsed.limitPerRelation,
       },
-      itemCache,
+      itemCache
     );
 
     truncatedRelations.push(...neighborResult.truncatedRelations);
 
     for (const neighborRecord of neighborResult.neighborRecords) {
-      const nextNodeKey = buildGraphNodeKey(
-        neighborRecord.resourceKey,
-        neighborRecord.item.id,
-      );
+      const nextNodeKey = buildGraphNodeKey(neighborRecord.resourceKey, neighborRecord.item.id);
 
       if (visitedNodeKeys.has(nextNodeKey)) {
         continue;
@@ -1268,10 +1147,7 @@ async function getExplorePath(query) {
       visitedNodeKeys.add(nextNodeKey);
       parentByNodeKey.set(nextNodeKey, {
         edge: neighborRecord.edge,
-        previousNodeKey: buildGraphNodeKey(
-          current.resourceKey,
-          current.item.id,
-        ),
+        previousNodeKey: buildGraphNodeKey(current.resourceKey, current.item.id),
       });
 
       if (nextNodeKey === toNodeKey) {
@@ -1288,12 +1164,7 @@ async function getExplorePath(query) {
   }
 
   const path = foundNodeKey
-    ? reconstructGraphPath(
-        fromNodeKey,
-        foundNodeKey,
-        parentByNodeKey,
-        itemCache,
-      )
+    ? reconstructGraphPath(fromNodeKey, foundNodeKey, parentByNodeKey, itemCache)
     : { edges: [], length: 0, nodes: [] };
 
   return {
@@ -1304,7 +1175,7 @@ async function getExplorePath(query) {
       to: createGraphNode(
         parsed.toResourceKey,
         toItem,
-        path.nodes.length ? path.nodes.length - 1 : 0,
+        path.nodes.length ? path.nodes.length - 1 : 0
       ),
     },
     included: {},
@@ -1339,8 +1210,7 @@ function buildFactionComparison(items) {
     alignments: uniqueValues(items.map((item) => item.alignment)),
     eraIds: uniqueValues(items.map((item) => item.eraId)),
     homeworldIds: uniqueValues(items.map((item) => item.homeworldId)),
-    powerSpread:
-      strongest && weakest ? strongest.powerLevel - weakest.powerLevel : 0,
+    powerSpread: strongest && weakest ? strongest.powerLevel - weakest.powerLevel : 0,
     sharedLeaderIds: intersectArrays(items.map((item) => item.leaderIds || [])),
     sharedRaceIds: intersectArrays(items.map((item) => item.raceIds || [])),
     statuses: uniqueValues(items.map((item) => item.status)),
@@ -1365,8 +1235,7 @@ function buildCharacterComparison(items) {
     eraIds: uniqueValues(items.map((item) => item.eraId)),
     factionIds: uniqueValues(items.map((item) => item.factionId)),
     homeworldIds: uniqueValues(items.map((item) => item.homeworldId)),
-    powerSpread:
-      strongest && weakest ? strongest.powerLevel - weakest.powerLevel : 0,
+    powerSpread: strongest && weakest ? strongest.powerLevel - weakest.powerLevel : 0,
     raceIds: uniqueValues(items.map((item) => item.raceId)),
     sharedEventIds: intersectArrays(items.map((item) => item.eventIds || [])),
     sharedKeywords: intersectArrays(items.map((item) => item.keywords || [])),
@@ -1390,14 +1259,9 @@ function buildUnitComparison(items) {
   return {
     eraIds: uniqueValues(items.map((item) => item.eraId)),
     factionIds: uniqueValues(items.flatMap((item) => item.factionIds || [])),
-    powerSpread:
-      strongest && weakest ? strongest.powerLevel - weakest.powerLevel : 0,
-    sharedFactionIds: intersectArrays(
-      items.map((item) => item.factionIds || []),
-    ),
-    sharedKeywordIds: intersectArrays(
-      items.map((item) => item.keywordIds || []),
-    ),
+    powerSpread: strongest && weakest ? strongest.powerLevel - weakest.powerLevel : 0,
+    sharedFactionIds: intersectArrays(items.map((item) => item.factionIds || [])),
+    sharedKeywordIds: intersectArrays(items.map((item) => item.keywordIds || [])),
     sharedWeaponIds: intersectArrays(items.map((item) => item.weaponIds || [])),
     statuses: uniqueValues(items.map((item) => item.status)),
     strongest,
@@ -1426,9 +1290,7 @@ function buildOrganizationComparison(items) {
         : 0,
     mostInfluential,
     organizationTypes: uniqueValues(items.map((item) => item.organizationType)),
-    sharedFactionIds: intersectArrays(
-      items.map((item) => item.factionIds || []),
-    ),
+    sharedFactionIds: intersectArrays(items.map((item) => item.factionIds || [])),
     sharedKeywords: intersectArrays(items.map((item) => item.keywords || [])),
     sharedLeaderIds: intersectArrays(items.map((item) => item.leaderIds || [])),
     statuses: uniqueValues(items.map((item) => item.status)),
@@ -1448,18 +1310,13 @@ function buildRelicComparison(items) {
   const weakest = rankedItems[rankedItems.length - 1] || null;
 
   return {
-    bearerCharacterIds: uniqueValues(
-      items.map((item) => item.bearerCharacterId),
-    ),
+    bearerCharacterIds: uniqueValues(items.map((item) => item.bearerCharacterId)),
     eraIds: uniqueValues(items.map((item) => item.eraId)),
     factionIds: uniqueValues(items.map((item) => item.factionId)),
     originPlanetIds: uniqueValues(items.map((item) => item.originPlanetId)),
-    powerSpread:
-      strongest && weakest ? strongest.powerLevel - weakest.powerLevel : 0,
+    powerSpread: strongest && weakest ? strongest.powerLevel - weakest.powerLevel : 0,
     relicTypes: uniqueValues(items.map((item) => item.relicType)),
-    sharedKeywordIds: intersectArrays(
-      items.map((item) => item.keywordIds || []),
-    ),
+    sharedKeywordIds: intersectArrays(items.map((item) => item.keywordIds || [])),
     statuses: uniqueValues(items.map((item) => item.status)),
     strongest,
     weakest,
@@ -1483,22 +1340,13 @@ function buildCampaignComparison(items) {
     eraIds: uniqueValues(items.map((item) => item.eraId)),
     earliest,
     latest,
-    sharedCharacterIds: intersectArrays(
-      items.map((item) => item.characterIds || []),
-    ),
-    sharedFactionIds: intersectArrays(
-      items.map((item) => item.factionIds || []),
-    ),
+    sharedCharacterIds: intersectArrays(items.map((item) => item.characterIds || [])),
+    sharedFactionIds: intersectArrays(items.map((item) => item.factionIds || [])),
     sharedKeywords: intersectArrays(items.map((item) => item.keywords || [])),
-    sharedOrganizationIds: intersectArrays(
-      items.map((item) => item.organizationIds || []),
-    ),
+    sharedOrganizationIds: intersectArrays(items.map((item) => item.organizationIds || [])),
     sharedPlanetIds: intersectArrays(items.map((item) => item.planetIds || [])),
     statuses: uniqueValues(items.map((item) => item.status)),
-    timeSpan:
-      earliest && latest
-        ? (latest.yearOrder ?? 0) - (earliest.yearOrder ?? 0)
-        : 0,
+    timeSpan: earliest && latest ? (latest.yearOrder ?? 0) - (earliest.yearOrder ?? 0) : 0,
   };
 }
 
@@ -1517,21 +1365,13 @@ function buildBattlefieldComparison(items) {
     battlefieldTypes: uniqueValues(items.map((item) => item.battlefieldType)),
     eraIds: uniqueValues(items.map((item) => item.eraId)),
     intensitySpread:
-      mostIntense && leastIntense
-        ? mostIntense.intensityLevel - leastIntense.intensityLevel
-        : 0,
+      mostIntense && leastIntense ? mostIntense.intensityLevel - leastIntense.intensityLevel : 0,
     mostIntense,
     leastIntense,
     planetIds: uniqueValues(items.map((item) => item.planetId)),
-    sharedCampaignIds: intersectArrays(
-      items.map((item) => item.campaignIds || []),
-    ),
-    sharedCharacterIds: intersectArrays(
-      items.map((item) => item.characterIds || []),
-    ),
-    sharedFactionIds: intersectArrays(
-      items.map((item) => item.factionIds || []),
-    ),
+    sharedCampaignIds: intersectArrays(items.map((item) => item.campaignIds || [])),
+    sharedCharacterIds: intersectArrays(items.map((item) => item.characterIds || [])),
+    sharedFactionIds: intersectArrays(items.map((item) => item.factionIds || [])),
     sharedKeywords: intersectArrays(items.map((item) => item.keywords || [])),
     starSystemIds: uniqueValues(items.map((item) => item.starSystemId)),
     statuses: uniqueValues(items.map((item) => item.status)),
@@ -1553,8 +1393,7 @@ function buildStarSystemComparison(items) {
   return {
     eraIds: uniqueValues(items.map((item) => item.eraId)),
     largest,
-    planetSpread:
-      largest && smallest ? largest.planetCount - smallest.planetCount : 0,
+    planetSpread: largest && smallest ? largest.planetCount - smallest.planetCount : 0,
     segmentums: uniqueValues(items.map((item) => item.segmentum)),
     sharedKeywords: intersectArrays(items.map((item) => item.keywords || [])),
     sharedPlanetIds: intersectArrays(items.map((item) => item.planetIds || [])),
@@ -1580,8 +1419,8 @@ function parseCompareIdentifiers(query) {
       createValidationDetail(
         "ids",
         "REQUIRED",
-        'Parameter "ids" is required and must contain at least two identifiers',
-      ),
+        'Parameter "ids" is required and must contain at least two identifiers'
+      )
     );
     throwIfValidationErrors(details);
   }
@@ -1599,8 +1438,8 @@ function parseCompareIdentifiers(query) {
         {
           count: identifiers.length,
           minItems: 2,
-        },
-      ),
+        }
+      )
     );
   }
 
@@ -1618,7 +1457,7 @@ async function compareResources(resourceKey, query) {
   const compareQuery = parseCompareIdentifiers(query);
   const items = await loadResourcesByIdentifiers(
     parsed.resourceKey,
-    compareQuery.identifiers.join(","),
+    compareQuery.identifiers.join(",")
   );
 
   if (items.length < 2) {
@@ -1634,16 +1473,14 @@ async function compareResources(resourceKey, query) {
           compareQuery.rawValue,
           {
             matchedCount: items.length,
-            matchedIdentifiers: items.map(
-              (item) => item.slug || String(item.id),
-            ),
+            matchedIdentifiers: items.map((item) => item.slug || String(item.id)),
             minItems: 2,
             requestedCount: compareQuery.identifiers.length,
             requestedIdentifiers: compareQuery.identifiers,
             resource: parsed.resourceKey,
-          },
+          }
         ),
-      ],
+      ]
     );
   }
 
@@ -1664,24 +1501,17 @@ async function compareResources(resourceKey, query) {
     throw createApiError(
       400,
       "COMPARE_NOT_SUPPORTED",
-      `Compare is not supported for resource "${parsed.resourceKey}"`,
+      `Compare is not supported for resource "${parsed.resourceKey}"`
     );
   }
 
   return {
     data: {
       comparison: comparisonBuilder(items),
-      items: items.map((item) =>
-        serializeResource(parsed.resourceKey, item, parsed.fieldMap),
-      ),
+      items: items.map((item) => serializeResource(parsed.resourceKey, item, parsed.fieldMap)),
       resource: parsed.resourceKey,
     },
-    included: await buildIncluded(
-      parsed.resourceKey,
-      items,
-      parsed.include,
-      parsed.fieldMap,
-    ),
+    included: await buildIncluded(parsed.resourceKey, items, parsed.include, parsed.fieldMap),
     meta: {
       count: items.length,
       identifiers: compareQuery.identifiers,
@@ -1727,7 +1557,7 @@ async function getOverview() {
       gettingStartedSteps,
       interactiveScenarios,
       resources: await Promise.all(
-        resourceOrder.map((resourceKey) => buildResourceStats(resourceKey)),
+        resourceOrder.map((resourceKey) => buildResourceStats(resourceKey))
       ),
     },
     meta: {
@@ -1738,9 +1568,7 @@ async function getOverview() {
 
 async function getResourceCatalog() {
   return {
-    data: await Promise.all(
-      resourceOrder.map((resourceKey) => buildResourceStats(resourceKey)),
-    ),
+    data: await Promise.all(resourceOrder.map((resourceKey) => buildResourceStats(resourceKey))),
     meta: {
       total: resourceOrder.length,
     },
@@ -1813,11 +1641,11 @@ function getInteractiveScenarios() {
         Object.entries(interactiveScenarios).map(([groupKey, scenarios]) => [
           groupKey,
           scenarios.length,
-        ]),
+        ])
       ),
       total: Object.values(interactiveScenarios).reduce(
         (sum, scenarios) => sum + scenarios.length,
-        0,
+        0
       ),
     },
   };
@@ -1851,18 +1679,13 @@ async function getRandomResource(resourceKey, query) {
     throw createApiError(
       404,
       "ENTITY_NOT_FOUND",
-      `No records found for resource "${parsed.resourceKey}"`,
+      `No records found for resource "${parsed.resourceKey}"`
     );
   }
 
   return {
     data: serializeResource(parsed.resourceKey, item, parsed.fieldMap),
-    included: await buildIncluded(
-      parsed.resourceKey,
-      [item],
-      parsed.include,
-      parsed.fieldMap,
-    ),
+    included: await buildIncluded(parsed.resourceKey, [item], parsed.include, parsed.fieldMap),
     meta: {
       include: parsed.include,
       resource: parsed.resourceKey,
@@ -1972,25 +1795,19 @@ async function getStats(resourceKey, groupKey) {
   throw createApiError(
     404,
     "STATS_NOT_FOUND",
-    `Stats endpoint "${resourceKey}/${groupKey}" was not found`,
+    `Stats endpoint "${resourceKey}/${groupKey}" was not found`
   );
 }
 
 async function searchAll(query, pathname) {
   const details = [];
-  const search = parseRequiredString(
-    query.search || query.q,
-    "search",
-    details,
-  );
+  const search = parseRequiredString(query.search || query.q, "search", details);
   const requestedResources = splitCsv(query.resources);
   const resources = requestedResources.length
     ? uniqueValues(
         requestedResources
-          .map((resourceKey) =>
-            normalizeQueryResourceKey(resourceKey, "resources", details),
-          )
-          .filter(Boolean),
+          .map((resourceKey) => normalizeQueryResourceKey(resourceKey, "resources", details))
+          .filter(Boolean)
       )
     : resourceOrder;
   const limit = parseOptionalPositiveInt(query.limit, {
@@ -2003,9 +1820,7 @@ async function searchAll(query, pathname) {
   throwIfValidationErrors(details);
 
   const resultsByResource = await Promise.all(
-    resources.map((resourceKey) =>
-      searchResourceRows(resourceKey, search, limit),
-    ),
+    resources.map((resourceKey) => searchResourceRows(resourceKey, search, limit))
   );
   const allResults = resultsByResource
     .flatMap((entry, index) =>
@@ -2016,7 +1831,7 @@ async function searchAll(query, pathname) {
         resource: resources[index],
         slug: item.slug,
         summary: item.summary,
-      })),
+      }))
     )
     .sort((left, right) => {
       if (right.rank !== left.rank) {
@@ -2029,7 +1844,13 @@ async function searchAll(query, pathname) {
 
       return left.name.localeCompare(right.name);
     });
-  const results = allResults.slice(0, limit).map(({ rank, ...item }) => item);
+  const results = allResults.slice(0, limit).map((item) => ({
+    id: item.id,
+    name: item.name,
+    resource: item.resource,
+    slug: item.slug,
+    summary: item.summary,
+  }));
   const total = resultsByResource.reduce((sum, entry) => sum + entry.total, 0);
   const totalPages = Math.max(1, Math.ceil(total / limit));
 

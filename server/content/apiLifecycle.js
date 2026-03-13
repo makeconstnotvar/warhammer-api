@@ -32,8 +32,7 @@ const legacyApiMigrationTargets = [
     path: "/api/races",
     replacement: "/api/v1/races",
     status: "legacy",
-    summary:
-      "Legacy CRUD list for races. Use `/api/v1/races` for the primary public contract.",
+    summary: "Legacy CRUD list for races. Use `/api/v1/races` for the primary public contract.",
   },
 ];
 
@@ -99,8 +98,7 @@ const deprecationPolicy = {
     {
       phase: "announce",
       window: "Не менее 90 дней до sunset",
-      description:
-        "Маршрут получает changelog-запись, policy-обновление и migration target.",
+      description: "Маршрут получает changelog-запись, policy-обновление и migration target.",
     },
     {
       phase: "deprecated",
@@ -130,8 +128,7 @@ const deprecationPolicy = {
     {
       name: "Link",
       example: `Link: ${legacyApiPolicy.linkHeader}`,
-      description:
-        "Ссылка на человекочитаемую policy-страницу с правилами миграции.",
+      description: "Ссылка на человекочитаемую policy-страницу с правилами миграции.",
     },
   ],
   legacyEndpoints: legacyApiMigrationTargets.map((item) => ({

@@ -1,4 +1,4 @@
-@import './bootstrap-custom.scss';
+@use "./bootstrap-custom";
 
 // Visual direction: cathedral brass, parchment, crimson.
 :root {
@@ -155,9 +155,7 @@ pre {
 .preview-card,
 .stat-card,
 .step-card {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 28%),
-    var(--panel);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 28%), var(--panel);
 }
 
 .hero-panel {
@@ -364,8 +362,7 @@ pre {
   gap: 10px;
   background:
     radial-gradient(circle at top right, rgba(209, 163, 90, 0.18), transparent 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 28%),
-    var(--panel);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 28%), var(--panel);
 }
 
 .stat-value {
@@ -407,6 +404,25 @@ pre {
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+}
+
+.stats-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.stat-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.stats-section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .stats-row-titleline {
@@ -823,7 +839,7 @@ pre {
 }
 
 .path-edge-card::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 12px;
   top: 18px;
@@ -1028,6 +1044,28 @@ pre {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.workbench-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.workbench-difficulty-tag-starter {
+  border-color: rgba(120, 167, 197, 0.28);
+  color: rgba(179, 219, 244, 0.96);
+}
+
+.workbench-difficulty-tag-intermediate {
+  border-color: rgba(209, 163, 90, 0.28);
+  color: var(--gold-soft);
+}
+
+.workbench-difficulty-tag-advanced {
+  border-color: rgba(195, 112, 112, 0.32);
+  color: rgba(239, 177, 177, 0.92);
 }
 
 .sample-query-actions {

@@ -1,4 +1,4 @@
-const { createClient, getMigrationFiles, readFile } = require('./_db');
+const { createClient, getMigrationFiles, readFile } = require("./_db");
 
 async function ensureMigrationsTable(client) {
   await client.query(`
@@ -11,7 +11,7 @@ async function ensureMigrationsTable(client) {
 }
 
 async function getAppliedMigrations(client) {
-  const result = await client.query('SELECT file_name FROM schema_migrations ORDER BY file_name');
+  const result = await client.query("SELECT file_name FROM schema_migrations ORDER BY file_name");
   return new Set(result.rows.map((row) => row.file_name));
 }
 
@@ -34,10 +34,10 @@ async function run() {
       console.log(`apply ${migration.file}`);
       const sql = readFile(migration.fullPath);
       await client.query(sql);
-      await client.query('INSERT INTO schema_migrations (file_name) VALUES ($1)', [migration.file]);
+      await client.query("INSERT INTO schema_migrations (file_name) VALUES ($1)", [migration.file]);
     }
 
-    console.log('migrations complete');
+    console.log("migrations complete");
   } finally {
     await client.end();
   }

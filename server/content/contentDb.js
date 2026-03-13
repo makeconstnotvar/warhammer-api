@@ -1,8 +1,10 @@
-const db = require('../db');
-const { createApiError } = require('../lib/apiErrors');
+const db = require("../db");
+const { createApiError } = require("../lib/apiErrors");
 
 function normalizeValue(value) {
-  return String(value || '').trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function splitCsv(value) {
@@ -11,7 +13,7 @@ function splitCsv(value) {
   }
 
   return String(value)
-    .split(',')
+    .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
 }
@@ -30,13 +32,11 @@ function toNumberArray(values) {
     return [];
   }
 
-  return values
-    .map((value) => toNumber(value))
-    .filter((value) => value !== null);
+  return values.map((value) => toNumber(value)).filter((value) => value !== null);
 }
 
 function escapeLikePattern(value) {
-  return String(value || '').replace(/[\\%_]/g, '\\$&');
+  return String(value || "").replace(/[\\%_]/g, "\\$&");
 }
 
 function createQueryContext() {
@@ -91,8 +91,8 @@ function addRelationFilter(context, rawValue, sqlFactory) {
 
 const resourceDbConfigs = {
   eras: {
-    alias: 'e',
-    fromClause: 'FROM eras e',
+    alias: "e",
+    fromClause: "FROM eras e",
     selectClause: `
       e.id,
       e.slug,
@@ -105,14 +105,14 @@ const resourceDbConfigs = {
       COALESCE(e.keywords, ARRAY[]::text[]) AS keywords
     `,
     sortMap: {
-      name: 'e.name',
-      status: 'e.status',
-      yearOrder: 'e.year_order',
+      name: "e.name",
+      status: "e.status",
+      yearOrder: "e.year_order",
     },
     searchExpression: `CONCAT_WS(' ', e.name, e.summary, e.description, array_to_string(COALESCE(e.keywords, ARRAY[]::text[]), ' '))`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'e.status', rawValue),
-      keywords: (context, rawValue) => addKeywordsFilter(context, 'e.keywords', rawValue),
+      status: (context, rawValue) => addAttributeFilter(context, "e.status", rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, "e.keywords", rawValue),
     },
     serialize(row) {
       return {
@@ -129,8 +129,8 @@ const resourceDbConfigs = {
     },
   },
   races: {
-    alias: 'r',
-    fromClause: 'FROM races r',
+    alias: "r",
+    fromClause: "FROM races r",
     selectClause: `
       r.id,
       r.slug,
@@ -142,15 +142,15 @@ const resourceDbConfigs = {
       COALESCE(r.keywords, ARRAY[]::text[]) AS keywords
     `,
     sortMap: {
-      name: 'r.name',
-      status: 'r.status',
-      alignment: 'r.alignment',
+      name: "r.name",
+      status: "r.status",
+      alignment: "r.alignment",
     },
     searchExpression: `CONCAT_WS(' ', r.name, r.summary, r.description, r.alignment, array_to_string(COALESCE(r.keywords, ARRAY[]::text[]), ' '))`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'r.status', rawValue),
-      alignment: (context, rawValue) => addAttributeFilter(context, 'r.alignment', rawValue),
-      keywords: (context, rawValue) => addKeywordsFilter(context, 'r.keywords', rawValue),
+      status: (context, rawValue) => addAttributeFilter(context, "r.status", rawValue),
+      alignment: (context, rawValue) => addAttributeFilter(context, "r.alignment", rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, "r.keywords", rawValue),
     },
     serialize(row) {
       return {
@@ -165,9 +165,9 @@ const resourceDbConfigs = {
       };
     },
   },
-  'star-systems': {
-    alias: 'ss',
-    fromClause: 'FROM star_systems ss',
+  "star-systems": {
+    alias: "ss",
+    fromClause: "FROM star_systems ss",
     selectClause: `
       ss.id,
       ss.slug,
@@ -186,35 +186,37 @@ const resourceDbConfigs = {
       ), ARRAY[]::bigint[]) AS planet_ids
     `,
     sortMap: {
-      name: 'ss.name',
-      status: 'ss.status',
-      segmentum: 'ss.segmentum',
+      name: "ss.name",
+      status: "ss.status",
+      segmentum: "ss.segmentum",
     },
     searchExpression: `CONCAT_WS(' ', ss.name, ss.summary, ss.description, ss.segmentum, array_to_string(COALESCE(ss.keywords, ARRAY[]::text[]), ' '))`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'ss.status', rawValue),
-      segmentum: (context, rawValue) => addAttributeFilter(context, 'ss.segmentum', rawValue),
-      keywords: (context, rawValue) => addKeywordsFilter(context, 'ss.keywords', rawValue),
-      era: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+      status: (context, rawValue) => addAttributeFilter(context, "ss.status", rawValue),
+      segmentum: (context, rawValue) => addAttributeFilter(context, "ss.segmentum", rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, "ss.keywords", rawValue),
+      era: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM eras era_filter
           WHERE era_filter.id = ss.era_id
-            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+            AND ${buildIdentityMatch("era_filter.id", "era_filter.slug", "era_filter.name", placeholder)}
         )`
-      ),
-      planets: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      planets: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM planets planet_filter
           WHERE planet_filter.star_system_id = ss.id
-            AND ${buildIdentityMatch('planet_filter.id', 'planet_filter.slug', 'planet_filter.name', placeholder)}
+            AND ${buildIdentityMatch("planet_filter.id", "planet_filter.slug", "planet_filter.name", placeholder)}
         )`
-      ),
+        ),
     },
     serialize(row) {
       return {
@@ -231,9 +233,9 @@ const resourceDbConfigs = {
       };
     },
   },
-  'warp-routes': {
-    alias: 'wr',
-    fromClause: 'FROM warp_routes wr',
+  "warp-routes": {
+    alias: "wr",
+    fromClause: "FROM warp_routes wr",
     selectClause: `
       wr.id,
       wr.slug,
@@ -262,79 +264,85 @@ const resourceDbConfigs = {
       ), ARRAY[]::bigint[]) AS campaign_ids
     `,
     sortMap: {
-      name: 'wr.name',
-      status: 'wr.status',
-      routeType: 'wr.route_type',
-      stabilityLevel: 'wr.stability_level',
-      transitTimeRating: 'wr.transit_time_rating',
+      name: "wr.name",
+      status: "wr.status",
+      routeType: "wr.route_type",
+      stabilityLevel: "wr.stability_level",
+      transitTimeRating: "wr.transit_time_rating",
     },
     searchExpression: `CONCAT_WS(' ', wr.name, wr.summary, wr.description, wr.route_type, array_to_string(COALESCE(wr.keywords, ARRAY[]::text[]), ' '))`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'wr.status', rawValue),
-      type: (context, rawValue) => addAttributeFilter(context, 'wr.route_type', rawValue),
-      keywords: (context, rawValue) => addKeywordsFilter(context, 'wr.keywords', rawValue),
-      era: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+      status: (context, rawValue) => addAttributeFilter(context, "wr.status", rawValue),
+      type: (context, rawValue) => addAttributeFilter(context, "wr.route_type", rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, "wr.keywords", rawValue),
+      era: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM eras era_filter
           WHERE era_filter.id = wr.era_id
-            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+            AND ${buildIdentityMatch("era_filter.id", "era_filter.slug", "era_filter.name", placeholder)}
         )`
-      ),
-      fromStarSystem: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      fromStarSystem: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM star_systems system_filter
           WHERE system_filter.id = wr.from_star_system_id
-            AND ${buildIdentityMatch('system_filter.id', 'system_filter.slug', 'system_filter.name', placeholder)}
+            AND ${buildIdentityMatch("system_filter.id", "system_filter.slug", "system_filter.name", placeholder)}
         )`
-      ),
-      toStarSystem: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      toStarSystem: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM star_systems system_filter
           WHERE system_filter.id = wr.to_star_system_id
-            AND ${buildIdentityMatch('system_filter.id', 'system_filter.slug', 'system_filter.name', placeholder)}
+            AND ${buildIdentityMatch("system_filter.id", "system_filter.slug", "system_filter.name", placeholder)}
         )`
-      ),
-      starSystems: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      starSystems: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM star_systems system_filter
           WHERE (system_filter.id = wr.from_star_system_id OR system_filter.id = wr.to_star_system_id)
-            AND ${buildIdentityMatch('system_filter.id', 'system_filter.slug', 'system_filter.name', placeholder)}
+            AND ${buildIdentityMatch("system_filter.id", "system_filter.slug", "system_filter.name", placeholder)}
         )`
-      ),
-      factions: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      factions: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM warp_route_factions wrf
           JOIN factions faction_filter ON faction_filter.id = wrf.faction_id
           WHERE wrf.warp_route_id = wr.id
-            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+            AND ${buildIdentityMatch("faction_filter.id", "faction_filter.slug", "faction_filter.name", placeholder)}
         )`
-      ),
-      campaigns: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      campaigns: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM warp_route_campaigns wrc
           JOIN campaigns campaign_filter ON campaign_filter.id = wrc.campaign_id
           WHERE wrc.warp_route_id = wr.id
-            AND ${buildIdentityMatch('campaign_filter.id', 'campaign_filter.slug', 'campaign_filter.name', placeholder)}
+            AND ${buildIdentityMatch("campaign_filter.id", "campaign_filter.slug", "campaign_filter.name", placeholder)}
         )`
-      ),
+        ),
     },
     serialize(row) {
       const fromStarSystemId = toNumber(row.from_star_system_id);
@@ -352,7 +360,9 @@ const resourceDbConfigs = {
         transitTimeRating: toNumber(row.transit_time_rating),
         fromStarSystemId,
         toStarSystemId,
-        starSystemIds: [fromStarSystemId, toStarSystemId].filter((value, index, values) => value !== null && values.indexOf(value) === index),
+        starSystemIds: [fromStarSystemId, toStarSystemId].filter(
+          (value, index, values) => value !== null && values.indexOf(value) === index
+        ),
         eraId: toNumber(row.era_id),
         factionIds: toNumberArray(row.faction_ids),
         campaignIds: toNumberArray(row.campaign_ids),
@@ -361,8 +371,8 @@ const resourceDbConfigs = {
     },
   },
   planets: {
-    alias: 'p',
-    fromClause: 'FROM planets p',
+    alias: "p",
+    fromClause: "FROM planets p",
     selectClause: `
       p.id,
       p.slug,
@@ -377,36 +387,38 @@ const resourceDbConfigs = {
       COALESCE(p.keywords, ARRAY[]::text[]) AS keywords
     `,
     sortMap: {
-      name: 'p.name',
-      status: 'p.status',
-      type: 'p.type',
-      sector: 'p.sector',
+      name: "p.name",
+      status: "p.status",
+      type: "p.type",
+      sector: "p.sector",
     },
     searchExpression: `CONCAT_WS(' ', p.name, p.summary, p.description, p.type, p.sector, array_to_string(COALESCE(p.keywords, ARRAY[]::text[]), ' '))`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'p.status', rawValue),
-      type: (context, rawValue) => addAttributeFilter(context, 'p.type', rawValue),
-      keywords: (context, rawValue) => addKeywordsFilter(context, 'p.keywords', rawValue),
-      era: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+      status: (context, rawValue) => addAttributeFilter(context, "p.status", rawValue),
+      type: (context, rawValue) => addAttributeFilter(context, "p.type", rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, "p.keywords", rawValue),
+      era: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM eras era_filter
           WHERE era_filter.id = p.era_id
-            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+            AND ${buildIdentityMatch("era_filter.id", "era_filter.slug", "era_filter.name", placeholder)}
         )`
-      ),
-      starSystem: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      starSystem: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM star_systems system_filter
           WHERE system_filter.id = p.star_system_id
-            AND ${buildIdentityMatch('system_filter.id', 'system_filter.slug', 'system_filter.name', placeholder)}
+            AND ${buildIdentityMatch("system_filter.id", "system_filter.slug", "system_filter.name", placeholder)}
         )`
-      ),
+        ),
     },
     serialize(row) {
       return {
@@ -425,8 +437,8 @@ const resourceDbConfigs = {
     },
   },
   factions: {
-    alias: 'f',
-    fromClause: 'FROM factions f',
+    alias: "f",
+    fromClause: "FROM factions f",
     selectClause: `
       f.id,
       f.slug,
@@ -455,45 +467,47 @@ const resourceDbConfigs = {
       ), ARRAY[]::bigint[]) AS leader_ids
     `,
     sortMap: {
-      name: 'f.name',
-      status: 'f.status',
-      alignment: 'f.alignment',
-      powerLevel: 'f.power_level',
+      name: "f.name",
+      status: "f.status",
+      alignment: "f.alignment",
+      powerLevel: "f.power_level",
     },
     searchExpression: `CONCAT_WS(' ', f.name, f.summary, f.description, f.alignment, array_to_string(COALESCE(f.keywords, ARRAY[]::text[]), ' '))`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'f.status', rawValue),
-      alignment: (context, rawValue) => addAttributeFilter(context, 'f.alignment', rawValue),
-      keywords: (context, rawValue) => addKeywordsFilter(context, 'f.keywords', rawValue),
-      era: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+      status: (context, rawValue) => addAttributeFilter(context, "f.status", rawValue),
+      alignment: (context, rawValue) => addAttributeFilter(context, "f.alignment", rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, "f.keywords", rawValue),
+      era: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM eras era_filter
           WHERE era_filter.id = f.era_id
-            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+            AND ${buildIdentityMatch("era_filter.id", "era_filter.slug", "era_filter.name", placeholder)}
         )`
-      ),
-      race: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `(
+        ),
+      race: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `(
           EXISTS (
             SELECT 1
             FROM faction_races fr
             JOIN races race_filter ON race_filter.id = fr.race_id
             WHERE fr.faction_id = f.id
-              AND ${buildIdentityMatch('race_filter.id', 'race_filter.slug', 'race_filter.name', placeholder)}
+              AND ${buildIdentityMatch("race_filter.id", "race_filter.slug", "race_filter.name", placeholder)}
           )
           OR EXISTS (
             SELECT 1
             FROM races race_filter
             WHERE race_filter.id = f.race_id
-              AND ${buildIdentityMatch('race_filter.id', 'race_filter.slug', 'race_filter.name', placeholder)}
+              AND ${buildIdentityMatch("race_filter.id", "race_filter.slug", "race_filter.name", placeholder)}
           )
         )`
-      ),
+        ),
     },
     serialize(row) {
       const raceIds = toNumberArray(row.race_ids);
@@ -522,8 +536,8 @@ const resourceDbConfigs = {
     },
   },
   fleets: {
-    alias: 'flt',
-    fromClause: 'FROM fleets flt',
+    alias: "flt",
+    fromClause: "FROM fleets flt",
     selectClause: `
       flt.id,
       flt.slug,
@@ -558,81 +572,87 @@ const resourceDbConfigs = {
       ), ARRAY[]::bigint[]) AS campaign_ids
     `,
     sortMap: {
-      name: 'flt.name',
-      status: 'flt.status',
-      fleetType: 'flt.fleet_type',
-      mobilityClass: 'flt.mobility_class',
-      strengthRating: 'flt.strength_rating',
+      name: "flt.name",
+      status: "flt.status",
+      fleetType: "flt.fleet_type",
+      mobilityClass: "flt.mobility_class",
+      strengthRating: "flt.strength_rating",
     },
     searchExpression: `CONCAT_WS(' ', flt.name, flt.summary, flt.description, flt.fleet_type, flt.mobility_class, array_to_string(COALESCE(flt.keywords, ARRAY[]::text[]), ' '))`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'flt.status', rawValue),
-      type: (context, rawValue) => addAttributeFilter(context, 'flt.fleet_type', rawValue),
-      mobility: (context, rawValue) => addAttributeFilter(context, 'flt.mobility_class', rawValue),
-      keywords: (context, rawValue) => addKeywordsFilter(context, 'flt.keywords', rawValue),
-      era: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+      status: (context, rawValue) => addAttributeFilter(context, "flt.status", rawValue),
+      type: (context, rawValue) => addAttributeFilter(context, "flt.fleet_type", rawValue),
+      mobility: (context, rawValue) => addAttributeFilter(context, "flt.mobility_class", rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, "flt.keywords", rawValue),
+      era: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM eras era_filter
           WHERE era_filter.id = flt.era_id
-            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+            AND ${buildIdentityMatch("era_filter.id", "era_filter.slug", "era_filter.name", placeholder)}
         )`
-      ),
-      factions: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      factions: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM fleet_factions ff
           JOIN factions faction_filter ON faction_filter.id = ff.faction_id
           WHERE ff.fleet_id = flt.id
-            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+            AND ${buildIdentityMatch("faction_filter.id", "faction_filter.slug", "faction_filter.name", placeholder)}
         )`
-      ),
-      commanders: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      commanders: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM fleet_commanders fc
           JOIN characters character_filter ON character_filter.id = fc.character_id
           WHERE fc.fleet_id = flt.id
-            AND ${buildIdentityMatch('character_filter.id', 'character_filter.slug', 'character_filter.name', placeholder)}
+            AND ${buildIdentityMatch("character_filter.id", "character_filter.slug", "character_filter.name", placeholder)}
         )`
-      ),
-      campaigns: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      campaigns: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM fleet_campaigns fcp
           JOIN campaigns campaign_filter ON campaign_filter.id = fcp.campaign_id
           WHERE fcp.fleet_id = flt.id
-            AND ${buildIdentityMatch('campaign_filter.id', 'campaign_filter.slug', 'campaign_filter.name', placeholder)}
+            AND ${buildIdentityMatch("campaign_filter.id", "campaign_filter.slug", "campaign_filter.name", placeholder)}
         )`
-      ),
-      currentStarSystem: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      currentStarSystem: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM star_systems system_filter
           WHERE system_filter.id = flt.current_star_system_id
-            AND ${buildIdentityMatch('system_filter.id', 'system_filter.slug', 'system_filter.name', placeholder)}
+            AND ${buildIdentityMatch("system_filter.id", "system_filter.slug", "system_filter.name", placeholder)}
         )`
-      ),
-      homePort: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      homePort: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM planets planet_filter
           WHERE planet_filter.id = flt.home_port_planet_id
-            AND ${buildIdentityMatch('planet_filter.id', 'planet_filter.slug', 'planet_filter.name', placeholder)}
+            AND ${buildIdentityMatch("planet_filter.id", "planet_filter.slug", "planet_filter.name", placeholder)}
         )`
-      ),
+        ),
     },
     serialize(row) {
       return {
@@ -656,8 +676,8 @@ const resourceDbConfigs = {
     },
   },
   organizations: {
-    alias: 'o',
-    fromClause: 'FROM organizations o',
+    alias: "o",
+    fromClause: "FROM organizations o",
     selectClause: `
       o.id,
       o.slug,
@@ -684,58 +704,62 @@ const resourceDbConfigs = {
       ), ARRAY[]::bigint[]) AS leader_ids
     `,
     sortMap: {
-      name: 'o.name',
-      status: 'o.status',
-      organizationType: 'o.organization_type',
-      influenceLevel: 'o.influence_level',
+      name: "o.name",
+      status: "o.status",
+      organizationType: "o.organization_type",
+      influenceLevel: "o.influence_level",
     },
     searchExpression: `CONCAT_WS(' ', o.name, o.summary, o.description, o.organization_type, array_to_string(COALESCE(o.keywords, ARRAY[]::text[]), ' '))`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'o.status', rawValue),
-      type: (context, rawValue) => addAttributeFilter(context, 'o.organization_type', rawValue),
-      keywords: (context, rawValue) => addKeywordsFilter(context, 'o.keywords', rawValue),
-      faction: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+      status: (context, rawValue) => addAttributeFilter(context, "o.status", rawValue),
+      type: (context, rawValue) => addAttributeFilter(context, "o.organization_type", rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, "o.keywords", rawValue),
+      faction: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM organization_factions ofn
           JOIN factions faction_filter ON faction_filter.id = ofn.faction_id
           WHERE ofn.organization_id = o.id
-            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+            AND ${buildIdentityMatch("faction_filter.id", "faction_filter.slug", "faction_filter.name", placeholder)}
         )`
-      ),
-      leader: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      leader: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM organization_leaders ol
           JOIN characters leader_filter ON leader_filter.id = ol.character_id
           WHERE ol.organization_id = o.id
-            AND ${buildIdentityMatch('leader_filter.id', 'leader_filter.slug', 'leader_filter.name', placeholder)}
+            AND ${buildIdentityMatch("leader_filter.id", "leader_filter.slug", "leader_filter.name", placeholder)}
         )`
-      ),
-      homeworld: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      homeworld: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM planets planet_filter
           WHERE planet_filter.id = o.homeworld_id
-            AND ${buildIdentityMatch('planet_filter.id', 'planet_filter.slug', 'planet_filter.name', placeholder)}
+            AND ${buildIdentityMatch("planet_filter.id", "planet_filter.slug", "planet_filter.name", placeholder)}
         )`
-      ),
-      era: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      era: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM eras era_filter
           WHERE era_filter.id = o.era_id
-            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+            AND ${buildIdentityMatch("era_filter.id", "era_filter.slug", "era_filter.name", placeholder)}
         )`
-      ),
+        ),
     },
     serialize(row) {
       return {
@@ -756,8 +780,8 @@ const resourceDbConfigs = {
     },
   },
   keywords: {
-    alias: 'k',
-    fromClause: 'FROM keywords k',
+    alias: "k",
+    fromClause: "FROM keywords k",
     selectClause: `
       k.id,
       k.slug,
@@ -766,12 +790,12 @@ const resourceDbConfigs = {
       k.category
     `,
     sortMap: {
-      name: 'k.name',
-      category: 'k.category',
+      name: "k.name",
+      category: "k.category",
     },
     searchExpression: `CONCAT_WS(' ', k.name, k.description, k.category)`,
     filterBuilders: {
-      category: (context, rawValue) => addAttributeFilter(context, 'k.category', rawValue),
+      category: (context, rawValue) => addAttributeFilter(context, "k.category", rawValue),
     },
     serialize(row) {
       return {
@@ -784,8 +808,8 @@ const resourceDbConfigs = {
     },
   },
   weapons: {
-    alias: 'w',
-    fromClause: 'FROM weapons w',
+    alias: "w",
+    fromClause: "FROM weapons w",
     selectClause: `
       w.id,
       w.slug,
@@ -805,46 +829,49 @@ const resourceDbConfigs = {
       ), ARRAY[]::bigint[]) AS keyword_ids
     `,
     sortMap: {
-      name: 'w.name',
-      status: 'w.status',
-      weaponType: 'w.weapon_type',
-      powerLevel: 'w.power_level',
+      name: "w.name",
+      status: "w.status",
+      weaponType: "w.weapon_type",
+      powerLevel: "w.power_level",
     },
     searchExpression: `CONCAT_WS(' ', w.name, w.summary, w.description, w.weapon_type)`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'w.status', rawValue),
-      type: (context, rawValue) => addAttributeFilter(context, 'w.weapon_type', rawValue),
-      era: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+      status: (context, rawValue) => addAttributeFilter(context, "w.status", rawValue),
+      type: (context, rawValue) => addAttributeFilter(context, "w.weapon_type", rawValue),
+      era: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM eras era_filter
           WHERE era_filter.id = w.era_id
-            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+            AND ${buildIdentityMatch("era_filter.id", "era_filter.slug", "era_filter.name", placeholder)}
         )`
-      ),
-      faction: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      faction: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM factions faction_filter
           WHERE faction_filter.id = w.faction_id
-            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+            AND ${buildIdentityMatch("faction_filter.id", "faction_filter.slug", "faction_filter.name", placeholder)}
         )`
-      ),
-      keywords: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      keywords: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM weapon_keywords wk
           JOIN keywords keyword_filter ON keyword_filter.id = wk.keyword_id
           WHERE wk.weapon_id = w.id
-            AND ${buildIdentityMatch('keyword_filter.id', 'keyword_filter.slug', 'keyword_filter.name', placeholder)}
+            AND ${buildIdentityMatch("keyword_filter.id", "keyword_filter.slug", "keyword_filter.name", placeholder)}
         )`
-      ),
+        ),
     },
     serialize(row) {
       return {
@@ -863,8 +890,8 @@ const resourceDbConfigs = {
     },
   },
   relics: {
-    alias: 'rl',
-    fromClause: 'FROM relics rl',
+    alias: "rl",
+    fromClause: "FROM relics rl",
     selectClause: `
       rl.id,
       rl.slug,
@@ -886,66 +913,71 @@ const resourceDbConfigs = {
       ), ARRAY[]::bigint[]) AS keyword_ids
     `,
     sortMap: {
-      name: 'rl.name',
-      status: 'rl.status',
-      relicType: 'rl.relic_type',
-      powerLevel: 'rl.power_level',
+      name: "rl.name",
+      status: "rl.status",
+      relicType: "rl.relic_type",
+      powerLevel: "rl.power_level",
     },
     searchExpression: `CONCAT_WS(' ', rl.name, rl.summary, rl.description, rl.relic_type)`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'rl.status', rawValue),
-      type: (context, rawValue) => addAttributeFilter(context, 'rl.relic_type', rawValue),
-      faction: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+      status: (context, rawValue) => addAttributeFilter(context, "rl.status", rawValue),
+      type: (context, rawValue) => addAttributeFilter(context, "rl.relic_type", rawValue),
+      faction: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM factions faction_filter
           WHERE faction_filter.id = rl.faction_id
-            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+            AND ${buildIdentityMatch("faction_filter.id", "faction_filter.slug", "faction_filter.name", placeholder)}
         )`
-      ),
-      bearer: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      bearer: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM characters bearer_filter
           WHERE bearer_filter.id = rl.bearer_character_id
-            AND ${buildIdentityMatch('bearer_filter.id', 'bearer_filter.slug', 'bearer_filter.name', placeholder)}
+            AND ${buildIdentityMatch("bearer_filter.id", "bearer_filter.slug", "bearer_filter.name", placeholder)}
         )`
-      ),
-      originPlanet: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      originPlanet: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM planets planet_filter
           WHERE planet_filter.id = rl.origin_planet_id
-            AND ${buildIdentityMatch('planet_filter.id', 'planet_filter.slug', 'planet_filter.name', placeholder)}
+            AND ${buildIdentityMatch("planet_filter.id", "planet_filter.slug", "planet_filter.name", placeholder)}
         )`
-      ),
-      era: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      era: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM eras era_filter
           WHERE era_filter.id = rl.era_id
-            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+            AND ${buildIdentityMatch("era_filter.id", "era_filter.slug", "era_filter.name", placeholder)}
         )`
-      ),
-      keywords: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      keywords: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM relic_keywords rk
           JOIN keywords keyword_filter ON keyword_filter.id = rk.keyword_id
           WHERE rk.relic_id = rl.id
-            AND ${buildIdentityMatch('keyword_filter.id', 'keyword_filter.slug', 'keyword_filter.name', placeholder)}
+            AND ${buildIdentityMatch("keyword_filter.id", "keyword_filter.slug", "keyword_filter.name", placeholder)}
         )`
-      ),
+        ),
     },
     serialize(row) {
       return {
@@ -966,8 +998,8 @@ const resourceDbConfigs = {
     },
   },
   units: {
-    alias: 'u',
-    fromClause: 'FROM units u',
+    alias: "u",
+    fromClause: "FROM units u",
     selectClause: `
       u.id,
       u.slug,
@@ -998,58 +1030,62 @@ const resourceDbConfigs = {
       ), ARRAY[]::bigint[]) AS weapon_ids
     `,
     sortMap: {
-      name: 'u.name',
-      status: 'u.status',
-      unitType: 'u.unit_type',
-      powerLevel: 'u.power_level',
+      name: "u.name",
+      status: "u.status",
+      unitType: "u.unit_type",
+      powerLevel: "u.power_level",
     },
     searchExpression: `CONCAT_WS(' ', u.name, u.summary, u.description, u.unit_type)`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'u.status', rawValue),
-      type: (context, rawValue) => addAttributeFilter(context, 'u.unit_type', rawValue),
-      era: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+      status: (context, rawValue) => addAttributeFilter(context, "u.status", rawValue),
+      type: (context, rawValue) => addAttributeFilter(context, "u.unit_type", rawValue),
+      era: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM eras era_filter
           WHERE era_filter.id = u.era_id
-            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+            AND ${buildIdentityMatch("era_filter.id", "era_filter.slug", "era_filter.name", placeholder)}
         )`
-      ),
-      faction: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      faction: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM unit_factions uf
           JOIN factions faction_filter ON faction_filter.id = uf.faction_id
           WHERE uf.unit_id = u.id
-            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+            AND ${buildIdentityMatch("faction_filter.id", "faction_filter.slug", "faction_filter.name", placeholder)}
         )`
-      ),
-      keywords: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      keywords: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM unit_keywords uk
           JOIN keywords keyword_filter ON keyword_filter.id = uk.keyword_id
           WHERE uk.unit_id = u.id
-            AND ${buildIdentityMatch('keyword_filter.id', 'keyword_filter.slug', 'keyword_filter.name', placeholder)}
+            AND ${buildIdentityMatch("keyword_filter.id", "keyword_filter.slug", "keyword_filter.name", placeholder)}
         )`
-      ),
-      weapons: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      weapons: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM unit_weapons uw
           JOIN weapons weapon_filter ON weapon_filter.id = uw.weapon_id
           WHERE uw.unit_id = u.id
-            AND ${buildIdentityMatch('weapon_filter.id', 'weapon_filter.slug', 'weapon_filter.name', placeholder)}
+            AND ${buildIdentityMatch("weapon_filter.id", "weapon_filter.slug", "weapon_filter.name", placeholder)}
         )`
-      ),
+        ),
     },
     serialize(row) {
       return {
@@ -1069,8 +1105,8 @@ const resourceDbConfigs = {
     },
   },
   events: {
-    alias: 'ev',
-    fromClause: 'FROM events ev',
+    alias: "ev",
+    fromClause: "FROM events ev",
     selectClause: `
       ev.id,
       ev.slug,
@@ -1102,46 +1138,49 @@ const resourceDbConfigs = {
       ), ARRAY[]::bigint[]) AS character_ids
     `,
     sortMap: {
-      name: 'ev.name',
-      status: 'ev.status',
-      yearOrder: 'ev.year_order',
+      name: "ev.name",
+      status: "ev.status",
+      yearOrder: "ev.year_order",
     },
     searchExpression: `CONCAT_WS(' ', ev.name, ev.summary, ev.description, ev.year_label, array_to_string(COALESCE(ev.keywords, ARRAY[]::text[]), ' '))`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'ev.status', rawValue),
-      keywords: (context, rawValue) => addKeywordsFilter(context, 'ev.keywords', rawValue),
-      era: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+      status: (context, rawValue) => addAttributeFilter(context, "ev.status", rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, "ev.keywords", rawValue),
+      era: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM eras era_filter
           WHERE era_filter.id = ev.era_id
-            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+            AND ${buildIdentityMatch("era_filter.id", "era_filter.slug", "era_filter.name", placeholder)}
         )`
-      ),
-      factions: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      factions: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM event_factions ef
           JOIN factions faction_filter ON faction_filter.id = ef.faction_id
           WHERE ef.event_id = ev.id
-            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+            AND ${buildIdentityMatch("faction_filter.id", "faction_filter.slug", "faction_filter.name", placeholder)}
         )`
-      ),
-      planets: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      planets: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM event_planets ep
           JOIN planets planet_filter ON planet_filter.id = ep.planet_id
           WHERE ep.event_id = ev.id
-            AND ${buildIdentityMatch('planet_filter.id', 'planet_filter.slug', 'planet_filter.name', placeholder)}
+            AND ${buildIdentityMatch("planet_filter.id", "planet_filter.slug", "planet_filter.name", placeholder)}
         )`
-      ),
+        ),
     },
     serialize(row) {
       return {
@@ -1162,8 +1201,8 @@ const resourceDbConfigs = {
     },
   },
   campaigns: {
-    alias: 'cp',
-    fromClause: 'FROM campaigns cp',
+    alias: "cp",
+    fromClause: "FROM campaigns cp",
     selectClause: `
       cp.id,
       cp.slug,
@@ -1208,81 +1247,87 @@ const resourceDbConfigs = {
       ), ARRAY[]::bigint[]) AS battlefield_ids
     `,
     sortMap: {
-      name: 'cp.name',
-      status: 'cp.status',
-      campaignType: 'cp.campaign_type',
-      yearOrder: 'cp.year_order',
+      name: "cp.name",
+      status: "cp.status",
+      campaignType: "cp.campaign_type",
+      yearOrder: "cp.year_order",
     },
     searchExpression: `CONCAT_WS(' ', cp.name, cp.summary, cp.description, cp.campaign_type, cp.year_label, array_to_string(COALESCE(cp.keywords, ARRAY[]::text[]), ' '))`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'cp.status', rawValue),
-      type: (context, rawValue) => addAttributeFilter(context, 'cp.campaign_type', rawValue),
-      keywords: (context, rawValue) => addKeywordsFilter(context, 'cp.keywords', rawValue),
-      era: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+      status: (context, rawValue) => addAttributeFilter(context, "cp.status", rawValue),
+      type: (context, rawValue) => addAttributeFilter(context, "cp.campaign_type", rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, "cp.keywords", rawValue),
+      era: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM eras era_filter
           WHERE era_filter.id = cp.era_id
-            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+            AND ${buildIdentityMatch("era_filter.id", "era_filter.slug", "era_filter.name", placeholder)}
         )`
-      ),
-      planets: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      planets: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM campaign_planets cpl
           JOIN planets planet_filter ON planet_filter.id = cpl.planet_id
           WHERE cpl.campaign_id = cp.id
-            AND ${buildIdentityMatch('planet_filter.id', 'planet_filter.slug', 'planet_filter.name', placeholder)}
+            AND ${buildIdentityMatch("planet_filter.id", "planet_filter.slug", "planet_filter.name", placeholder)}
         )`
-      ),
-      factions: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      factions: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM campaign_factions cpf
           JOIN factions faction_filter ON faction_filter.id = cpf.faction_id
           WHERE cpf.campaign_id = cp.id
-            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+            AND ${buildIdentityMatch("faction_filter.id", "faction_filter.slug", "faction_filter.name", placeholder)}
         )`
-      ),
-      characters: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      characters: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM campaign_characters cch
           JOIN characters character_filter ON character_filter.id = cch.character_id
           WHERE cch.campaign_id = cp.id
-            AND ${buildIdentityMatch('character_filter.id', 'character_filter.slug', 'character_filter.name', placeholder)}
+            AND ${buildIdentityMatch("character_filter.id", "character_filter.slug", "character_filter.name", placeholder)}
         )`
-      ),
-      organizations: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      organizations: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM campaign_organizations cor
           JOIN organizations organization_filter ON organization_filter.id = cor.organization_id
           WHERE cor.campaign_id = cp.id
-            AND ${buildIdentityMatch('organization_filter.id', 'organization_filter.slug', 'organization_filter.name', placeholder)}
+            AND ${buildIdentityMatch("organization_filter.id", "organization_filter.slug", "organization_filter.name", placeholder)}
         )`
-      ),
-      battlefields: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      battlefields: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM battlefield_campaigns bc
           JOIN battlefields battlefield_filter ON battlefield_filter.id = bc.battlefield_id
           WHERE bc.campaign_id = cp.id
-            AND ${buildIdentityMatch('battlefield_filter.id', 'battlefield_filter.slug', 'battlefield_filter.name', placeholder)}
+            AND ${buildIdentityMatch("battlefield_filter.id", "battlefield_filter.slug", "battlefield_filter.name", placeholder)}
         )`
-      ),
+        ),
     },
     serialize(row) {
       return {
@@ -1306,8 +1351,8 @@ const resourceDbConfigs = {
     },
   },
   battlefields: {
-    alias: 'bf',
-    fromClause: 'FROM battlefields bf',
+    alias: "bf",
+    fromClause: "FROM battlefields bf",
     selectClause: `
       bf.id,
       bf.slug,
@@ -1342,81 +1387,87 @@ const resourceDbConfigs = {
       ), ARRAY[]::bigint[]) AS campaign_ids
     `,
     sortMap: {
-      name: 'bf.name',
-      status: 'bf.status',
-      battlefieldType: 'bf.battlefield_type',
-      terrain: 'bf.terrain',
-      intensityLevel: 'bf.intensity_level',
+      name: "bf.name",
+      status: "bf.status",
+      battlefieldType: "bf.battlefield_type",
+      terrain: "bf.terrain",
+      intensityLevel: "bf.intensity_level",
     },
     searchExpression: `CONCAT_WS(' ', bf.name, bf.summary, bf.description, bf.battlefield_type, bf.terrain, array_to_string(COALESCE(bf.keywords, ARRAY[]::text[]), ' '))`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'bf.status', rawValue),
-      type: (context, rawValue) => addAttributeFilter(context, 'bf.battlefield_type', rawValue),
-      terrain: (context, rawValue) => addAttributeFilter(context, 'bf.terrain', rawValue),
-      keywords: (context, rawValue) => addKeywordsFilter(context, 'bf.keywords', rawValue),
-      era: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+      status: (context, rawValue) => addAttributeFilter(context, "bf.status", rawValue),
+      type: (context, rawValue) => addAttributeFilter(context, "bf.battlefield_type", rawValue),
+      terrain: (context, rawValue) => addAttributeFilter(context, "bf.terrain", rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, "bf.keywords", rawValue),
+      era: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM eras era_filter
           WHERE era_filter.id = bf.era_id
-            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+            AND ${buildIdentityMatch("era_filter.id", "era_filter.slug", "era_filter.name", placeholder)}
         )`
-      ),
-      planet: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      planet: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM planets planet_filter
           WHERE planet_filter.id = bf.planet_id
-            AND ${buildIdentityMatch('planet_filter.id', 'planet_filter.slug', 'planet_filter.name', placeholder)}
+            AND ${buildIdentityMatch("planet_filter.id", "planet_filter.slug", "planet_filter.name", placeholder)}
         )`
-      ),
-      starSystem: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      starSystem: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM star_systems system_filter
           WHERE system_filter.id = bf.star_system_id
-            AND ${buildIdentityMatch('system_filter.id', 'system_filter.slug', 'system_filter.name', placeholder)}
+            AND ${buildIdentityMatch("system_filter.id", "system_filter.slug", "system_filter.name", placeholder)}
         )`
-      ),
-      factions: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      factions: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM battlefield_factions bff
           JOIN factions faction_filter ON faction_filter.id = bff.faction_id
           WHERE bff.battlefield_id = bf.id
-            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+            AND ${buildIdentityMatch("faction_filter.id", "faction_filter.slug", "faction_filter.name", placeholder)}
         )`
-      ),
-      characters: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      characters: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM battlefield_characters bfc
           JOIN characters character_filter ON character_filter.id = bfc.character_id
           WHERE bfc.battlefield_id = bf.id
-            AND ${buildIdentityMatch('character_filter.id', 'character_filter.slug', 'character_filter.name', placeholder)}
+            AND ${buildIdentityMatch("character_filter.id", "character_filter.slug", "character_filter.name", placeholder)}
         )`
-      ),
-      campaigns: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      campaigns: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM battlefield_campaigns bcp
           JOIN campaigns campaign_filter ON campaign_filter.id = bcp.campaign_id
           WHERE bcp.battlefield_id = bf.id
-            AND ${buildIdentityMatch('campaign_filter.id', 'campaign_filter.slug', 'campaign_filter.name', placeholder)}
+            AND ${buildIdentityMatch("campaign_filter.id", "campaign_filter.slug", "campaign_filter.name", placeholder)}
         )`
-      ),
+        ),
     },
     serialize(row) {
       return {
@@ -1440,8 +1491,8 @@ const resourceDbConfigs = {
     },
   },
   characters: {
-    alias: 'c',
-    fromClause: 'FROM characters c',
+    alias: "c",
+    fromClause: "FROM characters c",
     selectClause: `
       c.id,
       c.slug,
@@ -1470,10 +1521,10 @@ const resourceDbConfigs = {
       ), ARRAY[]::bigint[]) AS event_ids
     `,
     sortMap: {
-      name: 'c.name',
-      status: 'c.status',
-      alignment: 'c.alignment',
-      powerLevel: 'c.power_level',
+      name: "c.name",
+      status: "c.status",
+      alignment: "c.alignment",
+      powerLevel: "c.power_level",
     },
     searchExpression: `CONCAT_WS(
       ' ',
@@ -1485,49 +1536,53 @@ const resourceDbConfigs = {
       COALESCE((SELECT string_agg(ct.title, ' ') FROM character_titles ct WHERE ct.character_id = c.id), '')
     )`,
     filterBuilders: {
-      status: (context, rawValue) => addAttributeFilter(context, 'c.status', rawValue),
-      alignment: (context, rawValue) => addAttributeFilter(context, 'c.alignment', rawValue),
-      keywords: (context, rawValue) => addKeywordsFilter(context, 'c.keywords', rawValue),
-      faction: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+      status: (context, rawValue) => addAttributeFilter(context, "c.status", rawValue),
+      alignment: (context, rawValue) => addAttributeFilter(context, "c.alignment", rawValue),
+      keywords: (context, rawValue) => addKeywordsFilter(context, "c.keywords", rawValue),
+      faction: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM factions faction_filter
           WHERE faction_filter.id = c.faction_id
-            AND ${buildIdentityMatch('faction_filter.id', 'faction_filter.slug', 'faction_filter.name', placeholder)}
+            AND ${buildIdentityMatch("faction_filter.id", "faction_filter.slug", "faction_filter.name", placeholder)}
         )`
-      ),
-      race: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      race: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM races race_filter
           WHERE race_filter.id = c.race_id
-            AND ${buildIdentityMatch('race_filter.id', 'race_filter.slug', 'race_filter.name', placeholder)}
+            AND ${buildIdentityMatch("race_filter.id", "race_filter.slug", "race_filter.name", placeholder)}
         )`
-      ),
-      homeworld: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      homeworld: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM planets planet_filter
           WHERE planet_filter.id = c.homeworld_id
-            AND ${buildIdentityMatch('planet_filter.id', 'planet_filter.slug', 'planet_filter.name', placeholder)}
+            AND ${buildIdentityMatch("planet_filter.id", "planet_filter.slug", "planet_filter.name", placeholder)}
         )`
-      ),
-      era: (context, rawValue) => addRelationFilter(
-        context,
-        rawValue,
-        (placeholder) => `EXISTS (
+        ),
+      era: (context, rawValue) =>
+        addRelationFilter(
+          context,
+          rawValue,
+          (placeholder) => `EXISTS (
           SELECT 1
           FROM eras era_filter
           WHERE era_filter.id = c.era_id
-            AND ${buildIdentityMatch('era_filter.id', 'era_filter.slug', 'era_filter.name', placeholder)}
+            AND ${buildIdentityMatch("era_filter.id", "era_filter.slug", "era_filter.name", placeholder)}
         )`
-      ),
+        ),
     },
     serialize(row) {
       return {
@@ -1555,7 +1610,7 @@ function getResourceDbConfig(resourceKey) {
   const config = resourceDbConfigs[resourceKey];
 
   if (!config) {
-    throw createApiError(404, 'RESOURCE_NOT_FOUND', `Unknown resource "${resourceKey}"`);
+    throw createApiError(404, "RESOURCE_NOT_FOUND", `Unknown resource "${resourceKey}"`);
   }
 
   return config;
@@ -1563,25 +1618,25 @@ function getResourceDbConfig(resourceKey) {
 
 function buildWhereClause(context) {
   if (!context.where.length) {
-    return '';
+    return "";
   }
 
-  return `WHERE ${context.where.join(' AND ')}`;
+  return `WHERE ${context.where.join(" AND ")}`;
 }
 
 function buildOrderClause(config, sortFields) {
   const orderParts = sortFields.map((sortField) => {
-    const direction = sortField.startsWith('-') ? 'DESC' : 'ASC';
-    const field = sortField.startsWith('-') ? sortField.slice(1) : sortField;
+    const direction = sortField.startsWith("-") ? "DESC" : "ASC";
+    const field = sortField.startsWith("-") ? sortField.slice(1) : sortField;
     return `${config.sortMap[field]} ${direction}`;
   });
 
-  return `ORDER BY ${orderParts.join(', ')}`;
+  return `ORDER BY ${orderParts.join(", ")}`;
 }
 
 function getDefaultSearchSort(config) {
-  return Object.prototype.hasOwnProperty.call(config.sortMap, 'name')
-    ? ['name']
+  return Object.prototype.hasOwnProperty.call(config.sortMap, "name")
+    ? ["name"]
     : [Object.keys(config.sortMap)[0]];
 }
 
@@ -1681,11 +1736,11 @@ async function searchResourceRows(resourceKey, search, limit) {
   const config = getResourceDbConfig(resourceKey);
   const normalizedSearch = normalizeValue(search);
   const escapedSearch = escapeLikePattern(normalizedSearch);
-  const exactPlaceholder = '$1';
-  const prefixPlaceholder = '$2';
-  const containsPlaceholder = '$3';
-  const rawContainsPlaceholder = '$4';
-  const limitPlaceholder = '$5';
+  const exactPlaceholder = "$1";
+  const prefixPlaceholder = "$2";
+  const containsPlaceholder = "$3";
+  const rawContainsPlaceholder = "$4";
+  const limitPlaceholder = "$5";
   const searchRankExpression = `
     CASE
       WHEN LOWER(${config.alias}.slug) = ${exactPlaceholder} THEN 140
@@ -1701,7 +1756,10 @@ async function searchResourceRows(resourceKey, search, limit) {
       ELSE 0
     END
   `;
-  const fallbackOrderClause = buildOrderClause(config, getDefaultSearchSort(config)).replace(/^ORDER BY\s+/i, '');
+  const fallbackOrderClause = buildOrderClause(config, getDefaultSearchSort(config)).replace(
+    /^ORDER BY\s+/i,
+    ""
+  );
   const dataQuery = `
     SELECT
       ${config.selectClause},
@@ -1751,7 +1809,7 @@ async function loadResourcesByIdentifiers(resourceKey, identifiers) {
   const query = `
     SELECT ${config.selectClause}
     ${config.fromClause}
-    WHERE ${buildIdentityMatch(`${config.alias}.id`, `${config.alias}.slug`, `${config.alias}.name`, '$1')}
+    WHERE ${buildIdentityMatch(`${config.alias}.id`, `${config.alias}.slug`, `${config.alias}.name`, "$1")}
   `;
 
   const result = await db.query(query, [normalizedValues]);

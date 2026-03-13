@@ -4,14 +4,13 @@ const express = require("express");
 const morgan = require("morgan");
 const helmet = require("helmet");
 const cors = require("cors");
+const swaggerUiDist = require("swagger-ui-dist");
 const config = require("./config");
 const { sendError } = require("./lib/apiResponse");
 const { createApiRateLimit } = require("./lib/apiRateLimit");
 const { apiRoutes } = require("./routes");
 const { apiV1Routes } = require("./v1Routes");
-const {
-  legacyDeprecationHeaders,
-} = require("./middleware/legacyDeprecationHeaders");
+const { legacyDeprecationHeaders } = require("./middleware/legacyDeprecationHeaders");
 
 function createApp(options = {}) {
   const app = express();
@@ -29,6 +28,14 @@ function createApp(options = {}) {
   app.use("/api", legacyDeprecationHeaders, apiRoutes);
 
   const distPath = path.join(__dirname, "../client/dist");
+  const generatedSdkPath = path.join(__dirname, "../sdk");
+  const openApiReferencePath = path.join(__dirname, "static/openapi-reference");
+  app.use("/sdk", express.static(generatedSdkPath));
+  app.use("/swagger-ui-assets", express.static(swaggerUiDist.getAbsoluteFSPath()));
+  app.use("/openapi-reference-assets", express.static(openApiReferencePath));
+  app.get("/openapi/reference", (req, res) => {
+    res.sendFile(path.join(openApiReferencePath, "index.html"));
+  });
   app.use(express.static(distPath));
 
   app.get("/*splat", (req, res) => {

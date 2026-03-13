@@ -129,15 +129,11 @@ function inferSchemaFromExample(value) {
   }
 
   if (Array.isArray(value)) {
-    const firstDefined = value.find(
-      (entry) => entry !== null && entry !== undefined,
-    );
+    const firstDefined = value.find((entry) => entry !== null && entry !== undefined);
 
     return {
       type: "array",
-      items: firstDefined
-        ? inferSchemaFromExample(firstDefined)
-        : { type: "string" },
+      items: firstDefined ? inferSchemaFromExample(firstDefined) : { type: "string" },
       example: value,
     };
   }
@@ -176,9 +172,7 @@ function inferSchemaFromExample(value) {
 
 function buildResourceSchema(resourceKey) {
   const config = resourceDefinitions[resourceKey];
-  const fieldDescriptions = new Map(
-    (config.fields || []).map((field) => [field.name, field]),
-  );
+  const fieldDescriptions = new Map((config.fields || []).map((field) => [field.name, field]));
   const example = dataset[resourceKey]?.[0] || {};
   const inferred = inferSchemaFromExample(example);
   const properties = {
@@ -207,9 +201,7 @@ function buildResourceStatsExample(resourceKey) {
   const config = resourceDefinitions[resourceKey];
 
   return {
-    count: Array.isArray(dataset[resourceKey])
-      ? dataset[resourceKey].length
-      : 0,
+    count: Array.isArray(dataset[resourceKey]) ? dataset[resourceKey].length : 0,
     description: config.description,
     filters: Object.entries(config.filters).map(([id, value]) => ({
       id,
@@ -252,9 +244,7 @@ function buildResourceDocumentationExample(resourceKey) {
 
   return {
     data: {
-      count: Array.isArray(dataset[resourceKey])
-        ? dataset[resourceKey].length
-        : 0,
+      count: Array.isArray(dataset[resourceKey]) ? dataset[resourceKey].length : 0,
       defaultSort: config.defaultSort,
       description: config.description,
       fields: config.fields,
@@ -330,11 +320,11 @@ function buildWorkbenchScenariosExample() {
         Object.entries(interactiveScenarios).map(([groupKey, scenarios]) => [
           groupKey,
           scenarios.length,
-        ]),
+        ])
       ),
       total: Object.values(interactiveScenarios).reduce(
         (sum, scenarios) => sum + scenarios.length,
-        0,
+        0
       ),
     },
   };
@@ -425,17 +415,29 @@ function buildGraphExample() {
       ],
       edges: [
         {
+          direction: "outgoing",
           from: `factions:${dataset.factions[0].id}`,
+          id: `factions:${dataset.factions[0].id}:leaders:characters:${dataset.characters[1].id}:outgoing`,
           label: "leaders",
+          relation: "leaders",
+          sourceResource: "factions",
+          targetResource: "characters",
           to: `characters:${dataset.characters[1].id}`,
         },
       ],
-      truncatedRelations: [],
     },
+    included: {},
     meta: {
-      backlinks: false,
+      backlinks: true,
       depth: 2,
+      edgeCount: 1,
+      identifier: dataset.factions[0].slug,
+      limitPerRelation: 4,
+      nodeCount: 2,
+      requestedResourceTypes: [],
       resource: "factions",
+      resourceTypes: ["factions", "characters"],
+      truncatedRelations: [],
     },
   };
 }
@@ -447,11 +449,19 @@ function buildPathExample() {
       path: {
         edges: [
           {
-            from: `characters:${dataset.characters[1].id}`,
-            label: "relics",
-            to: `relics:${dataset.relics[0].id}`,
+            direction: "incoming",
+            from: `relics:${dataset.relics[0].id}`,
+            id: `relics:${dataset.relics[0].id}:bearer:characters:${dataset.characters[1].id}:incoming`,
+            label: "bearer",
+            pathIndex: 0,
+            relation: "bearer",
+            sourceResource: "relics",
+            targetResource: "characters",
+            to: `characters:${dataset.characters[1].id}`,
+            traversal: "reverse",
           },
         ],
+        length: 1,
         nodes: [
           {
             id: dataset.characters[1].id,
@@ -468,9 +478,19 @@ function buildPathExample() {
         ],
       },
     },
+    included: {},
     meta: {
       backlinks: true,
+      fromIdentifier: dataset.characters[1].slug,
+      fromResource: "characters",
+      limitPerRelation: 6,
       maxDepth: 4,
+      requestedResourceTypes: [],
+      resourceTypes: ["characters", "relics"],
+      toIdentifier: dataset.relics[0].slug,
+      toResource: "relics",
+      truncatedRelations: [],
+      visitedNodeCount: 2,
     },
   };
 }
@@ -665,6 +685,476 @@ function buildResourceSchemas() {
   }, {});
 }
 
+function buildIncludedResourcesSchema() {
+  return {
+    type: "object",
+    properties: resourceOrder.reduce((result, resourceKey) => {
+      result[resourceKey] = {
+        type: "array",
+        items: {
+          $ref: `#/components/schemas/${buildSchemaName(resourceKey, "Resource")}`,
+        },
+      };
+      return result;
+    }, {}),
+    additionalProperties: false,
+  };
+}
+
+function buildGraphNodeSchema() {
+  return {
+    type: "object",
+    properties: {
+      distance: { type: "integer" },
+      id: { type: "integer" },
+      influenceLevel: {
+        oneOf: [{ type: "integer" }, { type: "null" }],
+      },
+      key: { type: "string" },
+      name: { type: "string" },
+      powerLevel: {
+        oneOf: [{ type: "integer" }, { type: "null" }],
+      },
+      resource: {
+        type: "string",
+        enum: resourceOrder,
+      },
+      slug: {
+        oneOf: [{ type: "string" }, { type: "null" }],
+      },
+      status: {
+        oneOf: [{ type: "string" }, { type: "null" }],
+      },
+      summary: {
+        oneOf: [{ type: "string" }, { type: "null" }],
+      },
+      type: {
+        oneOf: [{ type: "string" }, { type: "null" }],
+      },
+      yearLabel: {
+        oneOf: [{ type: "string" }, { type: "null" }],
+      },
+    },
+    required: ["distance", "id", "key", "name", "resource"],
+    additionalProperties: false,
+  };
+}
+
+function buildGraphEdgeSchema() {
+  return {
+    type: "object",
+    properties: {
+      direction: {
+        type: "string",
+        enum: ["incoming", "outgoing"],
+      },
+      from: { type: "string" },
+      id: { type: "string" },
+      label: { type: "string" },
+      relation: { type: "string" },
+      sourceResource: {
+        type: "string",
+        enum: resourceOrder,
+      },
+      targetResource: {
+        type: "string",
+        enum: resourceOrder,
+      },
+      to: { type: "string" },
+    },
+    required: [
+      "direction",
+      "from",
+      "id",
+      "label",
+      "relation",
+      "sourceResource",
+      "targetResource",
+      "to",
+    ],
+    additionalProperties: false,
+  };
+}
+
+function buildTruncatedRelationSchema() {
+  return {
+    type: "object",
+    properties: {
+      from: { type: "string" },
+      hiddenCount: { type: "integer" },
+      label: { type: "string" },
+      relation: { type: "string" },
+      sourceResource: {
+        type: "string",
+        enum: resourceOrder,
+      },
+      targetResource: {
+        type: "string",
+        enum: resourceOrder,
+      },
+    },
+    required: ["from", "hiddenCount", "label", "relation"],
+    additionalProperties: false,
+  };
+}
+
+function buildGraphResponseSchema() {
+  return {
+    type: "object",
+    properties: {
+      data: {
+        type: "object",
+        properties: {
+          edges: {
+            type: "array",
+            items: { $ref: "#/components/schemas/GraphEdge" },
+          },
+          nodes: {
+            type: "array",
+            items: { $ref: "#/components/schemas/GraphNode" },
+          },
+          root: {
+            $ref: "#/components/schemas/GraphNode",
+          },
+        },
+        required: ["edges", "nodes", "root"],
+        additionalProperties: false,
+      },
+      included: {
+        $ref: "#/components/schemas/IncludedResources",
+      },
+      meta: {
+        type: "object",
+        properties: {
+          backlinks: { type: "boolean" },
+          depth: { type: "integer" },
+          edgeCount: { type: "integer" },
+          identifier: { type: "string" },
+          limitPerRelation: { type: "integer" },
+          nodeCount: { type: "integer" },
+          requestedResourceTypes: {
+            type: "array",
+            items: {
+              type: "string",
+              enum: resourceOrder,
+            },
+          },
+          resource: {
+            type: "string",
+            enum: resourceOrder,
+          },
+          resourceTypes: {
+            type: "array",
+            items: {
+              type: "string",
+              enum: resourceOrder,
+            },
+          },
+          truncatedRelations: {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/GraphTruncatedRelation",
+            },
+          },
+        },
+        required: [
+          "backlinks",
+          "depth",
+          "edgeCount",
+          "identifier",
+          "limitPerRelation",
+          "nodeCount",
+          "requestedResourceTypes",
+          "resource",
+          "resourceTypes",
+          "truncatedRelations",
+        ],
+        additionalProperties: false,
+      },
+    },
+    required: ["data", "included", "meta"],
+    additionalProperties: false,
+  };
+}
+
+function buildPathResponseSchema() {
+  return {
+    type: "object",
+    properties: {
+      data: {
+        type: "object",
+        properties: {
+          found: { type: "boolean" },
+          from: {
+            $ref: "#/components/schemas/GraphNode",
+          },
+          path: {
+            type: "object",
+            properties: {
+              edges: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    direction: {
+                      type: "string",
+                      enum: ["incoming", "outgoing"],
+                    },
+                    from: { type: "string" },
+                    id: { type: "string" },
+                    label: { type: "string" },
+                    pathIndex: { type: "integer" },
+                    relation: { type: "string" },
+                    sourceResource: {
+                      type: "string",
+                      enum: resourceOrder,
+                    },
+                    targetResource: {
+                      type: "string",
+                      enum: resourceOrder,
+                    },
+                    to: { type: "string" },
+                    traversal: {
+                      type: "string",
+                      enum: ["forward", "reverse"],
+                    },
+                  },
+                  required: [
+                    "direction",
+                    "from",
+                    "id",
+                    "label",
+                    "pathIndex",
+                    "relation",
+                    "sourceResource",
+                    "targetResource",
+                    "to",
+                    "traversal",
+                  ],
+                  additionalProperties: false,
+                },
+              },
+              length: { type: "integer" },
+              nodes: {
+                type: "array",
+                items: { $ref: "#/components/schemas/GraphNode" },
+              },
+            },
+            required: ["edges", "length", "nodes"],
+            additionalProperties: false,
+          },
+          to: {
+            $ref: "#/components/schemas/GraphNode",
+          },
+        },
+        required: ["found", "from", "path", "to"],
+        additionalProperties: false,
+      },
+      included: {
+        $ref: "#/components/schemas/IncludedResources",
+      },
+      meta: {
+        type: "object",
+        properties: {
+          backlinks: { type: "boolean" },
+          fromIdentifier: { type: "string" },
+          fromResource: {
+            type: "string",
+            enum: resourceOrder,
+          },
+          limitPerRelation: { type: "integer" },
+          maxDepth: { type: "integer" },
+          requestedResourceTypes: {
+            type: "array",
+            items: {
+              type: "string",
+              enum: resourceOrder,
+            },
+          },
+          resourceTypes: {
+            type: "array",
+            items: {
+              type: "string",
+              enum: resourceOrder,
+            },
+          },
+          toIdentifier: { type: "string" },
+          toResource: {
+            type: "string",
+            enum: resourceOrder,
+          },
+          truncatedRelations: {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/GraphTruncatedRelation",
+            },
+          },
+          visitedNodeCount: { type: "integer" },
+        },
+        required: [
+          "backlinks",
+          "fromIdentifier",
+          "fromResource",
+          "limitPerRelation",
+          "maxDepth",
+          "requestedResourceTypes",
+          "resourceTypes",
+          "toIdentifier",
+          "toResource",
+          "truncatedRelations",
+          "visitedNodeCount",
+        ],
+        additionalProperties: false,
+      },
+    },
+    required: ["data", "included", "meta"],
+    additionalProperties: false,
+  };
+}
+
+function buildStatsSchemas() {
+  return {
+    FactionCountStatsRow: {
+      type: "object",
+      properties: {
+        count: { type: "integer" },
+        id: { type: "integer" },
+        name: { type: "string" },
+        slug: { type: "string" },
+      },
+      required: ["count", "id", "name", "slug"],
+      additionalProperties: false,
+    },
+    PowerLevelStatsRow: {
+      type: "object",
+      properties: {
+        averagePowerLevel: { type: "integer" },
+        count: { type: "integer" },
+        id: { type: "integer" },
+        maxPowerLevel: { type: "integer" },
+        name: { type: "string" },
+        slug: { type: "string" },
+      },
+      required: ["averagePowerLevel", "count", "id", "maxPowerLevel", "name", "slug"],
+      additionalProperties: false,
+    },
+    CampaignOrganizationStatsRow: {
+      type: "object",
+      properties: {
+        activeCount: { type: "integer" },
+        count: { type: "integer" },
+        id: { type: "integer" },
+        latestYearLabel: { type: "string" },
+        latestYearOrder: { type: "integer" },
+        name: { type: "string" },
+        organizationType: { type: "string" },
+        slug: { type: "string" },
+      },
+      required: [
+        "activeCount",
+        "count",
+        "id",
+        "latestYearLabel",
+        "latestYearOrder",
+        "name",
+        "organizationType",
+        "slug",
+      ],
+      additionalProperties: false,
+    },
+    BattlefieldIntensityStatsRow: {
+      type: "object",
+      properties: {
+        averageIntensityLevel: { type: "integer" },
+        count: { type: "integer" },
+        id: { type: "integer" },
+        maxIntensityLevel: { type: "integer" },
+        name: { type: "string" },
+        slug: { type: "string" },
+      },
+      required: ["averageIntensityLevel", "count", "id", "maxIntensityLevel", "name", "slug"],
+      additionalProperties: false,
+    },
+    SegmentumStatsRow: {
+      type: "object",
+      properties: {
+        activeCount: { type: "integer" },
+        count: { type: "integer" },
+        id: { type: "integer" },
+        name: { type: "string" },
+        planetCount: { type: "integer" },
+        slug: { type: "string" },
+      },
+      required: ["activeCount", "count", "id", "name", "planetCount", "slug"],
+      additionalProperties: false,
+    },
+    WeaponKeywordStatsRow: {
+      type: "object",
+      properties: {
+        averagePowerLevel: { type: "integer" },
+        category: { type: "string" },
+        count: { type: "integer" },
+        id: { type: "integer" },
+        maxPowerLevel: { type: "integer" },
+        name: { type: "string" },
+        slug: { type: "string" },
+      },
+      required: ["averagePowerLevel", "category", "count", "id", "maxPowerLevel", "name", "slug"],
+      additionalProperties: false,
+    },
+    EventEraStatsRow: {
+      type: "object",
+      properties: {
+        count: { type: "integer" },
+        id: { type: "integer" },
+        name: { type: "string" },
+        slug: { type: "string" },
+        yearLabel: { type: "string" },
+        yearOrder: { type: "integer" },
+      },
+      required: ["count", "id", "name", "slug", "yearLabel", "yearOrder"],
+      additionalProperties: false,
+    },
+    StatsMeta: {
+      type: "object",
+      properties: {
+        groupBy: { type: "string" },
+        resource: {
+          type: "string",
+          enum: [...new Set(statsRoutes.map((item) => item.resource))],
+        },
+        total: { type: "integer" },
+      },
+      required: ["groupBy", "resource", "total"],
+      additionalProperties: false,
+    },
+    StatsResponse: {
+      type: "object",
+      properties: {
+        data: {
+          type: "array",
+          items: {
+            oneOf: [
+              { $ref: "#/components/schemas/FactionCountStatsRow" },
+              { $ref: "#/components/schemas/PowerLevelStatsRow" },
+              { $ref: "#/components/schemas/CampaignOrganizationStatsRow" },
+              { $ref: "#/components/schemas/BattlefieldIntensityStatsRow" },
+              { $ref: "#/components/schemas/SegmentumStatsRow" },
+              { $ref: "#/components/schemas/WeaponKeywordStatsRow" },
+              { $ref: "#/components/schemas/EventEraStatsRow" },
+            ],
+          },
+        },
+        meta: {
+          $ref: "#/components/schemas/StatsMeta",
+        },
+      },
+      required: ["data", "meta"],
+      additionalProperties: false,
+    },
+  };
+}
+
 function buildPaths(rateLimit) {
   const rateLimitHeaders = buildRateLimitHeaders(rateLimit);
   const overviewExample = buildOverviewExample(rateLimit);
@@ -689,7 +1179,7 @@ function buildPaths(rateLimit) {
                 version: apiInfo.version,
               },
             },
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           429: createRateLimitResponse(rateLimit),
         },
@@ -707,7 +1197,7 @@ function buildPaths(rateLimit) {
               $ref: "#/components/schemas/OverviewResponse",
             },
             overviewExample,
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           429: createRateLimitResponse(rateLimit),
         },
@@ -730,7 +1220,7 @@ function buildPaths(rateLimit) {
                 total: resourceOrder.length,
               },
             },
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           429: createRateLimitResponse(rateLimit),
         },
@@ -742,11 +1232,7 @@ function buildPaths(rateLimit) {
         summary: "Documentation for a single resource",
         operationId: "getResourceDocumentation",
         parameters: [
-          createResourceEnumParameter(
-            "resource",
-            "Public resource identifier.",
-            resourceOrder,
-          ),
+          createResourceEnumParameter("resource", "Public resource identifier.", resourceOrder),
         ],
         responses: {
           200: createJsonResponse(
@@ -755,7 +1241,7 @@ function buildPaths(rateLimit) {
               $ref: "#/components/schemas/ResourceDocumentationResponse",
             },
             buildResourceDocumentationExample("factions"),
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           404: createNotFoundResponse('Unknown resource "unknown-resource".'),
           429: createRateLimitResponse(rateLimit),
@@ -774,7 +1260,7 @@ function buildPaths(rateLimit) {
               $ref: "#/components/schemas/QueryGuideResponse",
             },
             queryGuideExample,
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           429: createRateLimitResponse(rateLimit),
         },
@@ -792,7 +1278,7 @@ function buildPaths(rateLimit) {
               $ref: "#/components/schemas/ChangelogResponse",
             },
             buildChangelogExample(),
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           429: createRateLimitResponse(rateLimit),
         },
@@ -810,7 +1296,7 @@ function buildPaths(rateLimit) {
               $ref: "#/components/schemas/DeprecationPolicyResponse",
             },
             buildDeprecationPolicyExample(),
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           429: createRateLimitResponse(rateLimit),
         },
@@ -828,7 +1314,7 @@ function buildPaths(rateLimit) {
               $ref: "#/components/schemas/ConcurrencyExampleResponse",
             },
             buildConcurrencyExample(),
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           429: createRateLimitResponse(rateLimit),
         },
@@ -846,7 +1332,7 @@ function buildPaths(rateLimit) {
               $ref: "#/components/schemas/WorkbenchScenariosResponse",
             },
             buildWorkbenchScenariosExample(),
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           429: createRateLimitResponse(rateLimit),
         },
@@ -857,11 +1343,7 @@ function buildPaths(rateLimit) {
         tags: ["Search"],
         summary: "Global search across resources",
         operationId: "searchResources",
-        parameters: buildOperationParameters([
-          "SearchQuery",
-          "Limit",
-          "ResourceWhitelist",
-        ]),
+        parameters: buildOperationParameters(["SearchQuery", "Limit", "ResourceWhitelist"]),
         responses: {
           200: createJsonResponse(
             "Ranked cross-resource search results.",
@@ -869,7 +1351,7 @@ function buildPaths(rateLimit) {
               $ref: "#/components/schemas/SearchResponse",
             },
             buildSearchExample(),
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           400: createValidationErrorResponse(),
           429: createRateLimitResponse(rateLimit),
@@ -882,11 +1364,7 @@ function buildPaths(rateLimit) {
         summary: "Random resource detail",
         operationId: "getRandomResource",
         parameters: [
-          createResourceEnumParameter(
-            "resource",
-            "Resource to sample from.",
-            resourceOrder,
-          ),
+          createResourceEnumParameter("resource", "Resource to sample from.", resourceOrder),
           ...buildOperationParameters(["Include", "Fields"]),
         ],
         responses: {
@@ -906,7 +1384,7 @@ function buildPaths(rateLimit) {
                 strategy: "random",
               },
             },
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           400: createValidationErrorResponse(),
           404: createNotFoundResponse(),
@@ -923,7 +1401,7 @@ function buildPaths(rateLimit) {
           createResourceEnumParameter(
             "resource",
             "Resource that supports compare payloads.",
-            compareResources,
+            compareResources
           ),
           ...buildOperationParameters(["CompareIds", "Include", "Fields"]),
         ],
@@ -934,7 +1412,7 @@ function buildPaths(rateLimit) {
               $ref: "#/components/schemas/CompareResponse",
             },
             buildCompareExample(),
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           400: createJsonResponse(
             "Validation or compare-specific input error.",
@@ -944,7 +1422,7 @@ function buildPaths(rateLimit) {
                 { $ref: "#/components/schemas/ErrorResponse" },
               ],
             },
-            queryGuide.responseShapes.error,
+            queryGuide.responseShapes.error
           ),
           429: createRateLimitResponse(rateLimit),
         },
@@ -962,13 +1440,11 @@ function buildPaths(rateLimit) {
           createResourceEnumParameter(
             "resource",
             "Resource with supported aggregate projections.",
-            [...new Set(statsRoutes.map((item) => item.resource))],
+            [...new Set(statsRoutes.map((item) => item.resource))]
           ),
-          createResourceEnumParameter(
-            "groupKey",
-            "Grouping key for the selected stats resource.",
-            [...new Set(statsRoutes.map((item) => item.groupKey))],
-          ),
+          createResourceEnumParameter("groupKey", "Grouping key for the selected stats resource.", [
+            ...new Set(statsRoutes.map((item) => item.groupKey)),
+          ]),
         ],
         responses: {
           200: createJsonResponse(
@@ -977,11 +1453,9 @@ function buildPaths(rateLimit) {
               $ref: "#/components/schemas/StatsResponse",
             },
             buildStatsExample(),
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
-          404: createNotFoundResponse(
-            'Stats endpoint "relics/by-era" was not found.',
-          ),
+          404: createNotFoundResponse('Stats endpoint "relics/by-era" was not found.'),
           429: createRateLimitResponse(rateLimit),
         },
       },
@@ -1006,7 +1480,7 @@ function buildPaths(rateLimit) {
               $ref: "#/components/schemas/GraphResponse",
             },
             buildGraphExample(),
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           400: createValidationErrorResponse(),
           429: createRateLimitResponse(rateLimit),
@@ -1035,7 +1509,7 @@ function buildPaths(rateLimit) {
               $ref: "#/components/schemas/PathResponse",
             },
             buildPathExample(),
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           400: createValidationErrorResponse(),
           429: createRateLimitResponse(rateLimit),
@@ -1048,11 +1522,7 @@ function buildPaths(rateLimit) {
         summary: "List resource entries",
         operationId: "listResource",
         parameters: [
-          createResourceEnumParameter(
-            "resource",
-            "Public resource identifier.",
-            resourceOrder,
-          ),
+          createResourceEnumParameter("resource", "Public resource identifier.", resourceOrder),
           ...buildOperationParameters([
             "Page",
             "Limit",
@@ -1087,7 +1557,7 @@ function buildPaths(rateLimit) {
                 totalPages: 1,
               },
             },
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           400: createValidationErrorResponse(),
           404: createNotFoundResponse(),
@@ -1101,11 +1571,7 @@ function buildPaths(rateLimit) {
         summary: "Get one resource entry by id or slug",
         operationId: "getResourceDetail",
         parameters: [
-          createResourceEnumParameter(
-            "resource",
-            "Public resource identifier.",
-            resourceOrder,
-          ),
+          createResourceEnumParameter("resource", "Public resource identifier.", resourceOrder),
           {
             name: "idOrSlug",
             in: "path",
@@ -1134,7 +1600,7 @@ function buildPaths(rateLimit) {
                 resource: "characters",
               },
             },
-            rateLimitHeaders,
+            rateLimitHeaders
           ),
           400: createValidationErrorResponse(),
           404: createNotFoundResponse(),
@@ -1262,8 +1728,7 @@ function buildOpenApiSpec(rateLimit) {
           name: "sort",
           in: "query",
           required: false,
-          description:
-            "Comma-separated sort keys. Prefix with '-' for descending order.",
+          description: "Comma-separated sort keys. Prefix with '-' for descending order.",
           example: parameterExamples.Sort,
           schema: {
             type: "string",
@@ -1273,8 +1738,7 @@ function buildOpenApiSpec(rateLimit) {
           name: "include",
           in: "query",
           required: false,
-          description:
-            "Comma-separated relation includes. Returned under the `included` block.",
+          description: "Comma-separated relation includes. Returned under the `included` block.",
           example: parameterExamples.Include,
           schema: {
             type: "string",
@@ -1385,8 +1849,7 @@ function buildOpenApiSpec(rateLimit) {
           name: "limitPerRelation",
           in: "query",
           required: false,
-          description:
-            "Maximum number of neighbors to expand per relation edge.",
+          description: "Maximum number of neighbors to expand per relation edge.",
           example: parameterExamples.LimitPerRelation,
           schema: {
             type: "integer",
@@ -1399,8 +1862,7 @@ function buildOpenApiSpec(rateLimit) {
           name: "backlinks",
           in: "query",
           required: false,
-          description:
-            "When true, reverse relations are also used during traversal.",
+          description: "When true, reverse relations are also used during traversal.",
           example: parameterExamples.Backlinks,
           schema: {
             type: "boolean",
@@ -1461,16 +1923,7 @@ function buildOpenApiSpec(rateLimit) {
           },
           additionalProperties: false,
         },
-        IncludedResources: {
-          type: "object",
-          additionalProperties: {
-            type: "array",
-            items: {
-              type: "object",
-              additionalProperties: true,
-            },
-          },
-        },
+        IncludedResources: buildIncludedResourcesSchema(),
         ListMeta: {
           type: "object",
           properties: {
@@ -1572,9 +2025,7 @@ function buildOpenApiSpec(rateLimit) {
           required: ["error"],
           additionalProperties: false,
         },
-        RateLimitErrorResponse: inferSchemaFromExample(
-          queryGuide.responseShapes.rateLimitError,
-        ),
+        RateLimitErrorResponse: inferSchemaFromExample(queryGuide.responseShapes.rateLimitError),
         OverviewResponse: inferSchemaFromExample(overviewExample),
         ResourceCatalogResponse: inferSchemaFromExample({
           data: resourceOrder.map(buildResourceStatsExample),
@@ -1583,20 +2034,17 @@ function buildOpenApiSpec(rateLimit) {
           },
         }),
         ResourceDocumentationResponse: inferSchemaFromExample(
-          buildResourceDocumentationExample("factions"),
+          buildResourceDocumentationExample("factions")
         ),
         QueryGuideResponse: inferSchemaFromExample(queryGuideExample),
         ChangelogResponse: inferSchemaFromExample(buildChangelogExample()),
-        DeprecationPolicyResponse: inferSchemaFromExample(
-          buildDeprecationPolicyExample(),
-        ),
-        ConcurrencyExampleResponse: inferSchemaFromExample(
-          buildConcurrencyExample(),
-        ),
-        WorkbenchScenariosResponse: inferSchemaFromExample(
-          buildWorkbenchScenariosExample(),
-        ),
+        DeprecationPolicyResponse: inferSchemaFromExample(buildDeprecationPolicyExample()),
+        ConcurrencyExampleResponse: inferSchemaFromExample(buildConcurrencyExample()),
+        WorkbenchScenariosResponse: inferSchemaFromExample(buildWorkbenchScenariosExample()),
         SearchResponse: inferSchemaFromExample(buildSearchExample()),
+        GraphNode: buildGraphNodeSchema(),
+        GraphEdge: buildGraphEdgeSchema(),
+        GraphTruncatedRelation: buildTruncatedRelationSchema(),
         CompareResponse: {
           type: "object",
           properties: {
@@ -1647,9 +2095,9 @@ function buildOpenApiSpec(rateLimit) {
           },
           additionalProperties: false,
         },
-        GraphResponse: inferSchemaFromExample(buildGraphExample()),
-        PathResponse: inferSchemaFromExample(buildPathExample()),
-        StatsResponse: inferSchemaFromExample(buildStatsExample()),
+        GraphResponse: buildGraphResponseSchema(),
+        PathResponse: buildPathResponseSchema(),
+        ...buildStatsSchemas(),
         ...resourceSchemas,
       },
     },

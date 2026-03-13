@@ -1,13 +1,13 @@
-import {Routes} from "./router";
-import {Menu} from "./components/Menu";
+import { Routes } from "./router";
+import { Menu } from "./components/Menu";
 
 const App = () => (
   <div className="app-shell">
-    <Menu/>
+    <Menu />
     <main className="page-shell">
-      <Routes/>
+      <Routes />
     </main>
   </div>
 );
 
-export {App};
+export { App };

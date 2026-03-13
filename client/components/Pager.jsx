@@ -1,5 +1,3 @@
-import { h } from 'preact';
-
 /**
  * Компонент пейджера со стилями Bootstrap
  *
@@ -12,14 +10,7 @@ import { h } from 'preact';
  * @param {number} props.step Размер шага для кнопок "вперед" и "назад" (по умолчанию 1)
  * @returns {JSX.Element}
  */
-const Pager = ({
-                 currentPage,
-                 total,
-                 pageSize = 10,
-                 visiblePages = 5,
-                 onPageChange,
-                 step = 1
-               }) => {
+const Pager = ({ currentPage, total, pageSize = 10, visiblePages = 5, onPageChange, step = 1 }) => {
   // Вычисляем общее количество страниц внутри компонента
   const totalPages = Math.ceil(total / pageSize) || 1;
 
@@ -71,7 +62,7 @@ const Pager = ({
   return (
     <nav aria-label="Навигация по страницам">
       <ul className="pagination justify-content-center">
-        <li className={`page-item ${currentPage <= 1 ? 'disabled' : ''}`}>
+        <li className={`page-item ${currentPage <= 1 ? "disabled" : ""}`}>
           <a
             className="page-link"
             href="#"
@@ -85,8 +76,8 @@ const Pager = ({
           </a>
         </li>
 
-        {pageNumbers.map(page => (
-          <li key={page} className={`page-item ${page === currentPage ? 'active' : ''}`}>
+        {pageNumbers.map((page) => (
+          <li key={page} className={`page-item ${page === currentPage ? "active" : ""}`}>
             <a
               className="page-link"
               href="#"
@@ -100,7 +91,7 @@ const Pager = ({
           </li>
         ))}
 
-        <li className={`page-item ${currentPage >= totalPages ? 'disabled' : ''}`}>
+        <li className={`page-item ${currentPage >= totalPages ? "disabled" : ""}`}>
           <a
             className="page-link"
             href="#"

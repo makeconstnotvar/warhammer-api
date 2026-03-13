@@ -2,18 +2,21 @@ import { useMemo, useState } from "preact/hooks";
 import { docsApi } from "../api/docsApi";
 import { ApiOperationGuide } from "../components/ApiOperationGuide";
 import { JsonViewer } from "../components/JsonViewer";
+import { PivotActionLinks } from "../components/PivotActionLinks";
 import { StateNotice } from "../components/StateNotice";
+import { WorkbenchScenarioSection } from "../components/WorkbenchScenarioSection";
 import { useAsyncData } from "../hooks/useAsyncData";
 import { readQueryState, replaceQueryState } from "../lib/query";
+import {
+  parseCompareWorkbenchScenarios,
+  parseGraphWorkbenchScenarios,
+  parsePathWorkbenchScenarios,
+  parseWorkbenchScenarios,
+  selectWorkbenchScenarios,
+} from "../lib/workbenchScenarios";
+import { buildStatsRowWorkbenchActions } from "../lib/workbenchPivots";
 
-const chartPalette = [
-  "#d1a35a",
-  "#78a7c5",
-  "#9f70c7",
-  "#c37070",
-  "#7fb381",
-  "#d69255",
-];
+const chartPalette = ["#d1a35a", "#78a7c5", "#9f70c7", "#c37070", "#7fb381", "#d69255"];
 const accentColorMap = {
   battlefields: "#cf7f55",
   campaigns: "#7fb381",
@@ -72,8 +75,7 @@ function aggregateBy(rows, key) {
   }, {});
 
   return Object.values(grouped).sort(
-    (left, right) =>
-      right.count - left.count || left.label.localeCompare(right.label),
+    (left, right) => right.count - left.count || left.label.localeCompare(right.label)
   );
 }
 
@@ -85,21 +87,27 @@ function shortenLabel(value, maxLength = 18) {
   return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
 }
 
-function StatHeroCard({ label, value, detail }) {
+function StatHeroCard({ label, value, detail, actions = [] }) {
   return (
     <article className="stat-card">
       <div className="resource-kicker">{label}</div>
       <div className="stat-value">{value}</div>
       <div className="muted-line">{detail}</div>
+      <PivotActionLinks className="stat-card-actions" actions={actions} />
     </article>
   );
 }
 
 function RankingList({
+  compareScenarios,
   rows,
+  graphScenarios,
+  headerActions = [],
   metricKey,
   metricLabel,
+  pathScenarios,
   secondaryLabel,
+  section,
   endpoint,
   title,
   description,
@@ -113,6 +121,7 @@ function RankingList({
         <div>
           <h2>{title}</h2>
           <p className="muted-line">{description}</p>
+          <PivotActionLinks className="stats-section-actions" actions={headerActions} />
         </div>
         <a className="query-link" href={endpoint}>
           {endpoint}
@@ -130,16 +139,21 @@ function RankingList({
                 <div className="stats-row-titleline">
                   <h3>{row.name}</h3>
                   {row.category && <span className="tag">{row.category}</span>}
-                  {row.yearLabel && (
-                    <span className="tag">{row.yearLabel}</span>
-                  )}
+                  {row.yearLabel && <span className="tag">{row.yearLabel}</span>}
                 </div>
                 <div className="stats-track">
-                  <div
-                    className={`stats-fill stats-fill-${accent}`}
-                    style={{ width }}
-                  />
+                  <div className={`stats-fill stats-fill-${accent}`} style={{ width }} />
                 </div>
+                <PivotActionLinks
+                  className="stats-row-actions"
+                  actions={buildStatsRowWorkbenchActions({
+                    compareScenarios,
+                    graphScenarios,
+                    pathScenarios,
+                    row,
+                    section,
+                  })}
+                />
               </div>
 
               <div className="stats-row-metrics">
@@ -148,8 +162,7 @@ function RankingList({
                 </span>
                 {secondaryLabel && row[secondaryLabel.key] !== undefined && (
                   <span className="tag">
-                    {secondaryLabel.label}:{" "}
-                    {formatNumber(row[secondaryLabel.key])}
+                    {secondaryLabel.label}: {formatNumber(row[secondaryLabel.key])}
                   </span>
                 )}
               </div>
@@ -161,13 +174,14 @@ function RankingList({
   );
 }
 
-function ChartCard({ children, endpoint, title, description }) {
+function ChartCard({ children, endpoint, title, description, actions = [] }) {
   return (
     <section className="section-card chart-card">
       <div className="stats-section-head">
         <div>
           <h2>{title}</h2>
           <p className="muted-line">{description}</p>
+          <PivotActionLinks className="stats-section-actions" actions={actions} />
         </div>
         <a className="query-link" href={endpoint}>
           {endpoint}
@@ -178,14 +192,7 @@ function ChartCard({ children, endpoint, title, description }) {
   );
 }
 
-function ColumnChart({
-  rows,
-  title,
-  description,
-  endpoint,
-  accent,
-  subLabelRenderer,
-}) {
+function ColumnChart({ actions, rows, title, description, endpoint, accent, subLabelRenderer }) {
   const positiveRows = getPositiveRows(rows).slice(0, 6);
   const width = 520;
   const height = 260;
@@ -193,20 +200,13 @@ function ColumnChart({
   const paddingTop = 20;
   const paddingBottom = 68;
   const chartHeight = height - paddingTop - paddingBottom;
-  const columnWidth = positiveRows.length
-    ? (width - paddingX * 2) / positiveRows.length
-    : width;
+  const columnWidth = positiveRows.length ? (width - paddingX * 2) / positiveRows.length : width;
   const maxValue = Math.max(...positiveRows.map((row) => row.count), 1);
   const color = accentColorMap[accent] || chartPalette[0];
 
   return (
-    <ChartCard title={title} description={description} endpoint={endpoint}>
-      <svg
-        className="chart-svg"
-        viewBox={`0 0 ${width} ${height}`}
-        role="img"
-        aria-label={title}
-      >
+    <ChartCard title={title} description={description} endpoint={endpoint} actions={actions}>
+      <svg className="chart-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title}>
         {[0.25, 0.5, 0.75, 1].map((step) => {
           const y = paddingTop + chartHeight - chartHeight * step;
           return (
@@ -248,21 +248,11 @@ function ColumnChart({
                 fill={color}
                 fillOpacity="0.88"
               />
-              <text
-                className="chart-axis-label"
-                x={labelX}
-                y={height - 28}
-                textAnchor="middle"
-              >
+              <text className="chart-axis-label" x={labelX} y={height - 28} textAnchor="middle">
                 {shortenLabel(row.name, 14)}
               </text>
               {subLabelRenderer && (
-                <text
-                  className="chart-axis-subtle"
-                  x={labelX}
-                  y={height - 12}
-                  textAnchor="middle"
-                >
+                <text className="chart-axis-subtle" x={labelX} y={height - 12} textAnchor="middle">
                   {subLabelRenderer(row)}
                 </text>
               )}
@@ -274,7 +264,7 @@ function ColumnChart({
   );
 }
 
-function DonutChart({ rows, title, description, endpoint }) {
+function DonutChart({ actions, rows, title, description, endpoint }) {
   const positiveRows = getPositiveRows(rows);
   const topRows = positiveRows.slice(0, 5);
   const remainder = positiveRows.slice(5);
@@ -287,7 +277,7 @@ function DonutChart({ rows, title, description, endpoint }) {
   let offset = 0;
 
   return (
-    <ChartCard title={title} description={description} endpoint={endpoint}>
+    <ChartCard title={title} description={description} endpoint={endpoint} actions={actions}>
       <div className="chart-split">
         <svg
           className="chart-svg chart-svg-donut"
@@ -297,9 +287,7 @@ function DonutChart({ rows, title, description, endpoint }) {
         >
           <circle cx="110" cy="110" r={radius} className="chart-ring-base" />
           {displayRows.map((row, index) => {
-            const segmentLength = total
-              ? (row.count / total) * circumference
-              : 0;
+            const segmentLength = total ? (row.count / total) * circumference : 0;
             const dashArray = `${segmentLength} ${circumference - segmentLength}`;
             const dashOffset = -offset;
             offset += segmentLength;
@@ -320,20 +308,10 @@ function DonutChart({ rows, title, description, endpoint }) {
               />
             );
           })}
-          <text
-            x="110"
-            y="102"
-            textAnchor="middle"
-            className="chart-donut-total"
-          >
+          <text x="110" y="102" textAnchor="middle" className="chart-donut-total">
             {formatNumber(total)}
           </text>
-          <text
-            x="110"
-            y="124"
-            textAnchor="middle"
-            className="chart-donut-label"
-          >
+          <text x="110" y="124" textAnchor="middle" className="chart-donut-label">
             total
           </text>
         </svg>
@@ -348,9 +326,7 @@ function DonutChart({ rows, title, description, endpoint }) {
                 }}
               />
               <span>{row.name}</span>
-              <span className="chart-legend-value">
-                {formatNumber(row.count)}
-              </span>
+              <span className="chart-legend-value">{formatNumber(row.count)}</span>
             </div>
           ))}
         </div>
@@ -359,9 +335,9 @@ function DonutChart({ rows, title, description, endpoint }) {
   );
 }
 
-function TimelineChart({ rows, title, description, endpoint }) {
+function TimelineChart({ actions, rows, title, description, endpoint }) {
   const orderedRows = [...rows].sort(
-    (left, right) => (left.yearOrder || 0) - (right.yearOrder || 0),
+    (left, right) => (left.yearOrder || 0) - (right.yearOrder || 0)
   );
   const width = 520;
   const height = 260;
@@ -375,11 +351,8 @@ function TimelineChart({ rows, title, description, endpoint }) {
   const points = orderedRows.map((row, index) => {
     const x =
       paddingLeft +
-      (orderedRows.length === 1
-        ? chartWidth / 2
-        : (chartWidth / (orderedRows.length - 1)) * index);
-    const y =
-      paddingTop + chartHeight - ((row.count || 0) / maxValue) * chartHeight;
+      (orderedRows.length === 1 ? chartWidth / 2 : (chartWidth / (orderedRows.length - 1)) * index);
+    const y = paddingTop + chartHeight - ((row.count || 0) / maxValue) * chartHeight;
     return { ...row, x, y };
   });
   const path = points
@@ -388,13 +361,8 @@ function TimelineChart({ rows, title, description, endpoint }) {
   const areaPath = `${path} L ${points[points.length - 1]?.x || paddingLeft} ${paddingTop + chartHeight} L ${points[0]?.x || paddingLeft} ${paddingTop + chartHeight} Z`;
 
   return (
-    <ChartCard title={title} description={description} endpoint={endpoint}>
-      <svg
-        className="chart-svg"
-        viewBox={`0 0 ${width} ${height}`}
-        role="img"
-        aria-label={title}
-      >
+    <ChartCard title={title} description={description} endpoint={endpoint} actions={actions}>
+      <svg className="chart-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title}>
         {[0.25, 0.5, 0.75, 1].map((step) => {
           const y = paddingTop + chartHeight - chartHeight * step;
           return (
@@ -409,21 +377,12 @@ function TimelineChart({ rows, title, description, endpoint }) {
           );
         })}
 
-        {points.length > 1 && (
-          <path d={areaPath} className="chart-area chart-area-events" />
-        )}
-        {points.length > 1 && (
-          <path d={path} className="chart-line chart-line-events" />
-        )}
+        {points.length > 1 && <path d={areaPath} className="chart-area chart-area-events" />}
+        {points.length > 1 && <path d={path} className="chart-line chart-line-events" />}
 
         {points.map((point) => (
           <g key={point.slug}>
-            <circle
-              cx={point.x}
-              cy={point.y}
-              r="6"
-              className="chart-point chart-point-events"
-            />
+            <circle cx={point.x} cy={point.y} r="6" className="chart-point chart-point-events" />
             <text
               className="chart-value-label"
               x={point.x}
@@ -432,20 +391,10 @@ function TimelineChart({ rows, title, description, endpoint }) {
             >
               {point.count}
             </text>
-            <text
-              className="chart-axis-label"
-              x={point.x}
-              y={height - 28}
-              textAnchor="middle"
-            >
+            <text className="chart-axis-label" x={point.x} y={height - 28} textAnchor="middle">
               {point.yearLabel || point.name}
             </text>
-            <text
-              className="chart-axis-subtle"
-              x={point.x}
-              y={height - 12}
-              textAnchor="middle"
-            >
+            <text className="chart-axis-subtle" x={point.x} y={height - 12} textAnchor="middle">
               {shortenLabel(point.name, 16)}
             </text>
           </g>
@@ -455,12 +404,12 @@ function TimelineChart({ rows, title, description, endpoint }) {
   );
 }
 
-function StackedCategoryChart({ rows, title, description, endpoint }) {
+function StackedCategoryChart({ actions, rows, title, description, endpoint }) {
   const categoryRows = aggregateBy(getPositiveRows(rows), "category");
   const total = sumRows(categoryRows);
 
   return (
-    <ChartCard title={title} description={description} endpoint={endpoint}>
+    <ChartCard title={title} description={description} endpoint={endpoint} actions={actions}>
       <div className="chart-stack">
         {categoryRows.map((row, index) => (
           <div
@@ -485,9 +434,7 @@ function StackedCategoryChart({ rows, title, description, endpoint }) {
               }}
             />
             <span>{row.label}</span>
-            <span className="chart-legend-value">
-              {formatNumber(row.count)}
-            </span>
+            <span className="chart-legend-value">{formatNumber(row.count)}</span>
           </div>
         ))}
       </div>
@@ -500,9 +447,26 @@ function Stats() {
   const [focus, setFocus] = useState(
     statsFocusOptions.some((option) => option.id === initialQuery.focus)
       ? initialQuery.focus
-      : "all",
+      : "all"
   );
   const specState = useAsyncData(() => docsApi.getOpenApiSpec(), []);
+  const workbenchState = useAsyncData(() => docsApi.getWorkbenchScenarios(), []);
+  const workbenchScenarios = useMemo(
+    () => parseWorkbenchScenarios(workbenchState.data),
+    [workbenchState.data]
+  );
+  const compareScenarios = useMemo(
+    () => parseCompareWorkbenchScenarios(workbenchState.data),
+    [workbenchState.data]
+  );
+  const graphScenarios = useMemo(
+    () => parseGraphWorkbenchScenarios(workbenchState.data),
+    [workbenchState.data]
+  );
+  const pathScenarios = useMemo(
+    () => parsePathWorkbenchScenarios(workbenchState.data),
+    [workbenchState.data]
+  );
   const { data, loading, error } = useAsyncData(
     () =>
       Promise.all([
@@ -533,9 +497,9 @@ function Stats() {
           starSystemsBySegmentum,
           unitsByFaction,
           weaponsByKeyword,
-        }),
+        })
       ),
-    [],
+    []
   );
 
   if (loading) {
@@ -547,14 +511,8 @@ function Stats() {
   }
 
   const stats = data;
-  const topBattlefieldFaction = getTopRow(
-    stats.battlefieldsByFaction.data,
-    "count",
-  );
-  const topCampaignOrganization = getTopRow(
-    stats.campaignsByOrganization.data,
-    "count",
-  );
+  const topBattlefieldFaction = getTopRow(stats.battlefieldsByFaction.data, "count");
+  const topCampaignOrganization = getTopRow(stats.campaignsByOrganization.data, "count");
   const topSegmentum = getTopRow(stats.starSystemsBySegmentum.data, "count");
   const topFactionUnit = getTopRow(stats.unitsByFaction.data, "count");
   const topWeaponKeyword = getTopRow(stats.weaponsByKeyword.data, "count");
@@ -574,6 +532,10 @@ function Stats() {
   const sections = [
     {
       id: "battlefields-by-faction",
+      resourceKey: "battlefields",
+      groupResource: "factions",
+      filterKey: "factions",
+      listResource: "battlefields",
       rows: stats.battlefieldsByFaction.data,
       metricKey: "count",
       metricLabel: "battlefields",
@@ -586,54 +548,71 @@ function Stats() {
     },
     {
       id: "campaigns-by-organization",
+      resourceKey: "campaigns",
+      groupResource: "organizations",
+      filterKey: "organizations",
+      listResource: "campaigns",
       rows: stats.campaignsByOrganization.data,
       metricKey: "count",
       metricLabel: "campaigns",
       secondaryLabel: { key: "activeCount", label: "active" },
       endpoint: "/api/v1/stats/campaigns/by-organization",
       title: "Кампании по организациям",
-      description:
-        "Показывает, какие институты чаще всего участвуют в campaign-level данных.",
+      description: "Показывает, какие институты чаще всего участвуют в campaign-level данных.",
       accent: "campaigns",
     },
     {
       id: "relics-by-faction",
+      resourceKey: "relics",
+      groupResource: "factions",
+      filterKey: "faction",
+      listResource: "relics",
       rows: stats.relicsByFaction.data,
       metricKey: "count",
       metricLabel: "relics",
       secondaryLabel: { key: "averagePowerLevel", label: "avg power" },
       endpoint: "/api/v1/stats/relics/by-faction",
       title: "Реликвии по фракциям",
-      description:
-        "Полезно для inventory dashboards, faction identity UI и power-driven sorting.",
+      description: "Полезно для inventory dashboards, faction identity UI и power-driven sorting.",
       accent: "relics",
     },
     {
       id: "star-systems-by-segmentum",
+      resourceKey: "star-systems",
+      groupResource: "",
+      filterKey: "segmentum",
+      filterValueResolver: (row) => row.name,
+      listResource: "star-systems",
       rows: stats.starSystemsBySegmentum.data,
       metricKey: "count",
       metricLabel: "systems",
       secondaryLabel: { key: "planetCount", label: "planets" },
       endpoint: "/api/v1/stats/star-systems/by-segmentum",
       title: "Звездные системы по segmentum",
-      description:
-        "Системный обзор полезен для maps, route planners и sector-level dashboards.",
+      description: "Системный обзор полезен для maps, route planners и sector-level dashboards.",
       accent: "star-systems",
     },
     {
       id: "units-by-faction",
+      resourceKey: "units",
+      groupResource: "factions",
+      filterKey: "faction",
+      listResource: "units",
       rows: stats.unitsByFaction.data,
       metricKey: "count",
       metricLabel: "units",
       secondaryLabel: { key: "averagePowerLevel", label: "avg power" },
       endpoint: "/api/v1/stats/units/by-faction",
       title: "Юниты по фракциям",
-      description:
-        "Подходит для faction dashboards, army builder overview и compare screen.",
+      description: "Подходит для faction dashboards, army builder overview и compare screen.",
       accent: "units",
     },
     {
       id: "weapons-by-keyword",
+      resourceKey: "weapons",
+      groupResource: "keywords",
+      filterKey: "keywords",
+      listResource: "weapons",
       rows: stats.weaponsByKeyword.data,
       metricKey: "count",
       metricLabel: "weapons",
@@ -646,32 +625,47 @@ function Stats() {
     },
     {
       id: "factions-by-race",
+      resourceKey: "factions",
+      groupResource: "races",
+      filterKey: "race",
+      listResource: "factions",
       rows: stats.factionsByRace.data,
       metricKey: "count",
       metricLabel: "factions",
       endpoint: "/api/v1/stats/factions/by-race",
       title: "Фракции по расам",
-      description:
-        "Готовый источник для pie chart, stacked summary и доменных обзорных карточек.",
+      description: "Готовый источник для pie chart, stacked summary и доменных обзорных карточек.",
       accent: "factions",
     },
     {
       id: "events-by-era",
+      resourceKey: "events",
+      groupResource: "eras",
+      filterKey: "era",
+      listResource: "events",
       rows: stats.eventsByEra.data,
       metricKey: "count",
       metricLabel: "events",
       endpoint: "/api/v1/stats/events/by-era",
       title: "События по эрам",
-      description:
-        "Подходит для timeline overview, era compare и activity heatmap.",
+      description: "Подходит для timeline overview, era compare и activity heatmap.",
       accent: "events",
     },
   ];
+  const sectionsById = sections.reduce((result, section) => {
+    result[section.id] = section;
+    return result;
+  }, {});
   const visibleSections =
-    focus === "all"
-      ? sections
-      : sections.filter((section) => section.id === focus);
+    focus === "all" ? sections : sections.filter((section) => section.id === focus);
   const activeGuideSection = visibleSections[0] || sections[0];
+  const visibleResourceKeys = [...new Set(visibleSections.map((section) => section.resourceKey))];
+  const relatedWorkbenchScenarios = selectWorkbenchScenarios(workbenchScenarios, {
+    featuredOnly: focus === "all",
+    groupLimit: focus === "all" ? 2 : 3,
+    limit: 6,
+    resources: visibleResourceKeys,
+  });
   const visiblePayload =
     focus === "all"
       ? {
@@ -685,19 +679,36 @@ function Stats() {
           weaponsByKeyword: stats.weaponsByKeyword,
         }
       : { [focus]: payloadByFocus[focus] };
+  function buildSectionActions(section, className = "query-link") {
+    const topRow = section.rows[0];
+
+    if (!topRow) {
+      return [];
+    }
+
+    return buildStatsRowWorkbenchActions({
+      compareScenarios,
+      graphScenarios,
+      pathScenarios,
+      row: topRow,
+      section,
+    }).map((action) => ({
+      ...action,
+      className,
+    }));
+  }
   const chartSections = [
     {
       id: "battlefields-by-faction",
       node: (
         <ColumnChart
+          actions={buildSectionActions(sectionsById["battlefields-by-faction"])}
           rows={stats.battlefieldsByFaction.data}
           title="Battlefield density по фракциям"
           description="Показывает, какие factions уже дают наибольшую tactical глубину для warzone screens."
           endpoint="/api/v1/stats/battlefields/by-faction"
           accent="battlefields"
-          subLabelRenderer={(row) =>
-            `avg ${formatNumber(row.averageIntensityLevel)}`
-          }
+          subLabelRenderer={(row) => `avg ${formatNumber(row.averageIntensityLevel)}`}
         />
       ),
     },
@@ -705,6 +716,7 @@ function Stats() {
       id: "campaigns-by-organization",
       node: (
         <ColumnChart
+          actions={buildSectionActions(sectionsById["campaigns-by-organization"])}
           rows={stats.campaignsByOrganization.data}
           title="Campaign participation по организациям"
           description="Колонки показывают, какие institutional actors уже хорошо покрыты в campaign datasets."
@@ -718,14 +730,13 @@ function Stats() {
       id: "relics-by-faction",
       node: (
         <ColumnChart
+          actions={buildSectionActions(sectionsById["relics-by-faction"])}
           rows={stats.relicsByFaction.data}
           title="Relic density по фракциям"
           description="Хорошо показывает, где inventory и hero-item модели уже дают богатые экспериментальные сценарии."
           endpoint="/api/v1/stats/relics/by-faction"
           accent="relics"
-          subLabelRenderer={(row) =>
-            `avg ${formatNumber(row.averagePowerLevel)}`
-          }
+          subLabelRenderer={(row) => `avg ${formatNumber(row.averagePowerLevel)}`}
         />
       ),
     },
@@ -733,6 +744,7 @@ function Stats() {
       id: "star-systems-by-segmentum",
       node: (
         <DonutChart
+          actions={buildSectionActions(sectionsById["star-systems-by-segmentum"])}
           rows={stats.starSystemsBySegmentum.data}
           title="Segmentum share среди systems"
           description="Donut помогает быстро понять, как распределен системный слой домена по крупным секторам."
@@ -744,14 +756,13 @@ function Stats() {
       id: "units-by-faction",
       node: (
         <ColumnChart
+          actions={buildSectionActions(sectionsById["units-by-faction"])}
           rows={stats.unitsByFaction.data}
           title="Unit density по фракциям"
           description="Колонки быстро показывают, где модель данных уже достаточно плотная для army builder и squad browser."
           endpoint="/api/v1/stats/units/by-faction"
           accent="units"
-          subLabelRenderer={(row) =>
-            `avg ${formatNumber(row.averagePowerLevel)}`
-          }
+          subLabelRenderer={(row) => `avg ${formatNumber(row.averagePowerLevel)}`}
         />
       ),
     },
@@ -759,6 +770,7 @@ function Stats() {
       id: "weapons-by-keyword",
       node: (
         <StackedCategoryChart
+          actions={buildSectionActions(sectionsById["weapons-by-keyword"])}
           rows={stats.weaponsByKeyword.data}
           title="Weapon taxonomy по категориям"
           description="Распределение keyword categories помогает понять, как строить filters и legend-блоки."
@@ -770,6 +782,7 @@ function Stats() {
       id: "factions-by-race",
       node: (
         <DonutChart
+          actions={buildSectionActions(sectionsById["factions-by-race"])}
           rows={stats.factionsByRace.data}
           title="Race share среди фракций"
           description="Donut быстро показывает перекос учебного набора и доминирующие расы в публичном API."
@@ -781,6 +794,7 @@ function Stats() {
       id: "events-by-era",
       node: (
         <TimelineChart
+          actions={buildSectionActions(sectionsById["events-by-era"])}
           rows={stats.eventsByEra.data}
           title="Timeline активности по эрам"
           description="Линия по `yearOrder` показывает, как timeline-экран может читать плотность событий по эпохам."
@@ -790,9 +804,79 @@ function Stats() {
     },
   ];
   const visibleCharts =
-    focus === "all"
-      ? chartSections
-      : chartSections.filter((section) => section.id === focus);
+    focus === "all" ? chartSections : chartSections.filter((section) => section.id === focus);
+  const heroCards = [
+    {
+      detail: topBattlefieldFaction
+        ? `${topBattlefieldFaction.count} полей битв, avg intensity ${topBattlefieldFaction.averageIntensityLevel}`
+        : "Пока нет записей",
+      label: "Топ battlefield faction",
+      row: topBattlefieldFaction,
+      sectionId: "battlefields-by-faction",
+      value: topBattlefieldFaction ? topBattlefieldFaction.name : "Нет данных",
+    },
+    {
+      detail: topCampaignOrganization
+        ? `${topCampaignOrganization.count} campaigns, active ${topCampaignOrganization.activeCount}`
+        : "Пока нет записей",
+      label: "Топ organization",
+      row: topCampaignOrganization,
+      sectionId: "campaigns-by-organization",
+      value: topCampaignOrganization ? topCampaignOrganization.name : "Нет данных",
+    },
+    {
+      detail: topSegmentum
+        ? `${topSegmentum.count} systems, ${topSegmentum.planetCount} planets`
+        : "Пока нет записей",
+      label: "Топ segmentum",
+      row: topSegmentum,
+      sectionId: "star-systems-by-segmentum",
+      value: topSegmentum ? topSegmentum.name : "Нет данных",
+    },
+    {
+      detail: topRelicFaction
+        ? `${topRelicFaction.count} relics, avg power ${topRelicFaction.averagePowerLevel}`
+        : "Пока нет записей",
+      label: "Топ relic faction",
+      row: topRelicFaction,
+      sectionId: "relics-by-faction",
+      value: topRelicFaction ? topRelicFaction.name : "Нет данных",
+    },
+    {
+      detail: topFactionUnit
+        ? `${topFactionUnit.count} юнитов, avg power ${topFactionUnit.averagePowerLevel}`
+        : "Пока нет записей",
+      label: "Топ по юнитам",
+      row: topFactionUnit,
+      sectionId: "units-by-faction",
+      value: topFactionUnit ? topFactionUnit.name : "Нет данных",
+    },
+    {
+      detail: topWeaponKeyword
+        ? `${topWeaponKeyword.count} weapon matches, avg power ${topWeaponKeyword.averagePowerLevel}`
+        : "Пока нет записей",
+      label: "Топ keyword оружия",
+      row: topWeaponKeyword,
+      sectionId: "weapons-by-keyword",
+      value: topWeaponKeyword ? topWeaponKeyword.name : "Нет данных",
+    },
+    {
+      detail: busiestEra
+        ? `${busiestEra.count} событий, ${busiestEra.yearLabel}`
+        : "Пока нет записей",
+      label: "Самая насыщенная эра",
+      row: busiestEra,
+      sectionId: "events-by-era",
+      value: busiestEra ? busiestEra.name : "Нет данных",
+    },
+    {
+      detail: dominantRace ? `${dominantRace.count} фракций` : "Пока нет записей",
+      label: "Самая широкая раса",
+      row: dominantRace,
+      sectionId: "factions-by-race",
+      value: dominantRace ? dominantRace.name : "Нет данных",
+    },
+  ];
 
   function handleFocusChange(nextFocus) {
     setFocus(nextFocus);
@@ -808,9 +892,8 @@ function Stats() {
           <div className="section-eyebrow">Stats</div>
           <h1>Живые analytics-сценарии поверх API</h1>
           <p className="page-lead">
-            Эта страница показывает, что API уже умеет отдавать агрегаты для
-            dashboard, compare UI, charts и exploration-экранов без клиентской
-            пост-обработки.
+            Эта страница показывает, что API уже умеет отдавать агрегаты для dashboard, compare UI,
+            charts и exploration-экранов без клиентской пост-обработки.
           </p>
           <div className="hero-actions">
             <a className="action-link" href="/playground">
@@ -833,8 +916,7 @@ function Stats() {
           <div>
             <h2>Фокус страницы</h2>
             <p className="muted-line">
-              Сохраняется в query params. Можно открыть нужную analytics-секцию
-              сразу по ссылке.
+              Сохраняется в query params. Можно открыть нужную analytics-секцию сразу по ссылке.
             </p>
           </div>
         </div>
@@ -852,9 +934,7 @@ function Stats() {
         </div>
       </section>
 
-      {specState.error && (
-        <StateNotice type="error">{specState.error}</StateNotice>
-      )}
+      {specState.error && <StateNotice type="error">{specState.error}</StateNotice>}
       {specState.data && activeGuideSection && (
         <ApiOperationGuide
           description={`Контракт для stats endpoint-а сейчас привязан к секции "${activeGuideSection.title}".`}
@@ -864,84 +944,31 @@ function Stats() {
           spec={specState.data}
         />
       )}
+      {workbenchState.error && <StateNotice type="error">{workbenchState.error}</StateNotice>}
 
       <section className="stats-hero-grid">
-        <StatHeroCard
-          label="Топ battlefield faction"
-          value={
-            topBattlefieldFaction ? topBattlefieldFaction.name : "Нет данных"
-          }
-          detail={
-            topBattlefieldFaction
-              ? `${topBattlefieldFaction.count} полей битв, avg intensity ${topBattlefieldFaction.averageIntensityLevel}`
-              : "Пока нет записей"
-          }
-        />
-        <StatHeroCard
-          label="Топ organization"
-          value={
-            topCampaignOrganization
-              ? topCampaignOrganization.name
-              : "Нет данных"
-          }
-          detail={
-            topCampaignOrganization
-              ? `${topCampaignOrganization.count} campaigns, active ${topCampaignOrganization.activeCount}`
-              : "Пока нет записей"
-          }
-        />
-        <StatHeroCard
-          label="Топ segmentum"
-          value={topSegmentum ? topSegmentum.name : "Нет данных"}
-          detail={
-            topSegmentum
-              ? `${topSegmentum.count} systems, ${topSegmentum.planetCount} planets`
-              : "Пока нет записей"
-          }
-        />
-        <StatHeroCard
-          label="Топ relic faction"
-          value={topRelicFaction ? topRelicFaction.name : "Нет данных"}
-          detail={
-            topRelicFaction
-              ? `${topRelicFaction.count} relics, avg power ${topRelicFaction.averagePowerLevel}`
-              : "Пока нет записей"
-          }
-        />
-        <StatHeroCard
-          label="Топ по юнитам"
-          value={topFactionUnit ? topFactionUnit.name : "Нет данных"}
-          detail={
-            topFactionUnit
-              ? `${topFactionUnit.count} юнитов, avg power ${topFactionUnit.averagePowerLevel}`
-              : "Пока нет записей"
-          }
-        />
-        <StatHeroCard
-          label="Топ keyword оружия"
-          value={topWeaponKeyword ? topWeaponKeyword.name : "Нет данных"}
-          detail={
-            topWeaponKeyword
-              ? `${topWeaponKeyword.count} weapon matches, avg power ${topWeaponKeyword.averagePowerLevel}`
-              : "Пока нет записей"
-          }
-        />
-        <StatHeroCard
-          label="Самая насыщенная эра"
-          value={busiestEra ? busiestEra.name : "Нет данных"}
-          detail={
-            busiestEra
-              ? `${busiestEra.count} событий, ${busiestEra.yearLabel}`
-              : "Пока нет записей"
-          }
-        />
-        <StatHeroCard
-          label="Самая широкая раса"
-          value={dominantRace ? dominantRace.name : "Нет данных"}
-          detail={
-            dominantRace ? `${dominantRace.count} фракций` : "Пока нет записей"
-          }
-        />
+        {heroCards.map((card) => (
+          <StatHeroCard
+            key={card.sectionId}
+            label={card.label}
+            value={card.value}
+            detail={card.detail}
+            actions={
+              card.row
+                ? buildStatsRowWorkbenchActions({
+                    compareScenarios,
+                    graphScenarios,
+                    pathScenarios,
+                    row: card.row,
+                    section: sectionsById[card.sectionId],
+                  }).map((action) => ({
+                    ...action,
+                    className: "action-link action-link-muted",
+                  }))
+                : []
+            }
+          />
+        ))}
       </section>
 
       <div className="chart-grid">
@@ -953,11 +980,16 @@ function Stats() {
       <div className="panel-grid stats-panel-grid">
         {visibleSections.map((section) => (
           <RankingList
+            compareScenarios={compareScenarios}
+            graphScenarios={graphScenarios}
+            headerActions={buildSectionActions(section)}
             key={section.id}
             rows={section.rows}
             metricKey={section.metricKey}
             metricLabel={section.metricLabel}
+            pathScenarios={pathScenarios}
             secondaryLabel={section.secondaryLabel}
+            section={section}
             endpoint={section.endpoint}
             title={section.title}
             description={section.description}
@@ -965,6 +997,18 @@ function Stats() {
           />
         ))}
       </div>
+
+      <WorkbenchScenarioSection
+        title="Related Workbench Flows"
+        description={
+          focus === "all"
+            ? "Эти сценарии помогают перейти от aggregate-слоя к compare, graph и path flows по тем же доменным ресурсам."
+            : `Фокус "${activeGuideSection.title}" можно сразу продолжить через entity-level docs flows по тем же связанным ресурсам.`
+        }
+        emptyState="Для текущего stats-фокуса пока нет связанных workbench flow."
+        scenarios={relatedWorkbenchScenarios}
+        summary={`${relatedWorkbenchScenarios.length} related flows`}
+      />
 
       <JsonViewer label="Live stats payload" data={visiblePayload} />
     </div>

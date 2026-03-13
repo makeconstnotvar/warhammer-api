@@ -1,10 +1,9 @@
 // client/pages/RaceList.jsx
-import { h } from 'preact';
 import { observer, inject } from "mobx-react";
 import { useEffect, useState } from "preact/hooks";
 import { Pager } from "../components/Pager";
 
-const RaceList = inject('$racesStore')(observer(RaceListComponent));
+const RaceList = inject("$racesStore")(observer(RaceListComponent));
 
 function RaceListComponent(props) {
   const { $racesStore } = props;
@@ -12,7 +11,7 @@ function RaceListComponent(props) {
   const pageSize = 10;
 
   useEffect(() => {
-    $racesStore.fetchData({page: currentPage, limit:pageSize});
+    $racesStore.fetchData({ page: currentPage, limit: pageSize });
   }, [currentPage]); // Запрос при изменении страницы
 
   const handlePageChange = (page) => {
@@ -38,8 +37,10 @@ function RaceListComponent(props) {
       ) : (
         <div className="card">
           <ul className="list-group list-group-flush">
-            {$racesStore.data.map(item => (
-              <li key={item.id} className="list-group-item">{item.name}</li>
+            {$racesStore.data.map((item) => (
+              <li key={item.id} className="list-group-item">
+                {item.name}
+              </li>
             ))}
           </ul>
         </div>

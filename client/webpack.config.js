@@ -1,21 +1,20 @@
-const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 module.exports = {
-  mode: 'development', // или 'production' для билда
-  entry: './client/index.js',
+  mode: "development", // или 'production' для билда
+  entry: "./client/index.js",
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, "dist"),
     //filename: 'bundle.[contenthash].js',
-    filename: 'bundle.js',
+    filename: "bundle.js",
     clean: true,
   },
   resolve: {
-    extensions: ['.js', '.jsx'],
+    extensions: [".js", ".jsx"],
     alias: {
-      react: 'preact/compat',
-      'react-dom': 'preact/compat',
+      react: "preact/compat",
+      "react-dom": "preact/compat",
     },
   },
   module: {
@@ -24,54 +23,55 @@ module.exports = {
         test: /\.jsx?$/,
         exclude: /node_modules/,
         use: {
-          loader: 'babel-loader',
+          loader: "babel-loader",
           options: {
-            presets: [
-              ['@babel/preset-react', {runtime: 'automatic', importSource: 'preact'}],
-            ],
-            plugins: [
-              ['@babel/plugin-proposal-decorators', {version: '2023-05'}]
-            ],
+            presets: [["@babel/preset-react", { runtime: "automatic", importSource: "preact" }]],
+            plugins: [["@babel/plugin-proposal-decorators", { version: "2023-05" }]],
           },
         },
       },
       {
         test: /\.scss$/,
         use: [
-          'style-loader',
-          'css-loader',
-          'sass-loader'
-        ]
+          "style-loader",
+          "css-loader",
+          {
+            loader: "sass-loader",
+            options: {
+              sassOptions: {
+                quietDeps: true,
+                silenceDeprecations: ["import", "global-builtin", "color-functions"],
+              },
+            },
+          },
+        ],
       },
       {
         test: /\.css$/,
-        use: [
-          'style-loader',
-          'css-loader'
-        ]
-      }
+        use: ["style-loader", "css-loader"],
+      },
     ],
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './client/index.html',
-      inject: 'body',
+      template: "./client/index.html",
+      inject: "body",
     }),
     //new BundleAnalyzerPlugin()
   ],
-  devtool: 'source-map',
+  devtool: "source-map",
   devServer: {
-    static: path.join(__dirname, 'dist'),
+    static: path.join(__dirname, "dist"),
     port: 8080,
     historyApiFallback: true,
     proxy: [
       {
-        context: ['/api'],
-        target: 'http://localhost:3000',
-      }
+        context: ["/api"],
+        target: "http://localhost:3000",
+      },
     ],
   },
   stats: {
-    warnings: false
-  }
+    warnings: false,
+  },
 };

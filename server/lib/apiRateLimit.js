@@ -9,7 +9,7 @@ function parsePositiveInt(value, fallback) {
 }
 
 function defaultKeyGenerator(req) {
-  return req.ip || req.socket?.remoteAddress || 'anonymous';
+  return req.ip || req.socket?.remoteAddress || "anonymous";
 }
 
 function normalizeRateLimitOptions(options = {}) {
@@ -18,7 +18,8 @@ function normalizeRateLimitOptions(options = {}) {
   const windowSeconds = Math.max(1, Math.ceil(windowMs / 1000));
 
   return {
-    keyGenerator: typeof options.keyGenerator === 'function' ? options.keyGenerator : defaultKeyGenerator,
+    keyGenerator:
+      typeof options.keyGenerator === "function" ? options.keyGenerator : defaultKeyGenerator,
     maxRequests,
     windowMs,
     windowSeconds,
@@ -31,34 +32,34 @@ function buildRateLimitPolicy(options = {}) {
   return {
     headers: [
       {
-        name: 'RateLimit-Limit',
+        name: "RateLimit-Limit",
         example: `RateLimit-Limit: ${normalized.maxRequests}`,
-        description: 'Максимум запросов в текущем окне.',
+        description: "Максимум запросов в текущем окне.",
       },
       {
-        name: 'RateLimit-Remaining',
+        name: "RateLimit-Remaining",
         example: `RateLimit-Remaining: ${normalized.maxRequests - 1}`,
-        description: 'Сколько запросов еще можно выполнить до 429.',
+        description: "Сколько запросов еще можно выполнить до 429.",
       },
       {
-        name: 'RateLimit-Reset',
+        name: "RateLimit-Reset",
         example: `RateLimit-Reset: ${normalized.windowSeconds}`,
-        description: 'Через сколько секунд окно лимита полностью обновится.',
+        description: "Через сколько секунд окно лимита полностью обновится.",
       },
       {
-        name: 'RateLimit-Policy',
+        name: "RateLimit-Policy",
         example: `RateLimit-Policy: ${normalized.maxRequests};w=${normalized.windowSeconds}`,
         description: 'Сводное описание policy в формате "limit;w=windowSeconds".',
       },
       {
-        name: 'Retry-After',
+        name: "Retry-After",
         example: `Retry-After: ${normalized.windowSeconds}`,
-        description: 'Отдается вместе с 429 и показывает, когда безопасно повторить запрос.',
+        description: "Отдается вместе с 429 и показывает, когда безопасно повторить запрос.",
       },
     ],
     limit: normalized.maxRequests,
     policy: `${normalized.maxRequests};w=${normalized.windowSeconds}`,
-    scope: '/api/v1',
+    scope: "/api/v1",
     windowMs: normalized.windowMs,
     windowSeconds: normalized.windowSeconds,
   };
@@ -70,7 +71,7 @@ function createApiRateLimit(options = {}) {
   let cleanupCounter = 0;
 
   return function apiRateLimit(req, res, next) {
-    if (req.method === 'OPTIONS') {
+    if (req.method === "OPTIONS") {
       next();
       return;
     }
@@ -93,10 +94,10 @@ function createApiRateLimit(options = {}) {
     const remaining = Math.max(normalized.maxRequests - bucket.count, 0);
     const resetSeconds = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
 
-    res.setHeader('RateLimit-Limit', String(normalized.maxRequests));
-    res.setHeader('RateLimit-Remaining', String(remaining));
-    res.setHeader('RateLimit-Reset', String(resetSeconds));
-    res.setHeader('RateLimit-Policy', `${normalized.maxRequests};w=${normalized.windowSeconds}`);
+    res.setHeader("RateLimit-Limit", String(normalized.maxRequests));
+    res.setHeader("RateLimit-Remaining", String(remaining));
+    res.setHeader("RateLimit-Reset", String(resetSeconds));
+    res.setHeader("RateLimit-Policy", `${normalized.maxRequests};w=${normalized.windowSeconds}`);
 
     cleanupCounter += 1;
     if (cleanupCounter % 100 === 0) {
@@ -108,17 +109,17 @@ function createApiRateLimit(options = {}) {
     }
 
     if (bucket.count > normalized.maxRequests) {
-      res.setHeader('Retry-After', String(resetSeconds));
+      res.setHeader("Retry-After", String(resetSeconds));
       res.status(429).json({
         error: {
-          code: 'RATE_LIMIT_EXCEEDED',
-          message: 'Rate limit exceeded for /api/v1. Retry after the current window resets.',
+          code: "RATE_LIMIT_EXCEEDED",
+          message: "Rate limit exceeded for /api/v1. Retry after the current window resets.",
           details: [
             {
               limit: normalized.maxRequests,
               policy: `${normalized.maxRequests};w=${normalized.windowSeconds}`,
               resetInSeconds: resetSeconds,
-              scope: '/api/v1',
+              scope: "/api/v1",
             },
           ],
         },

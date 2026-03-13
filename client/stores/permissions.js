@@ -4,10 +4,10 @@ const permittedCodes = [
   "NO_EXECUTOR",
   "NON_UNIQUE_LOGIN",
   "EMPTY_REQUIRED_FIELD",
-]
+];
 
 function isPermitted(code) {
   return permittedCodes.includes(code);
 }
 
-export {isPermitted}
+export { isPermitted };

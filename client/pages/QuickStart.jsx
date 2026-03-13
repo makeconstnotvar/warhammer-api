@@ -1,16 +1,30 @@
+import { useMemo } from "preact/hooks";
 import { docsApi } from "../api/docsApi";
 import { CodeBlock } from "../components/CodeBlock";
 import { StateNotice } from "../components/StateNotice";
+import { WorkbenchScenarioSection } from "../components/WorkbenchScenarioSection";
 import { useAsyncData } from "../hooks/useAsyncData";
+import { parseWorkbenchScenarios, selectWorkbenchScenarios } from "../lib/workbenchScenarios";
 
 function QuickStart() {
-  const { data, loading, error } = useAsyncData(
-    () => docsApi.getOverview(),
-    [],
-  );
+  const { data, loading, error } = useAsyncData(() => docsApi.getOverview(), []);
   const overview = data?.data;
   const basePath = overview?.api?.basePath || "/api/v1";
   const rateLimit = overview?.api?.rateLimit;
+  const workbenchDocument = useMemo(
+    () => ({ data: overview?.interactiveScenarios || {} }),
+    [overview]
+  );
+  const starterWorkbenchScenarios = useMemo(
+    () =>
+      selectWorkbenchScenarios(parseWorkbenchScenarios(workbenchDocument), {
+        difficulty: "starter",
+        featuredOnly: true,
+        groupLimit: 2,
+        limit: 6,
+      }),
+    [workbenchDocument]
+  );
 
   if (loading) {
     return <StateNotice>Загрузка quick start...</StateNotice>;
@@ -27,8 +41,8 @@ function QuickStart() {
           <div className="section-eyebrow">Quick Start</div>
           <h1>Старт без лишней подготовки</h1>
           <p className="page-lead">
-            Клиент и API спроектированы так, чтобы первый учебный интерфейс
-            появился быстро: каталог, детали, search и конкурентная загрузка.
+            Клиент и API спроектированы так, чтобы первый учебный интерфейс появился быстро:
+            каталог, детали, search и конкурентная загрузка.
           </p>
         </div>
       </section>
@@ -60,8 +74,8 @@ function QuickStart() {
           <span className="tag">scope {rateLimit.scope}</span>
         </div>
         <p className="muted-line">
-          Даже учебный API должен вести себя как публичный сервис: читай
-          `RateLimit-*` headers и уважай `Retry-After`, если получаешь 429.
+          Даже учебный API должен вести себя как публичный сервис: читай `RateLimit-*` headers и
+          уважай `Retry-After`, если получаешь 429.
         </p>
       </section>
 
@@ -74,6 +88,13 @@ function QuickStart() {
         <CodeBlock label="Axios">{`const response = await axios.get('${basePath}/characters', {\n  params: { limit: 6, sort: '-powerLevel,name', include: 'faction,race' }\n});\nconst remaining = response.headers['ratelimit-remaining'];\nconst payload = response.data;`}</CodeBlock>
         <CodeBlock label="Promise.all">{`const [factions, characters, events] = await Promise.all([\n  fetch('${basePath}/factions?limit=4').then((r) => r.json()),\n  fetch('${basePath}/characters?limit=4').then((r) => r.json()),\n  fetch('${basePath}/events?limit=4').then((r) => r.json()),\n]);`}</CodeBlock>
       </div>
+
+      <WorkbenchScenarioSection
+        title="Starter Workbench Flows"
+        description="Эти сценарии сервер уже пометил как `featured` и `starter`, поэтому они подходят для первого живого интерфейса без ручного подбора preset-ов в клиенте."
+        scenarios={starterWorkbenchScenarios}
+        summary={`${starterWorkbenchScenarios.length} starter flows`}
+      />
     </div>
   );
 }

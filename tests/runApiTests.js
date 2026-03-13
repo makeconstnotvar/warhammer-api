@@ -9,6 +9,8 @@ const { runCompareStatsApiTests } = require("./api/compareStatsApiTests");
 const { runDomainApiTests } = require("./api/domainApiTests");
 const { runExploreApiTests } = require("./api/exploreApiTests");
 const { runRateLimitApiTests } = require("./api/rateLimitApiTests");
+const { runGeneratedSdkTests } = require("./client/generatedSdkTests");
+const { runWorkbenchPivotTests } = require("./client/workbenchPivotsTests");
 
 async function main() {
   const server = createApp().listen(0, "127.0.0.1");
@@ -22,6 +24,8 @@ async function main() {
     failures.push(...(await runCompareStatsApiTests(baseUrl)));
     failures.push(...(await runDomainApiTests(baseUrl)));
     failures.push(...(await runRateLimitApiTests()));
+    failures.push(...(await runGeneratedSdkTests(baseUrl)));
+    failures.push(...(await runWorkbenchPivotTests()));
   } finally {
     await new Promise((resolve, reject) => {
       server.close((error) => {
@@ -43,7 +47,7 @@ async function main() {
     return;
   }
 
-  console.log("API tests passed");
+  console.log("Tests passed");
 }
 
 main().catch((error) => {

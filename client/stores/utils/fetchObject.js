@@ -1,23 +1,23 @@
 export function fetchObject(params) {
   (async () => {
     if (this.executor.cancel) {
-      this.executor.cancel('user cancel');
+      this.executor.cancel("user cancel");
     }
 
     this.fetchProgress = true;
     this.fetchError = false;
-    this.fetchErrorText = '';
+    this.fetchErrorText = "";
     this.fetchDone = false;
     let fetchCancel = false;
 
     try {
-      let response = await this.fetchMethod(params, this.executor)
+      let response = await this.fetchMethod(params, this.executor);
       response = this.fetchDataAdapter(response);
       this.data = response?.data || {};
       this.fetchSuccess(response);
       this.fetchDone = true;
     } catch (e) {
-      if (e.message == 'user cancel') {
+      if (e.message == "user cancel") {
         fetchCancel = true;
         return;
       }
@@ -31,5 +31,5 @@ export function fetchObject(params) {
         this.fetchProgress = false;
       }
     }
-  })()
+  })();
 }

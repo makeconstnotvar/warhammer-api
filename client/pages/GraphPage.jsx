@@ -4,11 +4,7 @@ import { ApiErrorNotice } from "../components/ApiErrorNotice";
 import { ApiOperationGuide } from "../components/ApiOperationGuide";
 import { JsonViewer } from "../components/JsonViewer";
 import { StateNotice } from "../components/StateNotice";
-import {
-  extractError,
-  extractErrorDetails,
-  useAsyncData,
-} from "../hooks/useAsyncData";
+import { extractError, extractErrorDetails, useAsyncData } from "../hooks/useAsyncData";
 import {
   buildOpenApiIntegerOptions,
   getOpenApiParameterHint,
@@ -68,8 +64,7 @@ function createGraphFallbackScenario(resource, label = resource) {
   return {
     backlinks: "true",
     depth: "2",
-    description:
-      "Укажи slug или id вручную и собери graph для любого поддерживаемого ресурса.",
+    description: "Укажи slug или id вручную и собери graph для любого поддерживаемого ресурса.",
     identifier: "",
     label: label || resource || "Ресурс",
     limitPerRelation: "4",
@@ -136,10 +131,7 @@ function buildCompareLink(nodes, compareScenarios) {
   }
 
   const [left, right] = nodes;
-  const compareScenario = findWorkbenchScenarioByResource(
-    compareScenarios,
-    left.resource,
-  );
+  const compareScenario = findWorkbenchScenarioByResource(compareScenarios, left.resource);
 
   if (left.resource !== right.resource || !compareScenario?.include) {
     return "";
@@ -204,27 +196,13 @@ function buildGraphLayout(nodes = []) {
   return { height, positions, width };
 }
 
-function GraphStage({
-  edges,
-  focusedNodeKey,
-  nodes,
-  onNodeSelect,
-  root,
-  selectedNodeKeys,
-}) {
+function GraphStage({ edges, focusedNodeKey, nodes, onNodeSelect, root, selectedNodeKeys }) {
   const layout = useMemo(() => buildGraphLayout(nodes), [nodes]);
   const rings = useMemo(
-    () => [
-      ...new Set(
-        nodes.map((node) => node.distance).filter((distance) => distance > 0),
-      ),
-    ],
-    [nodes],
+    () => [...new Set(nodes.map((node) => node.distance).filter((distance) => distance > 0))],
+    [nodes]
   );
-  const selectedNodeSet = useMemo(
-    () => new Set(selectedNodeKeys),
-    [selectedNodeKeys],
-  );
+  const selectedNodeSet = useMemo(() => new Set(selectedNodeKeys), [selectedNodeKeys]);
 
   return (
     <section className="section-card graph-stage-card">
@@ -232,8 +210,7 @@ function GraphStage({
         <div>
           <h2>Graph view</h2>
           <p className="muted-line">
-            Клик по узлу переводит фокус, подсвечивает связи и добавляет запись
-            в рабочую область.
+            Клик по узлу переводит фокус, подсвечивает связи и добавляет запись в рабочую область.
           </p>
         </div>
         <div className="tag-list">
@@ -263,8 +240,7 @@ function GraphStage({
         {edges.map((edge) => {
           const from = layout.positions[edge.from];
           const to = layout.positions[edge.to];
-          const isFocused =
-            edge.from === focusedNodeKey || edge.to === focusedNodeKey;
+          const isFocused = edge.from === focusedNodeKey || edge.to === focusedNodeKey;
 
           if (!from || !to) {
             return null;
@@ -344,9 +320,7 @@ function GraphNodeCard({
   resourceFilterKeys,
   selected,
 }) {
-  const metric = formatMetric(
-    node.powerLevel ?? node.influenceLevel ?? node.yearLabel,
-  );
+  const metric = formatMetric(node.powerLevel ?? node.influenceLevel ?? node.yearLabel);
   const detailLink = buildDetailLink(node);
   const exploreLink = buildExploreLink(node, {
     backlinks,
@@ -356,9 +330,7 @@ function GraphNodeCard({
   });
 
   return (
-    <article
-      className={`graph-node-card${active ? " graph-node-card-active" : ""}`}
-    >
+    <article className={`graph-node-card${active ? " graph-node-card-active" : ""}`}>
       <div className="resource-card-top">
         <div>
           <div className="resource-kicker">{node.resource}</div>
@@ -376,11 +348,7 @@ function GraphNodeCard({
         {node.type && <span className="tag">{node.type}</span>}
       </div>
       <div className="graph-card-actions">
-        <button
-          type="button"
-          className="action-button"
-          onClick={() => onFocus(node.key)}
-        >
+        <button type="button" className="action-button" onClick={() => onFocus(node.key)}>
           Фокус
         </button>
         <button
@@ -412,10 +380,7 @@ function NodeGroups({
   resourceFilterKeys,
   selectedNodeKeys,
 }) {
-  const selectedNodeSet = useMemo(
-    () => new Set(selectedNodeKeys),
-    [selectedNodeKeys],
-  );
+  const selectedNodeSet = useMemo(() => new Set(selectedNodeKeys), [selectedNodeKeys]);
   const grouped = useMemo(() => {
     return nodes.reduce((result, node) => {
       result[node.resource] = result[node.resource] || [];
@@ -540,11 +505,7 @@ function Workbench({
             </button>
           ))}
           {!!selectedNodes.length && (
-            <button
-              type="button"
-              className="control-chip"
-              onClick={onClearSelection}
-            >
+            <button type="button" className="control-chip" onClick={onClearSelection}>
               Очистить selection
             </button>
           )}
@@ -560,9 +521,7 @@ function Workbench({
             <div className="tag-list">
               <span className="metric-chip">{focusNode.resource}</span>
               <span className="metric-chip">depth {focusNode.distance}</span>
-              {focusNode.status && (
-                <span className="tag">{focusNode.status}</span>
-              )}
+              {focusNode.status && <span className="tag">{focusNode.status}</span>}
               {focusNode.type && <span className="tag">{focusNode.type}</span>}
             </div>
             <div className="graph-card-actions">
@@ -595,16 +554,12 @@ function Workbench({
                 ))}
               </div>
             ) : (
-              <p className="muted-line">
-                У текущего узла нет видимых ребер на этом depth.
-              </p>
+              <p className="muted-line">У текущего узла нет видимых ребер на этом depth.</p>
             )}
           </article>
         </div>
       ) : (
-        <p className="muted-line">
-          Сначала построй graph и выбери хотя бы один узел.
-        </p>
+        <p className="muted-line">Сначала построй graph и выбери хотя бы один узел.</p>
       )}
 
       <div className="graph-selection-status">
@@ -614,8 +569,7 @@ function Workbench({
           </a>
         ) : (
           <p className="muted-line">
-            Для compare нужны две выбранные записи одного compare-capable
-            ресурса.
+            Для compare нужны две выбранные записи одного compare-capable ресурса.
           </p>
         )}
       </div>
@@ -642,8 +596,7 @@ function GraphPage() {
       focus: queryState.focus,
       hasQuery:
         (typeof window !== "undefined" &&
-          new URLSearchParams(window.location.search || "").toString().length >
-            0) ||
+          new URLSearchParams(window.location.search || "").toString().length > 0) ||
         false,
       identifier: queryState.identifier,
       limitPerRelation: queryState.limitPerRelation,
@@ -655,32 +608,23 @@ function GraphPage() {
   const initialRunRef = useRef(false);
   const catalogState = useAsyncData(() => docsApi.getCatalog(), []);
   const specState = useAsyncData(() => docsApi.getOpenApiSpec(), []);
-  const workbenchState = useAsyncData(
-    () => docsApi.getWorkbenchScenarios(),
-    [],
-  );
+  const workbenchState = useAsyncData(() => docsApi.getWorkbenchScenarios(), []);
   const graphScenarios = useMemo(
     () => parseGraphWorkbenchScenarios(workbenchState.data),
-    [workbenchState.data],
+    [workbenchState.data]
   );
   const compareScenarios = useMemo(
     () => parseCompareWorkbenchScenarios(workbenchState.data),
-    [workbenchState.data],
+    [workbenchState.data]
   );
   const resources = catalogState.data?.data || [];
   const [resource, setResource] = useState(initialQuery.resource);
   const [identifier, setIdentifier] = useState(initialQuery.identifier);
   const [depth, setDepth] = useState(initialQuery.depth || "2");
-  const [limitPerRelation, setLimitPerRelation] = useState(
-    initialQuery.limitPerRelation || "4",
-  );
+  const [limitPerRelation, setLimitPerRelation] = useState(initialQuery.limitPerRelation || "4");
   const [backlinks, setBacklinks] = useState(initialQuery.backlinks);
-  const [resourceFilterKeys, setResourceFilterKeys] = useState(
-    initialQuery.resourceFilterKeys,
-  );
-  const [selectedNodeKeys, setSelectedNodeKeys] = useState(
-    initialQuery.selected,
-  );
+  const [resourceFilterKeys, setResourceFilterKeys] = useState(initialQuery.resourceFilterKeys);
+  const [selectedNodeKeys, setSelectedNodeKeys] = useState(initialQuery.selected);
   const [focusedNodeKey, setFocusedNodeKey] = useState(initialQuery.focus);
   const [requestPath, setRequestPath] = useState("");
   const [responseData, setResponseData] = useState(null);
@@ -693,19 +637,15 @@ function GraphPage() {
     createGraphFallbackScenario(resource);
   const graphParameterMap = useMemo(
     () => getOpenApiParameterMap(specState.data, "/api/v1/explore/graph"),
-    [specState.data],
+    [specState.data]
   );
   const depthOptions = useMemo(
     () => buildOpenApiIntegerOptions(graphParameterMap.depth, [1, 2, 3]),
-    [graphParameterMap.depth],
+    [graphParameterMap.depth]
   );
   const limitPerRelationOptions = useMemo(
-    () =>
-      buildOpenApiIntegerOptions(
-        graphParameterMap.limitPerRelation,
-        [2, 4, 6, 8],
-      ),
-    [graphParameterMap.limitPerRelation],
+    () => buildOpenApiIntegerOptions(graphParameterMap.limitPerRelation, [2, 4, 6, 8]),
+    [graphParameterMap.limitPerRelation]
   );
   const nodes = responseData?.data?.nodes || [];
   const edges = responseData?.data?.edges || [];
@@ -717,26 +657,21 @@ function GraphPage() {
         result[node.key] = node;
         return result;
       }, {}),
-    [nodes],
+    [nodes]
   );
   const selectedNodes = useMemo(
     () => selectedNodeKeys.map((nodeKey) => nodeByKey[nodeKey]).filter(Boolean),
-    [nodeByKey, selectedNodeKeys],
+    [nodeByKey, selectedNodeKeys]
   );
   const focusNode =
-    nodeByKey[focusedNodeKey] ||
-    selectedNodes[selectedNodes.length - 1] ||
-    rootNode;
+    nodeByKey[focusedNodeKey] || selectedNodes[selectedNodes.length - 1] || rootNode;
   const focusedEdges = useMemo(
-    () =>
-      edges.filter(
-        (edge) => edge.from === focusNode?.key || edge.to === focusNode?.key,
-      ),
-    [edges, focusNode],
+    () => edges.filter((edge) => edge.from === focusNode?.key || edge.to === focusNode?.key),
+    [edges, focusNode]
   );
   const compareLink = useMemo(
     () => buildCompareLink(selectedNodes, compareScenarios),
-    [compareScenarios, selectedNodes],
+    [compareScenarios, selectedNodes]
   );
   const requestPreviewPath = useMemo(
     () =>
@@ -748,16 +683,9 @@ function GraphPage() {
           limitPerRelation,
           resource,
           resourceFilterKeys,
-        }),
+        })
       )}`,
-    [
-      backlinks,
-      depth,
-      identifier,
-      limitPerRelation,
-      resource,
-      resourceFilterKeys,
-    ],
+    [backlinks, depth, identifier, limitPerRelation, resource, resourceFilterKeys]
   );
 
   async function runGraph(nextState = {}) {
@@ -766,8 +694,7 @@ function GraphPage() {
     const nextDepth = nextState.depth ?? depth;
     const nextLimitPerRelation = nextState.limitPerRelation ?? limitPerRelation;
     const nextBacklinks = nextState.backlinks ?? backlinks;
-    const nextResourceFilterKeys =
-      nextState.resourceFilterKeys ?? resourceFilterKeys;
+    const nextResourceFilterKeys = nextState.resourceFilterKeys ?? resourceFilterKeys;
     const params = buildGraphParams({
       backlinks: nextBacklinks,
       depth: nextDepth,
@@ -810,9 +737,7 @@ function GraphPage() {
       return;
     }
 
-    const hasInitialRequest = Boolean(
-      initialQuery.resource && initialQuery.identifier,
-    );
+    const hasInitialRequest = Boolean(initialQuery.resource && initialQuery.identifier);
 
     if (!hasInitialRequest && !graphScenarios.length) {
       if (workbenchState.loading || workbenchState.error) {
@@ -821,19 +746,14 @@ function GraphPage() {
     }
 
     const defaultScenario =
-      findWorkbenchScenarioByResource(graphScenarios, "characters") ||
-      graphScenarios[0] ||
-      null;
-    const nextResource =
-      initialQuery.resource || defaultScenario?.resource || "";
+      findWorkbenchScenarioByResource(graphScenarios, "characters") || graphScenarios[0] || null;
+    const nextResource = initialQuery.resource || defaultScenario?.resource || "";
     const resourceScenario =
       findWorkbenchScenarioByResource(graphScenarios, nextResource) ||
       createGraphFallbackScenario(nextResource);
-    const nextIdentifier =
-      initialQuery.identifier || resourceScenario.identifier;
+    const nextIdentifier = initialQuery.identifier || resourceScenario.identifier;
     const nextDepth = initialQuery.depth || resourceScenario.depth;
-    const nextLimitPerRelation =
-      initialQuery.limitPerRelation || resourceScenario.limitPerRelation;
+    const nextLimitPerRelation = initialQuery.limitPerRelation || resourceScenario.limitPerRelation;
     const nextBacklinks = initialQuery.backlinks || resourceScenario.backlinks;
     const nextResourceFilterKeys = initialQuery.resourceFilterKeys.length
       ? initialQuery.resourceFilterKeys
@@ -859,12 +779,7 @@ function GraphPage() {
       resourceFilterKeys: nextResourceFilterKeys,
       selected: initialQuery.selected,
     });
-  }, [
-    graphScenarios,
-    initialQuery,
-    workbenchState.error,
-    workbenchState.loading,
-  ]);
+  }, [graphScenarios, initialQuery, workbenchState.error, workbenchState.loading]);
 
   useEffect(() => {
     if (!nodes.length) {
@@ -872,9 +787,7 @@ function GraphPage() {
     }
 
     const availableNodeKeys = new Set(nodes.map((node) => node.key));
-    const filteredSelected = selectedNodeKeys.filter((nodeKey) =>
-      availableNodeKeys.has(nodeKey),
-    );
+    const filteredSelected = selectedNodeKeys.filter((nodeKey) => availableNodeKeys.has(nodeKey));
     const nextSelected = filteredSelected.length
       ? filteredSelected
       : rootNode
@@ -940,8 +853,7 @@ function GraphPage() {
 
   function handleResourceChange(event) {
     const nextResource = event.target.value;
-    const resourceLabel =
-      resources.find((item) => item.id === nextResource)?.label || nextResource;
+    const resourceLabel = resources.find((item) => item.id === nextResource)?.label || nextResource;
     const preset =
       findWorkbenchScenarioByResource(graphScenarios, nextResource) ||
       createGraphFallbackScenario(nextResource, resourceLabel);
@@ -959,9 +871,7 @@ function GraphPage() {
   }
 
   function toggleGraphResourceFilter(resourceKey) {
-    setResourceFilterKeys((current) =>
-      toggleResourceFilterKey(current, resourceKey),
-    );
+    setResourceFilterKeys((current) => toggleResourceFilterKey(current, resourceKey));
   }
 
   function focusNodeByKey(nodeKey) {
@@ -985,9 +895,7 @@ function GraphPage() {
         const nextSelection = current.filter((item) => item !== nodeKey);
 
         if (focusedNodeKey === nodeKey) {
-          setFocusedNodeKey(
-            nextSelection[nextSelection.length - 1] || rootNode?.key || "",
-          );
+          setFocusedNodeKey(nextSelection[nextSelection.length - 1] || rootNode?.key || "");
         }
 
         return nextSelection;
@@ -1013,9 +921,7 @@ function GraphPage() {
       const nextSelection = current.filter((item) => item !== nodeKey);
 
       if (focusedNodeKey === nodeKey) {
-        setFocusedNodeKey(
-          nextSelection[nextSelection.length - 1] || rootNode?.key || "",
-        );
+        setFocusedNodeKey(nextSelection[nextSelection.length - 1] || rootNode?.key || "");
       }
 
       return nextSelection;
@@ -1037,18 +943,15 @@ function GraphPage() {
           <div className="section-eyebrow">Graph</div>
           <h1>Explorer связей поверх одного endpoint-а</h1>
           <p className="page-lead">
-            `explore/graph` возвращает уже готовые `nodes` и `edges`. Теперь
-            этот экран еще и умеет выделять узлы, фокусировать связи и
-            перекидывать selection в `Compare`.
+            `explore/graph` возвращает уже готовые `nodes` и `edges`. Теперь этот экран еще и умеет
+            выделять узлы, фокусировать связи и перекидывать selection в `Compare`.
           </p>
         </div>
         <div className="hero-side">
           <div className="metric-chip">nodes + edges</div>
           <div className="metric-chip">root backlinks</div>
           <div className="metric-chip">compare bridge</div>
-          <div className="metric-chip">
-            {graphScenarios.length || 9} preset scenarios
-          </div>
+          <div className="metric-chip">{graphScenarios.length || 9} preset scenarios</div>
         </div>
       </section>
 
@@ -1057,8 +960,7 @@ function GraphPage() {
           <div>
             <h2>Preset scenarios</h2>
             <p className="muted-line">
-              Быстрые точки входа для detail graph, campaign explorer и
-              institutional map.
+              Быстрые точки входа для detail graph, campaign explorer и institutional map.
             </p>
           </div>
         </div>
@@ -1096,18 +998,14 @@ function GraphPage() {
               value={identifier}
               onInput={(event) => setIdentifier(event.target.value)}
               placeholder={
-                activePreset.identifier ||
-                getOpenApiParameterHint(graphParameterMap.identifier)
+                activePreset.identifier || getOpenApiParameterHint(graphParameterMap.identifier)
               }
             />
           </label>
 
           <label>
             <span>Depth</span>
-            <select
-              value={depth}
-              onChange={(event) => setDepth(event.target.value)}
-            >
+            <select value={depth} onChange={(event) => setDepth(event.target.value)}>
               {depthOptions.map((value) => (
                 <option key={value} value={value}>
                   {value}
@@ -1132,10 +1030,7 @@ function GraphPage() {
 
           <label>
             <span>Backlinks</span>
-            <select
-              value={backlinks}
-              onChange={(event) => setBacklinks(event.target.value)}
-            >
+            <select value={backlinks} onChange={(event) => setBacklinks(event.target.value)}>
               <option value="true">true</option>
               <option value="false">false</option>
             </select>
@@ -1147,8 +1042,8 @@ function GraphPage() {
             <div>
               <h2>Resource filter</h2>
               <p className="muted-line">
-                Ограничивает соседние типы ресурсов. Root-узел всегда
-                сохраняется, даже если его нет в whitelist.
+                Ограничивает соседние типы ресурсов. Root-узел всегда сохраняется, даже если его нет
+                в whitelist.
               </p>
             </div>
             <div className="tag-list">
@@ -1183,9 +1078,8 @@ function GraphPage() {
 
         <div className="resource-preview-foot">
           <p className="muted-line">
-            Подходит для graph explorer, connected detail screen и
-            relation-aware dashboard. Для sharable ссылок фильтр уходит в
-            `resources=...`.
+            Подходит для graph explorer, connected detail screen и relation-aware dashboard. Для
+            sharable ссылок фильтр уходит в `resources=...`.
           </p>
           <button type="submit" className="action-button" disabled={loading}>
             {loading ? "Сборка graph..." : "Построить graph"}
@@ -1193,12 +1087,8 @@ function GraphPage() {
         </div>
       </form>
 
-      {specState.error && (
-        <StateNotice type="error">{specState.error}</StateNotice>
-      )}
-      {workbenchState.error && (
-        <StateNotice type="error">{workbenchState.error}</StateNotice>
-      )}
+      {specState.error && <StateNotice type="error">{specState.error}</StateNotice>}
+      {workbenchState.error && <StateNotice type="error">{workbenchState.error}</StateNotice>}
       {specState.data && (
         <ApiOperationGuide
           description="Graph explorer читает traversal contract из OpenAPI и показывает live snippets для текущей конфигурации traversal."
@@ -1224,16 +1114,12 @@ function GraphPage() {
             <article className="stat-card">
               <div className="resource-kicker">Nodes</div>
               <div className="stat-value">{meta.nodeCount}</div>
-              <p className="muted-line">
-                Количество узлов в возвращенной сети.
-              </p>
+              <p className="muted-line">Количество узлов в возвращенной сети.</p>
             </article>
             <article className="stat-card">
               <div className="resource-kicker">Edges</div>
               <div className="stat-value">{meta.edgeCount}</div>
-              <p className="muted-line">
-                Количество прямых связей между узлами.
-              </p>
+              <p className="muted-line">Количество прямых связей между узлами.</p>
             </article>
             <article className="stat-card">
               <div className="resource-kicker">Resource Types</div>
@@ -1243,9 +1129,7 @@ function GraphPage() {
             <article className="stat-card">
               <div className="resource-kicker">Selection</div>
               <div className="stat-value">{selectedNodes.length}</div>
-              <p className="muted-line">
-                До двух узлов для compare bridge и ручного фокуса.
-              </p>
+              <p className="muted-line">До двух узлов для compare bridge и ручного фокуса.</p>
             </article>
           </section>
 

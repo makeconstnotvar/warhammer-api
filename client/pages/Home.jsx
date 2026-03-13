@@ -1,52 +1,32 @@
 import { useMemo } from "preact/hooks";
 import { docsApi } from "../api/docsApi";
 import { StateNotice } from "../components/StateNotice";
+import { WorkbenchScenarioSection } from "../components/WorkbenchScenarioSection";
 import { useAsyncData } from "../hooks/useAsyncData";
-import {
-  parseCompareWorkbenchScenarios,
-  parseGraphWorkbenchScenarios,
-  parsePathWorkbenchScenarios,
-} from "../lib/workbenchScenarios";
+import { parseWorkbenchScenarios, selectWorkbenchScenarios } from "../lib/workbenchScenarios";
 
 function Home() {
-  const { data, loading, error } = useAsyncData(
-    () => docsApi.getOverview(),
-    [],
-  );
+  const { data, loading, error } = useAsyncData(() => docsApi.getOverview(), []);
   const overview = data?.data;
   const rateLimit = overview?.api?.rateLimit;
-  const workbenchScenarioTotal = Object.values(
-    overview?.interactiveScenarios || {},
-  ).reduce((sum, items) => sum + items.length, 0);
   const workbenchDocument = useMemo(
     () => ({ data: overview?.interactiveScenarios || {} }),
-    [overview],
+    [overview]
   );
-  const featuredWorkbenchScenarios = useMemo(() => {
-    const compareScenarios = parseCompareWorkbenchScenarios(workbenchDocument)
-      .slice(0, 2)
-      .map((scenario) => ({
-        ...scenario,
-        groupLabel: "Compare",
-        scope: scenario.resource,
-      }));
-    const graphScenarios = parseGraphWorkbenchScenarios(workbenchDocument)
-      .slice(0, 2)
-      .map((scenario) => ({
-        ...scenario,
-        groupLabel: "Graph",
-        scope: scenario.resource,
-      }));
-    const pathScenarios = parsePathWorkbenchScenarios(workbenchDocument)
-      .slice(0, 2)
-      .map((scenario) => ({
-        ...scenario,
-        groupLabel: "Path",
-        scope: `${scenario.fromResource} -> ${scenario.toResource}`,
-      }));
-
-    return [...compareScenarios, ...graphScenarios, ...pathScenarios];
-  }, [workbenchDocument]);
+  const workbenchScenarios = useMemo(
+    () => parseWorkbenchScenarios(workbenchDocument),
+    [workbenchDocument]
+  );
+  const workbenchScenarioTotal = workbenchScenarios.length;
+  const featuredWorkbenchScenarios = useMemo(
+    () =>
+      selectWorkbenchScenarios(workbenchScenarios, {
+        featuredOnly: true,
+        groupLimit: 2,
+        limit: 6,
+      }),
+    [workbenchScenarios]
+  );
 
   if (loading) {
     return <StateNotice>Загрузка overview...</StateNotice>;
@@ -63,9 +43,8 @@ function Home() {
           <div className="section-eyebrow">Warhammer 40K API</div>
           <h1>Публичная документация и учебный playground в одном клиенте</h1>
           <p className="page-lead">
-            Этот клиент не притворяется отдельным продуктом. Его задача
-            объяснить, как использовать API, быстро дать живые примеры и помочь
-            собрать веб-приложение без долгого разгона.
+            Этот клиент не притворяется отдельным продуктом. Его задача объяснить, как использовать
+            API, быстро дать живые примеры и помочь собрать веб-приложение без долгого разгона.
           </p>
           <div className="hero-actions">
             <a className="action-link" href="/quick-start">
@@ -74,10 +53,7 @@ function Home() {
             <a className="action-link action-link-muted" href="/changelog">
               Посмотреть Changelog
             </a>
-            <a
-              className="action-link action-link-muted"
-              href="/deprecation-policy"
-            >
+            <a className="action-link action-link-muted" href="/deprecation-policy">
               Изучить Deprecation Policy
             </a>
             <a className="action-link action-link-muted" href="/stats">
@@ -98,15 +74,9 @@ function Home() {
           </div>
         </div>
         <div className="hero-side">
-          <div className="metric-chip">
-            {overview.resources.length} ресурсов
-          </div>
-          <div className="metric-chip">
-            {overview.featuredQueries.length} готовых сценария
-          </div>
-          <div className="metric-chip">
-            {workbenchScenarioTotal} workbench presets
-          </div>
+          <div className="metric-chip">{overview.resources.length} ресурсов</div>
+          <div className="metric-chip">{overview.featuredQueries.length} готовых сценария</div>
+          <div className="metric-chip">{workbenchScenarioTotal} workbench presets</div>
           <div className="metric-chip">8 stats endpoint-ов</div>
           <div className="metric-chip">8 compare ресурсов</div>
           <div className="metric-chip">
@@ -180,51 +150,12 @@ function Home() {
         </section>
       </div>
 
-      <section className="section-card">
-        <div className="stats-section-head">
-          <div>
-            <h2>Workbench Flows</h2>
-            <p className="muted-line">
-              Эти deeplink-сценарии приходят из `overview` и используют тот же
-              server-owned contract, что и страницы `Compare`, `Graph` и `Path`.
-            </p>
-          </div>
-          <div className="tag-list">
-            <span className="metric-chip">
-              {workbenchScenarioTotal} scenarios
-            </span>
-          </div>
-        </div>
-
-        <div className="preview-grid">
-          {featuredWorkbenchScenarios.map((scenario) => (
-            <article
-              key={`${scenario.groupLabel}-${scenario.id}`}
-              className="sample-query-card"
-            >
-              <div className="resource-kicker">{scenario.groupLabel}</div>
-              <h3>{scenario.label}</h3>
-              <p>{scenario.description}</p>
-              <div className="tag-list">
-                <span className="tag">{scenario.scope}</span>
-                {scenario.pathResources?.length ? (
-                  <span className="tag">
-                    path whitelist {scenario.pathResources.length}
-                  </span>
-                ) : null}
-              </div>
-              <div className="sample-query-actions">
-                <a className="action-link" href={scenario.docsPath}>
-                  Открыть docs flow
-                </a>
-                <a className="query-link" href={scenario.path}>
-                  {scenario.path}
-                </a>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+      <WorkbenchScenarioSection
+        title="Workbench Flows"
+        description="Эти deeplink-сценарии приходят из `overview` и используют тот же server-owned contract, что и страницы `Compare`, `Graph` и `Path`."
+        scenarios={featuredWorkbenchScenarios}
+        summary={`${workbenchScenarioTotal} scenarios`}
+      />
     </div>
   );
 }

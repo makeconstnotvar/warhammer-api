@@ -4,33 +4,15 @@ import { ApiErrorNotice } from "../components/ApiErrorNotice";
 import { ApiOperationGuide } from "../components/ApiOperationGuide";
 import { JsonViewer } from "../components/JsonViewer";
 import { StateNotice } from "../components/StateNotice";
-import {
-  extractError,
-  extractErrorDetails,
-  useAsyncData,
-} from "../hooks/useAsyncData";
-import {
-  getOpenApiParameterHint,
-  getOpenApiParameterMap,
-} from "../lib/openApi";
-import {
-  buildQueryString,
-  readQueryState,
-  replaceQueryState,
-} from "../lib/query";
+import { extractError, extractErrorDetails, useAsyncData } from "../hooks/useAsyncData";
+import { getOpenApiParameterHint, getOpenApiParameterMap } from "../lib/openApi";
+import { buildQueryString, readQueryState, replaceQueryState } from "../lib/query";
 import {
   findWorkbenchScenarioByResource,
   parseCompareWorkbenchScenarios,
 } from "../lib/workbenchScenarios";
 
-const comparePalette = [
-  "#d1a35a",
-  "#78a7c5",
-  "#7fb381",
-  "#c37070",
-  "#9f70c7",
-  "#d69255",
-];
+const comparePalette = ["#d1a35a", "#78a7c5", "#7fb381", "#c37070", "#9f70c7", "#d69255"];
 
 function buildCompareParams(resource, ids, include, fields) {
   const params = {
@@ -312,18 +294,12 @@ function getMetricTone(metricKey) {
 }
 
 function buildResourceLookup(included) {
-  return Object.entries(included || {}).reduce(
-    (result, [resourceKey, items]) => {
-      result[resourceKey] = new Map(
-        (items || []).map((item) => [
-          String(item.id),
-          item.name || item.slug || `#${item.id}`,
-        ]),
-      );
-      return result;
-    },
-    {},
-  );
+  return Object.entries(included || {}).reduce((result, [resourceKey, items]) => {
+    result[resourceKey] = new Map(
+      (items || []).map((item) => [String(item.id), item.name || item.slug || `#${item.id}`])
+    );
+    return result;
+  }, {});
 }
 
 function resolveNamedValues(values, definition, lookup) {
@@ -344,43 +320,37 @@ function resolveNamedValues(values, definition, lookup) {
 }
 
 function buildSharedGroups(comparison, lookup) {
-  return Object.entries(sharedFieldDefinitions).reduce(
-    (result, [key, definition]) => {
-      const values = comparison[key];
+  return Object.entries(sharedFieldDefinitions).reduce((result, [key, definition]) => {
+    const values = comparison[key];
 
-      if (!Array.isArray(values) || !values.length) {
-        return result;
-      }
-
-      result.push({
-        id: key,
-        label: definition.label,
-        values: resolveNamedValues(values, definition, lookup),
-      });
+    if (!Array.isArray(values) || !values.length) {
       return result;
-    },
-    [],
-  );
+    }
+
+    result.push({
+      id: key,
+      label: definition.label,
+      values: resolveNamedValues(values, definition, lookup),
+    });
+    return result;
+  }, []);
 }
 
 function buildProfileGroups(comparison) {
-  return Object.entries(profileFieldDefinitions).reduce(
-    (result, [key, label]) => {
-      const values = comparison[key];
+  return Object.entries(profileFieldDefinitions).reduce((result, [key, label]) => {
+    const values = comparison[key];
 
-      if (!Array.isArray(values) || !values.length) {
-        return result;
-      }
-
-      result.push({
-        id: key,
-        label,
-        values: values.map((value) => String(value)),
-      });
+    if (!Array.isArray(values) || !values.length) {
       return result;
-    },
-    [],
-  );
+    }
+
+    result.push({
+      id: key,
+      label,
+      values: values.map((value) => String(value)),
+    });
+    return result;
+  }, []);
 }
 
 function buildVisualMetrics(resource, items) {
@@ -455,9 +425,7 @@ function CompareMetricCard({ label, value }) {
   return (
     <article className={`compare-metric-card compare-metric-card-${tone}`}>
       <div className="resource-kicker">{label}</div>
-      <div
-        className={`compare-metric-value${compact ? " compare-metric-value-compact" : ""}`}
-      >
+      <div className={`compare-metric-value${compact ? " compare-metric-value-compact" : ""}`}>
         {displayValue}
       </div>
     </article>
@@ -475,8 +443,8 @@ function CompareVisualSection({ metrics }) {
         <div>
           <h2>Visual compare</h2>
           <p className="muted-line">
-            Быстрый слой для карточек сравнения, charts и decision UI без
-            отдельной клиентской агрегации.
+            Быстрый слой для карточек сравнения, charts и decision UI без отдельной клиентской
+            агрегации.
           </p>
         </div>
       </div>
@@ -494,10 +462,7 @@ function CompareVisualSection({ metrics }) {
                 const width = `${Math.max(((row.value || 0) / metric.maxValue) * 100, 8)}%`;
 
                 return (
-                  <div
-                    key={`${metric.id}-${row.slug || row.id}`}
-                    className="compare-visual-row"
-                  >
+                  <div key={`${metric.id}-${row.slug || row.id}`} className="compare-visual-row">
                     <div className="compare-visual-meta">
                       <span>{row.name}</span>
                       <strong>{formatNumber(row.value)}</strong>
@@ -506,8 +471,7 @@ function CompareVisualSection({ metrics }) {
                       <div
                         className="compare-visual-fill"
                         style={{
-                          backgroundColor:
-                            comparePalette[index % comparePalette.length],
+                          backgroundColor: comparePalette[index % comparePalette.length],
                           width,
                         }}
                       />
@@ -577,9 +541,7 @@ function CompareItemCard({ item, resource }) {
           {Array.isArray(item.planetIds) && (
             <span className="metric-chip">planets {item.planetIds.length}</span>
           )}
-          {item.yearLabel && (
-            <span className="metric-chip">{item.yearLabel}</span>
-          )}
+          {item.yearLabel && <span className="metric-chip">{item.yearLabel}</span>}
         </div>
       </div>
 
@@ -590,14 +552,10 @@ function CompareItemCard({ item, resource }) {
         {item.alignment && <span className="tag">{item.alignment}</span>}
         {item.segmentum && <span className="tag">{item.segmentum}</span>}
         {item.unitType && <span className="tag">{item.unitType}</span>}
-        {item.organizationType && (
-          <span className="tag">{item.organizationType}</span>
-        )}
+        {item.organizationType && <span className="tag">{item.organizationType}</span>}
         {item.relicType && <span className="tag">{item.relicType}</span>}
         {item.campaignType && <span className="tag">{item.campaignType}</span>}
-        {item.battlefieldType && (
-          <span className="tag">{item.battlefieldType}</span>
-        )}
+        {item.battlefieldType && <span className="tag">{item.battlefieldType}</span>}
         {item.terrain && <span className="tag">{item.terrain}</span>}
       </div>
 
@@ -605,10 +563,7 @@ function CompareItemCard({ item, resource }) {
         <a className="action-link" href={buildDetailLink(resource, item)}>
           Открыть detail preview
         </a>
-        <a
-          className="action-link action-link-muted"
-          href={buildGraphLink(resource, item)}
-        >
+        <a className="action-link action-link-muted" href={buildGraphLink(resource, item)}>
           Открыть Graph
         </a>
       </div>
@@ -620,9 +575,7 @@ function IncludedSummary({ included }) {
   const entries = Object.entries(included || {});
 
   if (!entries.length) {
-    return (
-      <span className="muted-line">Этот compare не вернул included-блок.</span>
-    );
+    return <span className="muted-line">Этот compare не вернул included-блок.</span>;
   }
 
   return (
@@ -647,8 +600,8 @@ function CompareBridgeSection({ items, pathLink, resource }) {
         <div>
           <h2>Explore bridge</h2>
           <p className="muted-line">
-            Из compare можно сразу перейти в traversal-сценарии и проверить, как
-            две записи связаны через relation graph.
+            Из compare можно сразу перейти в traversal-сценарии и проверить, как две записи связаны
+            через relation graph.
           </p>
         </div>
       </div>
@@ -658,17 +611,15 @@ function CompareBridgeSection({ items, pathLink, resource }) {
           <div className="resource-kicker">Path</div>
           <h3>Кратчайший путь между сравниваемыми сущностями</h3>
           <p className="muted-line">
-            Deeplink уже содержит `backlinks=true`, `maxDepth=4` и server-owned
-            whitelist ресурсов, если он задан для текущего compare-сценария.
+            Deeplink уже содержит `backlinks=true`, `maxDepth=4` и server-owned whitelist ресурсов,
+            если он задан для текущего compare-сценария.
           </p>
           {pathLink ? (
             <a className="action-link" href={pathLink}>
               Открыть Path между двумя записями
             </a>
           ) : (
-            <span className="muted-line">
-              Нужно минимум две записи для path bridge.
-            </span>
+            <span className="muted-line">Нужно минимум две записи для path bridge.</span>
           )}
         </article>
 
@@ -704,28 +655,19 @@ function ComparePage() {
         : new URLSearchParams(window.location.search || "");
 
     return {
-      fields: queryState.resource
-        ? searchParams.get(`fields[${queryState.resource}]`) || ""
-        : "",
+      fields: queryState.resource ? searchParams.get(`fields[${queryState.resource}]`) || "" : "",
       hasQuery: searchParams.toString().length > 0,
-      ids:
-        searchParams.get("ids") ||
-        searchParams.get("items") ||
-        searchParams.get("values") ||
-        "",
+      ids: searchParams.get("ids") || searchParams.get("items") || searchParams.get("values") || "",
       include: queryState.include,
       resource: queryState.resource,
     };
   }, []);
   const initialRunRef = useRef(false);
   const specState = useAsyncData(() => docsApi.getOpenApiSpec(), []);
-  const workbenchState = useAsyncData(
-    () => docsApi.getWorkbenchScenarios(),
-    [],
-  );
+  const workbenchState = useAsyncData(() => docsApi.getWorkbenchScenarios(), []);
   const compareScenarios = useMemo(
     () => parseCompareWorkbenchScenarios(workbenchState.data),
-    [workbenchState.data],
+    [workbenchState.data]
   );
   const [resource, setResource] = useState(initialQuery.resource);
   const [ids, setIds] = useState(initialQuery.ids);
@@ -737,11 +679,8 @@ function ComparePage() {
   const [submitErrorDetails, setSubmitErrorDetails] = useState([]);
   const [loading, setLoading] = useState(false);
   const docState = useAsyncData(
-    () =>
-      resource
-        ? docsApi.getResourceDoc(resource)
-        : Promise.resolve({ data: { fields: [] } }),
-    [resource],
+    () => (resource ? docsApi.getResourceDoc(resource) : Promise.resolve({ data: { fields: [] } })),
+    [resource]
   );
 
   const preset =
@@ -749,7 +688,7 @@ function ComparePage() {
     createCompareFallbackScenario(resource);
   const compareParameterMap = useMemo(
     () => getOpenApiParameterMap(specState.data, "/api/v1/compare/{resource}"),
-    [specState.data],
+    [specState.data]
   );
   const fieldPlaceholder = useMemo(() => {
     const resourceFields = docState.data?.data?.fields || [];
@@ -768,50 +707,36 @@ function ComparePage() {
   }, [compareParameterMap.fields, docState.data, resource]);
   const responseItems = responseData?.data?.items || [];
   const comparison = responseData?.data?.comparison || {};
-  const comparisonEntries = useMemo(
-    () => Object.entries(comparison),
-    [comparison],
-  );
-  const includedLookup = useMemo(
-    () => buildResourceLookup(responseData?.included),
-    [responseData],
-  );
+  const comparisonEntries = useMemo(() => Object.entries(comparison), [comparison]);
+  const includedLookup = useMemo(() => buildResourceLookup(responseData?.included), [responseData]);
   const visualMetrics = useMemo(
     () => buildVisualMetrics(resource, responseItems),
-    [resource, responseItems],
+    [resource, responseItems]
   );
   const sharedGroups = useMemo(
     () => buildSharedGroups(comparison, includedLookup),
-    [comparison, includedLookup],
+    [comparison, includedLookup]
   );
-  const profileGroups = useMemo(
-    () => buildProfileGroups(comparison),
-    [comparison],
-  );
+  const profileGroups = useMemo(() => buildProfileGroups(comparison), [comparison]);
   const pathLink = useMemo(
     () => buildPathLink(resource, responseItems, preset.pathResources || []),
-    [preset.pathResources, resource, responseItems],
+    [preset.pathResources, resource, responseItems]
   );
   const requestPreviewPath = useMemo(
     () =>
       `/api/v1/compare/${resource}${buildQueryString(
-        buildCompareParams(resource, ids, include, fields),
+        buildCompareParams(resource, ids, include, fields)
       )}`,
-    [fields, ids, include, resource],
+    [fields, ids, include, resource]
   );
 
   async function runCompare(
     nextResource = resource,
     nextIds = ids,
     nextInclude = include,
-    nextFields = fields,
+    nextFields = fields
   ) {
-    const params = buildCompareParams(
-      nextResource,
-      nextIds,
-      nextInclude,
-      nextFields,
-    );
+    const params = buildCompareParams(nextResource, nextIds, nextInclude, nextFields);
 
     setLoading(true);
     setSubmitError("");
@@ -819,17 +744,13 @@ function ComparePage() {
 
     try {
       const result = await docsApi.getCompare(nextResource, params);
-      setRequestPath(
-        `/api/v1/compare/${nextResource}${buildQueryString(params)}`,
-      );
+      setRequestPath(`/api/v1/compare/${nextResource}${buildQueryString(params)}`);
       setResponseData(result);
     } catch (error) {
       setSubmitError(extractError(error));
       setSubmitErrorDetails(extractErrorDetails(error));
       setResponseData(null);
-      setRequestPath(
-        `/api/v1/compare/${nextResource}${buildQueryString(params)}`,
-      );
+      setRequestPath(`/api/v1/compare/${nextResource}${buildQueryString(params)}`);
     } finally {
       replaceQueryState({
         resource: nextResource,
@@ -846,9 +767,7 @@ function ComparePage() {
       return;
     }
 
-    const hasInitialRequest = Boolean(
-      initialQuery.resource && initialQuery.ids,
-    );
+    const hasInitialRequest = Boolean(initialQuery.resource && initialQuery.ids);
 
     if (!hasInitialRequest && !compareScenarios.length) {
       if (workbenchState.loading || workbenchState.error) {
@@ -857,14 +776,10 @@ function ComparePage() {
     }
 
     const defaultScenario =
-      findWorkbenchScenarioByResource(compareScenarios, "factions") ||
-      compareScenarios[0] ||
-      null;
-    const nextResource =
-      initialQuery.resource || defaultScenario?.resource || "";
+      findWorkbenchScenarioByResource(compareScenarios, "factions") || compareScenarios[0] || null;
+    const nextResource = initialQuery.resource || defaultScenario?.resource || "";
     const resourceScenario =
-      findWorkbenchScenarioByResource(compareScenarios, nextResource) ||
-      defaultScenario;
+      findWorkbenchScenarioByResource(compareScenarios, nextResource) || defaultScenario;
     const nextIds = initialQuery.ids || resourceScenario?.ids || "";
     const nextInclude = initialQuery.include || resourceScenario?.include || "";
     const nextFields = initialQuery.fields || "";
@@ -879,12 +794,7 @@ function ComparePage() {
     setInclude(nextInclude);
     setFields(nextFields);
     runCompare(nextResource, nextIds, nextInclude, nextFields);
-  }, [
-    compareScenarios,
-    initialQuery,
-    workbenchState.error,
-    workbenchState.loading,
-  ]);
+  }, [compareScenarios, initialQuery, workbenchState.error, workbenchState.loading]);
 
   function handleResourceChange(event) {
     const nextResource = event.target.value;
@@ -911,15 +821,13 @@ function ComparePage() {
           <div className="section-eyebrow">Compare</div>
           <h1>Готовый compare UI поверх одного endpoint-а</h1>
           <p className="page-lead">
-            Эта страница показывает, что compare-сценарий не требует сложной
-            клиентской логики. Достаточно выбрать ресурс, передать `ids` и
-            `include`, а API вернет и сами items, и готовую сводку различий.
+            Эта страница показывает, что compare-сценарий не требует сложной клиентской логики.
+            Достаточно выбрать ресурс, передать `ids` и `include`, а API вернет и сами items, и
+            готовую сводку различий.
           </p>
         </div>
         <div className="hero-side">
-          <div className="metric-chip">
-            {compareScenarios.length || 8} compare ресурсов
-          </div>
+          <div className="metric-chip">{compareScenarios.length || 8} compare ресурсов</div>
           <div className="metric-chip">visual bars</div>
           <div className="metric-chip">shared overlaps</div>
           <div className="metric-chip">summary + included</div>
@@ -944,9 +852,7 @@ function ComparePage() {
             <input
               value={ids}
               onInput={(event) => setIds(event.target.value)}
-              placeholder={
-                preset.ids || getOpenApiParameterHint(compareParameterMap.ids)
-              }
+              placeholder={preset.ids || getOpenApiParameterHint(compareParameterMap.ids)}
             />
           </label>
 
@@ -955,10 +861,7 @@ function ComparePage() {
             <input
               value={include}
               onInput={(event) => setInclude(event.target.value)}
-              placeholder={
-                preset.include ||
-                getOpenApiParameterHint(compareParameterMap.include)
-              }
+              placeholder={preset.include || getOpenApiParameterHint(compareParameterMap.include)}
             />
           </label>
 
@@ -974,8 +877,8 @@ function ComparePage() {
 
         <div className="compare-form-foot">
           <p className="muted-line">
-            {preset.description} `fields[...]` сужает payload compare endpoint-а
-            и полезен для SDK/demo-клиентов.
+            {preset.description} `fields[...]` сужает payload compare endpoint-а и полезен для
+            SDK/demo-клиентов.
           </p>
           <button type="submit" className="action-button" disabled={loading}>
             {loading ? "Сравнение выполняется..." : "Выполнить compare"}
@@ -983,12 +886,8 @@ function ComparePage() {
         </div>
       </form>
 
-      {specState.error && (
-        <StateNotice type="error">{specState.error}</StateNotice>
-      )}
-      {workbenchState.error && (
-        <StateNotice type="error">{workbenchState.error}</StateNotice>
-      )}
+      {specState.error && <StateNotice type="error">{specState.error}</StateNotice>}
+      {workbenchState.error && <StateNotice type="error">{workbenchState.error}</StateNotice>}
       {specState.data && (
         <ApiOperationGuide
           description="Compare UI теперь опирается на OpenAPI-контракт и показывает live snippets для текущего compare request."
@@ -1008,8 +907,8 @@ function ComparePage() {
               <div>
                 <h2>Сводка сравнения</h2>
                 <p className="muted-line">
-                  API уже посчитал пересечения и различия. Клиенту не нужно
-                  вручную нормализовать доменную логику.
+                  API уже посчитал пересечения и различия. Клиенту не нужно вручную нормализовать
+                  доменную логику.
                 </p>
               </div>
               <a className="query-link" href={requestPath}>
@@ -1026,11 +925,7 @@ function ComparePage() {
 
           <CompareVisualSection metrics={visualMetrics} />
 
-          <CompareBridgeSection
-            items={responseItems}
-            pathLink={pathLink}
-            resource={resource}
-          />
+          <CompareBridgeSection items={responseItems} pathLink={pathLink} resource={resource} />
 
           <ComparePillSection
             title="Shared overlap"
@@ -1050,11 +945,7 @@ function ComparePage() {
             <h2>Сравниваемые записи</h2>
             <div className="compare-item-grid">
               {responseItems.map((item) => (
-                <CompareItemCard
-                  key={item.id || item.slug}
-                  item={item}
-                  resource={resource}
-                />
+                <CompareItemCard key={item.id || item.slug} item={item} resource={resource} />
               ))}
             </div>
           </section>

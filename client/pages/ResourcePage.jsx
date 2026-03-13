@@ -3,21 +3,21 @@ import { docsApi } from "../api/docsApi";
 import { ApiErrorNotice } from "../components/ApiErrorNotice";
 import { ApiOperationGuide } from "../components/ApiOperationGuide";
 import { JsonViewer } from "../components/JsonViewer";
+import { PivotActionLinks } from "../components/PivotActionLinks";
 import { StateNotice } from "../components/StateNotice";
+import { WorkbenchScenarioSection } from "../components/WorkbenchScenarioSection";
+import { extractError, extractErrorDetails, useAsyncData } from "../hooks/useAsyncData";
+import { getOpenApiParameterHint, getOpenApiParameterMap } from "../lib/openApi";
+import { buildQueryString, readQueryState, replaceQueryState } from "../lib/query";
 import {
-  extractError,
-  extractErrorDetails,
-  useAsyncData,
-} from "../hooks/useAsyncData";
-import {
-  getOpenApiParameterHint,
-  getOpenApiParameterMap,
-} from "../lib/openApi";
-import {
-  buildQueryString,
-  readQueryState,
-  replaceQueryState,
-} from "../lib/query";
+  parseWorkbenchScenarios,
+  parseCompareWorkbenchScenarios,
+  parseGraphWorkbenchScenarios,
+  parsePathWorkbenchScenarios,
+  selectWorkbenchScenarios,
+} from "../lib/workbenchScenarios";
+import { buildEntityWorkbenchActions } from "../lib/workbenchPivots";
+import { buildResourceHeroActions } from "../lib/resourceDocs";
 
 const emptyPreviewState = {
   page: "",
@@ -58,9 +58,7 @@ function normalizePreviewState(doc, rawState = {}) {
 
 function parseSampleQuery(resource, sampleQuery) {
   const [pathPart, rawQuery = ""] = String(sampleQuery || "").split("?");
-  const normalizedPath = pathPart
-    .replace(/^\/api\/v1\//, "")
-    .replace(/^\//, "");
+  const normalizedPath = pathPart.replace(/^\/api\/v1\//, "").replace(/^\//, "");
   const segments = normalizedPath.split("/").filter(Boolean);
 
   if (segments[0] !== resource) {
@@ -138,17 +136,13 @@ function buildResourcePreviewPath(resource, previewQuery) {
       ? `/api/v1/${resource}/${previewQuery.identifier}`
       : `/api/v1/${resource}`;
 
-  return `${pathname}${buildQueryString(
-    buildResourcePreviewParams(resource, previewQuery),
-  )}`;
+  return `${pathname}${buildQueryString(buildResourcePreviewParams(resource, previewQuery))}`;
 }
 
 function getIdentifierPlaceholder(doc, resource) {
   const detailSample = (doc.sampleQueries || [])
     .map((sampleQuery) => parseSampleQuery(resource, sampleQuery))
-    .find(
-      (sampleQuery) => sampleQuery?.mode === "detail" && sampleQuery.identifier,
-    );
+    .find((sampleQuery) => sampleQuery?.mode === "detail" && sampleQuery.identifier);
 
   return detailSample?.identifier || "roboute-guilliman";
 }
@@ -157,9 +151,7 @@ function IncludedSummary({ included }) {
   const entries = Object.entries(included || {});
 
   if (!entries.length) {
-    return (
-      <span className="muted-line">Этот preview не вернул included-блок.</span>
-    );
+    return <span className="muted-line">Этот preview не вернул included-блок.</span>;
   }
 
   return (
@@ -173,16 +165,25 @@ function IncludedSummary({ included }) {
   );
 }
 
-function PreviewCards({ include, items, resource }) {
+function PreviewCards({
+  compareScenarios,
+  graphScenarios,
+  include,
+  items,
+  pathScenarios,
+  resource,
+}) {
   return (
     <div className="preview-grid">
       {items.map((item) => {
-        const identifier = item.slug || item.id;
-        const detailLink = `/resources/${resource}${buildQueryString({
-          mode: "detail",
-          identifier,
+        const actions = buildEntityWorkbenchActions({
+          compareScenarios,
+          graphScenarios,
           include,
-        })}`;
+          item,
+          pathScenarios,
+          resource,
+        });
 
         return (
           <article key={item.id || item.slug} className="preview-card">
@@ -199,9 +200,7 @@ function PreviewCards({ include, items, resource }) {
               )}
               {item.yearLabel && <span className="tag">{item.yearLabel}</span>}
             </div>
-            <a className="query-link" href={detailLink}>
-              Открыть detail preview
-            </a>
+            <PivotActionLinks actions={actions} />
           </article>
         );
       })}
@@ -209,11 +208,9 @@ function PreviewCards({ include, items, resource }) {
   );
 }
 
-function DetailPreviewCard({ item }) {
+function DetailPreviewCard({ compareScenarios, graphScenarios, item, pathScenarios, resource }) {
   const detailRows = Object.entries(item || {})
-    .filter(
-      ([, value]) => value !== null && value !== undefined && value !== "",
-    )
+    .filter(([, value]) => value !== null && value !== undefined && value !== "")
     .filter(([, value]) => !Array.isArray(value) && typeof value !== "object")
     .slice(0, 12);
 
@@ -232,13 +229,22 @@ function DetailPreviewCard({ item }) {
           {item.influenceLevel !== undefined && (
             <span className="metric-chip">influence {item.influenceLevel}</span>
           )}
-          {item.yearLabel && (
-            <span className="metric-chip">{item.yearLabel}</span>
-          )}
+          {item.yearLabel && <span className="metric-chip">{item.yearLabel}</span>}
         </div>
       </div>
 
       {item.summary && <p>{item.summary}</p>}
+
+      <PivotActionLinks
+        actions={buildEntityWorkbenchActions({
+          compareScenarios,
+          graphScenarios,
+          include: "",
+          item,
+          pathScenarios,
+          resource,
+        })}
+      />
 
       <div className="preview-detail-grid">
         {detailRows.map(([key, value]) => (
@@ -253,11 +259,9 @@ function DetailPreviewCard({ item }) {
 }
 
 function ResourcePage({ resource }) {
-  const docState = useAsyncData(
-    () => docsApi.getResourceDoc(resource),
-    [resource],
-  );
+  const docState = useAsyncData(() => docsApi.getResourceDoc(resource), [resource]);
   const specState = useAsyncData(() => docsApi.getOpenApiSpec(), []);
+  const workbenchState = useAsyncData(() => docsApi.getWorkbenchScenarios(), []);
   const [previewQuery, setPreviewQuery] = useState(emptyPreviewState);
   const [requestPath, setRequestPath] = useState("");
   const [responseData, setResponseData] = useState(null);
@@ -266,12 +270,27 @@ function ResourcePage({ resource }) {
   const [loading, setLoading] = useState(false);
   const listParameterMap = useMemo(
     () => getOpenApiParameterMap(specState.data, "/api/v1/{resource}"),
-    [specState.data],
+    [specState.data]
   );
   const detailParameterMap = useMemo(
-    () =>
-      getOpenApiParameterMap(specState.data, "/api/v1/{resource}/{idOrSlug}"),
-    [specState.data],
+    () => getOpenApiParameterMap(specState.data, "/api/v1/{resource}/{idOrSlug}"),
+    [specState.data]
+  );
+  const workbenchScenarios = useMemo(
+    () => parseWorkbenchScenarios(workbenchState.data),
+    [workbenchState.data]
+  );
+  const compareScenarios = useMemo(
+    () => parseCompareWorkbenchScenarios(workbenchState.data),
+    [workbenchState.data]
+  );
+  const graphScenarios = useMemo(
+    () => parseGraphWorkbenchScenarios(workbenchState.data),
+    [workbenchState.data]
+  );
+  const pathScenarios = useMemo(
+    () => parsePathWorkbenchScenarios(workbenchState.data),
+    [workbenchState.data]
   );
 
   async function runPreview(nextPreviewQuery = previewQuery) {
@@ -316,11 +335,7 @@ function ResourcePage({ resource }) {
     try {
       const result =
         resolvedQuery.mode === "detail"
-          ? await docsApi.getResourceDetail(
-              resource,
-              resolvedQuery.identifier,
-              params,
-            )
+          ? await docsApi.getResourceDetail(resource, resolvedQuery.identifier, params)
           : await docsApi.getResourceList(resource, params);
 
       setRequestPath(`${pathname}${buildQueryString(params)}`);
@@ -338,14 +353,12 @@ function ResourcePage({ resource }) {
         search: resolvedQuery.mode === "list" ? resolvedQuery.search : "",
         [`fields[${resource}]`]: resolvedQuery.fields,
         mode: resolvedQuery.mode,
-        identifier:
-          resolvedQuery.mode === "detail" ? resolvedQuery.identifier : "",
+        identifier: resolvedQuery.mode === "detail" ? resolvedQuery.identifier : "",
         limit: resolvedQuery.mode === "list" ? resolvedQuery.limit : "",
         sort: resolvedQuery.mode === "list" ? resolvedQuery.sort : "",
         include: resolvedQuery.include,
         filterKey: resolvedQuery.mode === "list" ? resolvedQuery.filterKey : "",
-        filterValue:
-          resolvedQuery.mode === "list" ? resolvedQuery.filterValue : "",
+        filterValue: resolvedQuery.mode === "list" ? resolvedQuery.filterValue : "",
       });
       setLoading(false);
     }
@@ -419,41 +432,35 @@ function ResourcePage({ resource }) {
         .map((field) => field.name)
         .join(",")
     : "id,name,slug";
-  const identifierPlaceholder = getOpenApiParameterHint(
-    detailParameterMap.idOrSlug,
-    {
-      fallback: getIdentifierPlaceholder(doc, resource),
-    },
-  );
+  const identifierPlaceholder = getOpenApiParameterHint(detailParameterMap.idOrSlug, {
+    fallback: getIdentifierPlaceholder(doc, resource),
+  });
   const requestPreviewPath = buildResourcePreviewPath(resource, previewQuery);
   const guideRequestPath =
-    previewQuery.mode === "detail" && !previewQuery.identifier
-      ? ""
-      : requestPreviewPath;
+    previewQuery.mode === "detail" && !previewQuery.identifier ? "" : requestPreviewPath;
   const guidePath =
-    previewQuery.mode === "detail"
-      ? "/api/v1/{resource}/{idOrSlug}"
-      : "/api/v1/{resource}";
+    previewQuery.mode === "detail" ? "/api/v1/{resource}/{idOrSlug}" : "/api/v1/{resource}";
   const guideParameterOrder =
     previewQuery.mode === "detail"
       ? ["resource", "idOrSlug", "include", "fields"]
-      : [
-          "resource",
-          "page",
-          "limit",
-          "search",
-          "sort",
-          "include",
-          "fields",
-          "filter",
-        ];
-  const previewItems = Array.isArray(responseData?.data)
-    ? responseData.data
-    : [];
+      : ["resource", "page", "limit", "search", "sort", "include", "fields", "filter"];
+  const previewItems = Array.isArray(responseData?.data) ? responseData.data : [];
   const previewDetail =
-    responseData?.data && !Array.isArray(responseData.data)
-      ? responseData.data
-      : null;
+    responseData?.data && !Array.isArray(responseData.data) ? responseData.data : null;
+  const relatedWorkbenchScenarios = selectWorkbenchScenarios(workbenchScenarios, {
+    groupLimit: 3,
+    limit: 6,
+    resources: [resource],
+  });
+  const detailSample = (doc.sampleQueries || [])
+    .map((sampleQuery) => parseSampleQuery(resource, sampleQuery))
+    .find((sampleQuery) => sampleQuery?.mode === "detail" && sampleQuery.identifier);
+  const heroActions = buildResourceHeroActions({
+    detailPreviewQuery: detailSample ? normalizePreviewState(doc, detailSample) : null,
+    listPreviewQuery: normalizePreviewState(doc, { mode: "list" }),
+    relatedScenario: relatedWorkbenchScenarios[0] || null,
+    resource,
+  });
 
   return (
     <div className="page-stack">
@@ -462,6 +469,17 @@ function ResourcePage({ resource }) {
           <div className="section-eyebrow">{doc.id}</div>
           <h1>{doc.label}</h1>
           <p className="page-lead">{doc.description}</p>
+          <div className="hero-actions">
+            {heroActions.map((action) => (
+              <a
+                key={`${action.label}-${action.href}`}
+                className={action.className}
+                href={action.href}
+              >
+                {action.label}
+              </a>
+            ))}
+          </div>
         </div>
         <div className="hero-side">
           <div className="metric-chip">{doc.count} записей</div>
@@ -475,18 +493,15 @@ function ResourcePage({ resource }) {
           <div>
             <h2>Live preview</h2>
             <p className="muted-line">
-              Можно переключаться между `list` и `detail`, менять `include`,
-              фильтры и сразу делиться ссылкой на конкретное состояние
-              документации ресурса.
+              Можно переключаться между `list` и `detail`, менять `include`, фильтры и сразу
+              делиться ссылкой на конкретное состояние документации ресурса.
             </p>
           </div>
           <div className="control-chip-bar">
             <button
               type="button"
               className={`control-chip${previewQuery.mode === "list" ? " control-chip-active" : ""}`}
-              onClick={() =>
-                updatePreviewQuery({ mode: "list", identifier: "" })
-              }
+              onClick={() => updatePreviewQuery({ mode: "list", identifier: "" })}
             >
               list
             </button>
@@ -506,9 +521,7 @@ function ResourcePage({ resource }) {
               <span>Mode</span>
               <select
                 value={previewQuery.mode}
-                onChange={(event) =>
-                  updatePreviewQuery({ mode: event.target.value })
-                }
+                onChange={(event) => updatePreviewQuery({ mode: event.target.value })}
               >
                 <option value="list">list</option>
                 <option value="detail">detail</option>
@@ -520,9 +533,7 @@ function ResourcePage({ resource }) {
                 <span>ID or slug</span>
                 <input
                   value={previewQuery.identifier}
-                  onInput={(event) =>
-                    updatePreviewQuery({ identifier: event.target.value })
-                  }
+                  onInput={(event) => updatePreviewQuery({ identifier: event.target.value })}
                   placeholder={identifierPlaceholder}
                 />
               </label>
@@ -532,9 +543,7 @@ function ResourcePage({ resource }) {
                   <span>Page</span>
                   <input
                     value={previewQuery.page}
-                    onInput={(event) =>
-                      updatePreviewQuery({ page: event.target.value })
-                    }
+                    onInput={(event) => updatePreviewQuery({ page: event.target.value })}
                     placeholder={getOpenApiParameterHint(listParameterMap.page)}
                   />
                 </label>
@@ -543,12 +552,8 @@ function ResourcePage({ resource }) {
                   <span>Limit</span>
                   <input
                     value={previewQuery.limit}
-                    onInput={(event) =>
-                      updatePreviewQuery({ limit: event.target.value })
-                    }
-                    placeholder={getOpenApiParameterHint(
-                      listParameterMap.limit,
-                    )}
+                    onInput={(event) => updatePreviewQuery({ limit: event.target.value })}
+                    placeholder={getOpenApiParameterHint(listParameterMap.limit)}
                   />
                 </label>
 
@@ -556,13 +561,8 @@ function ResourcePage({ resource }) {
                   <span>Sort</span>
                   <input
                     value={previewQuery.sort}
-                    onInput={(event) =>
-                      updatePreviewQuery({ sort: event.target.value })
-                    }
-                    placeholder={
-                      doc.defaultSort ||
-                      getOpenApiParameterHint(listParameterMap.sort)
-                    }
+                    onInput={(event) => updatePreviewQuery({ sort: event.target.value })}
+                    placeholder={doc.defaultSort || getOpenApiParameterHint(listParameterMap.sort)}
                   />
                 </label>
 
@@ -570,12 +570,8 @@ function ResourcePage({ resource }) {
                   <span>Search</span>
                   <input
                     value={previewQuery.search}
-                    onInput={(event) =>
-                      updatePreviewQuery({ search: event.target.value })
-                    }
-                    placeholder={getOpenApiParameterHint(
-                      listParameterMap.search,
-                    )}
+                    onInput={(event) => updatePreviewQuery({ search: event.target.value })}
+                    placeholder={getOpenApiParameterHint(listParameterMap.search)}
                   />
                 </label>
               </>
@@ -585,12 +581,9 @@ function ResourcePage({ resource }) {
               <span>Include</span>
               <input
                 value={previewQuery.include}
-                onInput={(event) =>
-                  updatePreviewQuery({ include: event.target.value })
-                }
+                onInput={(event) => updatePreviewQuery({ include: event.target.value })}
                 placeholder={
-                  doc.previewParams?.include ||
-                  getOpenApiParameterHint(listParameterMap.include)
+                  doc.previewParams?.include || getOpenApiParameterHint(listParameterMap.include)
                 }
               />
             </label>
@@ -599,9 +592,7 @@ function ResourcePage({ resource }) {
               <span>Fields</span>
               <input
                 value={previewQuery.fields}
-                onInput={(event) =>
-                  updatePreviewQuery({ fields: event.target.value })
-                }
+                onInput={(event) => updatePreviewQuery({ fields: event.target.value })}
                 placeholder={fieldPlaceholder}
               />
             </label>
@@ -612,9 +603,7 @@ function ResourcePage({ resource }) {
                   <span>Filter key</span>
                   <select
                     value={previewQuery.filterKey}
-                    onChange={(event) =>
-                      updatePreviewQuery({ filterKey: event.target.value })
-                    }
+                    onChange={(event) => updatePreviewQuery({ filterKey: event.target.value })}
                   >
                     {(doc.filters || []).map((item) => (
                       <option key={item.id} value={item.id}>
@@ -628,16 +617,11 @@ function ResourcePage({ resource }) {
                   <span>Filter value</span>
                   <input
                     value={previewQuery.filterValue}
-                    onInput={(event) =>
-                      updatePreviewQuery({ filterValue: event.target.value })
-                    }
-                    placeholder={getOpenApiParameterHint(
-                      listParameterMap.filter,
-                      {
-                        fallback: "imperium-of-man",
-                        nestedKey: previewQuery.filterKey,
-                      },
-                    )}
+                    onInput={(event) => updatePreviewQuery({ filterValue: event.target.value })}
+                    placeholder={getOpenApiParameterHint(listParameterMap.filter, {
+                      fallback: "imperium-of-man",
+                      nestedKey: previewQuery.filterKey,
+                    })}
                   />
                 </label>
               </>
@@ -646,8 +630,7 @@ function ResourcePage({ resource }) {
 
           <div className="resource-preview-foot">
             <p className="muted-line">
-              Это тот же публичный API. Отдельный sandbox-слой на клиенте не
-              нужен.
+              Это тот же публичный API. Отдельный sandbox-слой на клиенте не нужен.
             </p>
             <button type="submit" className="action-button" disabled={loading}>
               {loading ? "Загрузка..." : "Обновить preview"}
@@ -656,9 +639,7 @@ function ResourcePage({ resource }) {
         </form>
       </section>
 
-      {specState.error && (
-        <StateNotice type="error">{specState.error}</StateNotice>
-      )}
+      {specState.error && <StateNotice type="error">{specState.error}</StateNotice>}
       {specState.data && (
         <ApiOperationGuide
           description={
@@ -694,9 +675,7 @@ function ResourcePage({ resource }) {
                 </span>
               ))
             ) : (
-              <span className="muted-line">
-                Для этого ресурса include не нужен.
-              </span>
+              <span className="muted-line">Для этого ресурса include не нужен.</span>
             )}
           </div>
         </section>
@@ -742,6 +721,16 @@ function ResourcePage({ resource }) {
         </div>
       </section>
 
+      {workbenchState.error && <StateNotice type="error">{workbenchState.error}</StateNotice>}
+
+      <WorkbenchScenarioSection
+        title="Related Workbench Flows"
+        description="Эти сценарии приходят из общего workbench contract и показывают, где текущий ресурс участвует в compare, graph или path flows."
+        emptyState="Для этого ресурса пока нет связанных workbench flow."
+        scenarios={relatedWorkbenchScenarios}
+        summary={`${relatedWorkbenchScenarios.length} related flows`}
+      />
+
       <ApiErrorNotice details={submitErrorDetails} message={submitError} />
       {requestPath && <StateNotice>{requestPath}</StateNotice>}
 
@@ -752,8 +741,8 @@ function ResourcePage({ resource }) {
               <div>
                 <h2>Результат preview</h2>
                 <p className="muted-line">
-                  Можно использовать как образец для list page, detail screen
-                  или data-fetching примера.
+                  Можно использовать как образец для list page, detail screen или data-fetching
+                  примера.
                 </p>
               </div>
               <a className="query-link" href={requestPath}>
@@ -765,13 +754,24 @@ function ResourcePage({ resource }) {
 
             {previewItems.length > 0 && (
               <PreviewCards
+                compareScenarios={compareScenarios}
+                graphScenarios={graphScenarios}
                 items={previewItems}
+                pathScenarios={pathScenarios}
                 resource={resource}
                 include={previewQuery.include}
               />
             )}
 
-            {previewDetail && <DetailPreviewCard item={previewDetail} />}
+            {previewDetail && (
+              <DetailPreviewCard
+                compareScenarios={compareScenarios}
+                graphScenarios={graphScenarios}
+                item={previewDetail}
+                pathScenarios={pathScenarios}
+                resource={resource}
+              />
+            )}
           </section>
 
           <JsonViewer label="JSON preview" data={responseData} />

@@ -1,11 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 
 function extractError(error) {
-  return (
-    error?.response?.data?.error?.message ||
-    error?.message ||
-    "Не удалось загрузить данные."
-  );
+  return error?.response?.data?.error?.message || error?.message || "Не удалось загрузить данные.";
 }
 
 function extractErrorDetails(error) {

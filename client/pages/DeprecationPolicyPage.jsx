@@ -1,17 +1,14 @@
-import { docsApi } from '../api/docsApi';
-import { CodeBlock } from '../components/CodeBlock';
-import { StateNotice } from '../components/StateNotice';
-import { useAsyncData } from '../hooks/useAsyncData';
+import { docsApi } from "../api/docsApi";
+import { CodeBlock } from "../components/CodeBlock";
+import { StateNotice } from "../components/StateNotice";
+import { useAsyncData } from "../hooks/useAsyncData";
 
 function DeprecationPolicyPage() {
   const { data, loading, error } = useAsyncData(() => docsApi.getDeprecationPolicy(), []);
   const policy = data?.data;
   const headerSnippet = policy
-    ? [
-        'HTTP/1.1 200 OK',
-        ...policy.headers.map((header) => header.example),
-      ].join('\n')
-    : '';
+    ? ["HTTP/1.1 200 OK", ...policy.headers.map((header) => header.example)].join("\n")
+    : "";
 
   if (loading) {
     return <StateNotice>Загрузка deprecation policy...</StateNotice>;
@@ -92,7 +89,9 @@ function DeprecationPolicyPage() {
               <div className="policy-card-head">
                 <div>
                   <div className="section-eyebrow">{endpoint.status}</div>
-                  <h3>{endpoint.method} {endpoint.path}</h3>
+                  <h3>
+                    {endpoint.method} {endpoint.path}
+                  </h3>
                 </div>
                 <div className="tag-list">
                   <span className="tag">deprecated: {endpoint.deprecatedOn}</span>
@@ -100,7 +99,9 @@ function DeprecationPolicyPage() {
                 </div>
               </div>
               <p>{endpoint.summary}</p>
-              <a className="query-link" href={endpoint.replacement}>{endpoint.replacement}</a>
+              <a className="query-link" href={endpoint.replacement}>
+                {endpoint.replacement}
+              </a>
             </article>
           ))}
         </div>

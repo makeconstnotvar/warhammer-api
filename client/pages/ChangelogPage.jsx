@@ -1,6 +1,6 @@
-import { docsApi } from '../api/docsApi';
-import { StateNotice } from '../components/StateNotice';
-import { useAsyncData } from '../hooks/useAsyncData';
+import { docsApi } from "../api/docsApi";
+import { StateNotice } from "../components/StateNotice";
+import { useAsyncData } from "../hooks/useAsyncData";
 
 function ChangelogPage() {
   const { data, loading, error } = useAsyncData(() => docsApi.getChangelog(), []);
@@ -21,8 +21,8 @@ function ChangelogPage() {
           <div className="section-eyebrow">Changelog</div>
           <h1>Изменения публичного контракта без догадок</h1>
           <p className="page-lead">
-            Эта лента фиксирует изменения, которые важны для пользователей API:
-            новые docs-возможности, deprecation-решения и стабильные точки миграции.
+            Эта лента фиксирует изменения, которые важны для пользователей API: новые
+            docs-возможности, deprecation-решения и стабильные точки миграции.
           </p>
         </div>
         <div className="hero-side">
@@ -52,7 +52,10 @@ function ChangelogPage() {
               <p>{entry.summary}</p>
               <div className="timeline-change-list">
                 {entry.changes.map((change) => (
-                  <article key={`${entry.version}-${change.area}-${change.type}`} className="timeline-change-card">
+                  <article
+                    key={`${entry.version}-${change.area}-${change.type}`}
+                    className="timeline-change-card"
+                  >
                     <div className="tag-list">
                       <span className="tag">{change.type}</span>
                       <span className="tag">{change.area}</span>

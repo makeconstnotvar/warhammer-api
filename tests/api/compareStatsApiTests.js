@@ -8,7 +8,7 @@ async function runCompareStatsApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/compare/factions?ids=imperium-of-man,black-legion&include=races,leaders,homeworld",
+          "/api/v1/compare/factions?ids=imperium-of-man,black-legion&include=races,leaders,homeworld"
         );
 
         assert.equal(response.status, 200);
@@ -16,17 +16,13 @@ async function runCompareStatsApiTests(baseUrl) {
         assert.equal(json.meta.count, 2);
         assert.deepEqual(
           json.data.items.map((item) => item.name),
-          ["Imperium of Man", "Black Legion"],
+          ["Imperium of Man", "Black Legion"]
         );
         assert.equal(json.data.comparison.powerSpread, 5);
         assert.equal(json.data.comparison.strongest.name, "Imperium of Man");
         assert.equal(json.data.comparison.weakest.name, "Black Legion");
         assert.deepEqual(json.data.comparison.sharedRaceIds, [1]);
-        assert.deepEqual(Object.keys(json.included).sort(), [
-          "characters",
-          "planets",
-          "races",
-        ]);
+        assert.deepEqual(Object.keys(json.included).sort(), ["characters", "planets", "races"]);
       },
     },
     {
@@ -34,7 +30,7 @@ async function runCompareStatsApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus&include=factions,leaders,homeworld,era",
+          "/api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus&include=factions,leaders,homeworld,era"
         );
 
         assert.equal(response.status, 200);
@@ -42,14 +38,11 @@ async function runCompareStatsApiTests(baseUrl) {
         assert.equal(json.meta.count, 2);
         assert.deepEqual(
           json.data.items.map((item) => item.name),
-          ["Inquisition", "Adeptus Mechanicus"],
+          ["Inquisition", "Adeptus Mechanicus"]
         );
         assert.equal(json.data.comparison.influenceSpread, 3);
         assert.equal(json.data.comparison.mostInfluential.name, "Inquisition");
-        assert.equal(
-          json.data.comparison.leastInfluential.name,
-          "Adeptus Mechanicus",
-        );
+        assert.equal(json.data.comparison.leastInfluential.name, "Adeptus Mechanicus");
         assert.deepEqual(json.data.comparison.sharedFactionIds, [1]);
         assert.deepEqual(Object.keys(json.included).sort(), [
           "characters",
@@ -64,7 +57,7 @@ async function runCompareStatsApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/compare/star-systems?ids=sol-system,macragge-system&include=planets,era",
+          "/api/v1/compare/star-systems?ids=sol-system,macragge-system&include=planets,era"
         );
 
         assert.equal(response.status, 200);
@@ -72,7 +65,7 @@ async function runCompareStatsApiTests(baseUrl) {
         assert.equal(json.meta.count, 2);
         assert.deepEqual(
           json.data.items.map((item) => item.name),
-          ["Sol System", "Macragge System"],
+          ["Sol System", "Macragge System"]
         );
         assert.equal(json.data.comparison.planetSpread, 1);
         assert.equal(json.data.comparison.largest.name, "Sol System");
@@ -82,10 +75,7 @@ async function runCompareStatsApiTests(baseUrl) {
           "Segmentum Solar",
           "Ultima Segmentum",
         ]);
-        assert.deepEqual(Object.keys(json.included).sort(), [
-          "eras",
-          "planets",
-        ]);
+        assert.deepEqual(Object.keys(json.included).sort(), ["eras", "planets"]);
       },
     },
     {
@@ -93,7 +83,7 @@ async function runCompareStatsApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/compare/battlefields?ids=hesperon-void-line,kasr-partox-ruins&include=planet,starSystem,era,factions,characters,campaigns",
+          "/api/v1/compare/battlefields?ids=hesperon-void-line,kasr-partox-ruins&include=planet,starSystem,era,factions,characters,campaigns"
         );
 
         assert.equal(response.status, 200);
@@ -101,17 +91,11 @@ async function runCompareStatsApiTests(baseUrl) {
         assert.equal(json.meta.count, 2);
         assert.deepEqual(
           json.data.items.map((item) => item.name),
-          ["Hesperon Void Line", "Kasr Partox Ruins"],
+          ["Hesperon Void Line", "Kasr Partox Ruins"]
         );
         assert.equal(json.data.comparison.intensitySpread, 2);
-        assert.equal(
-          json.data.comparison.mostIntense.name,
-          "Hesperon Void Line",
-        );
-        assert.equal(
-          json.data.comparison.leastIntense.name,
-          "Kasr Partox Ruins",
-        );
+        assert.equal(json.data.comparison.mostIntense.name, "Hesperon Void Line");
+        assert.equal(json.data.comparison.leastIntense.name, "Kasr Partox Ruins");
         assert.deepEqual(json.data.comparison.sharedFactionIds, [1, 3]);
         assert.deepEqual(json.data.comparison.sharedCharacterIds, [4]);
         assert.deepEqual(Object.keys(json.included).sort(), [
@@ -129,18 +113,15 @@ async function runCompareStatsApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/compare/factions?items=imperium-of-man,black-legion&include=races",
+          "/api/v1/compare/factions?items=imperium-of-man,black-legion&include=races"
         );
 
         assert.equal(response.status, 200);
         assert.equal(json.meta.resource, "factions");
-        assert.deepEqual(json.meta.identifiers, [
-          "imperium-of-man",
-          "black-legion",
-        ]);
+        assert.deepEqual(json.meta.identifiers, ["imperium-of-man", "black-legion"]);
         assert.deepEqual(
           json.data.items.map((item) => item.name),
-          ["Imperium of Man", "Black Legion"],
+          ["Imperium of Man", "Black Legion"]
         );
       },
     },
@@ -149,26 +130,19 @@ async function runCompareStatsApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/compare/factions?ids=imperium-of-man,black-legion&fields[factions]=id,name,slug",
+          "/api/v1/compare/factions?ids=imperium-of-man,black-legion&fields[factions]=id,name,slug"
         );
 
         assert.equal(response.status, 200);
         assert.equal(json.meta.resource, "factions");
-        assert.deepEqual(Object.keys(json.data.items[0]).sort(), [
-          "id",
-          "name",
-          "slug",
-        ]);
+        assert.deepEqual(Object.keys(json.data.items[0]).sort(), ["id", "name", "slug"]);
         assert.equal(json.data.comparison.powerSpread, 5);
       },
     },
     {
       name: "compare returns validation error when ids are missing",
       run: async () => {
-        const { json, response } = await getJson(
-          baseUrl,
-          "/api/v1/compare/factions",
-        );
+        const { json, response } = await getJson(baseUrl, "/api/v1/compare/factions");
 
         assert.equal(response.status, 400);
         assert.equal(json.error.code, "VALIDATION_ERROR");
@@ -176,8 +150,7 @@ async function runCompareStatsApiTests(baseUrl) {
           {
             code: "REQUIRED",
             field: "ids",
-            message:
-              'Parameter "ids" is required and must contain at least two identifiers',
+            message: 'Parameter "ids" is required and must contain at least two identifiers',
           },
         ]);
       },
@@ -187,7 +160,7 @@ async function runCompareStatsApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/compare/factions?ids=imperium-of-man",
+          "/api/v1/compare/factions?ids=imperium-of-man"
         );
 
         assert.equal(response.status, 400);
@@ -209,7 +182,7 @@ async function runCompareStatsApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/compare/factions?ids=imperium-of-man,missing-record",
+          "/api/v1/compare/factions?ids=imperium-of-man,missing-record"
         );
 
         assert.equal(response.status, 400);
@@ -220,8 +193,7 @@ async function runCompareStatsApiTests(baseUrl) {
             field: "ids",
             matchedCount: 1,
             matchedIdentifiers: ["imperium-of-man"],
-            message:
-              'At least two identifiers must resolve to existing "factions" records',
+            message: 'At least two identifiers must resolve to existing "factions" records',
             minItems: 2,
             requestedCount: 2,
             requestedIdentifiers: ["imperium-of-man", "missing-record"],
@@ -234,10 +206,7 @@ async function runCompareStatsApiTests(baseUrl) {
     {
       name: "compare returns explicit unsupported error for resources without comparison builder",
       run: async () => {
-        const { json, response } = await getJson(
-          baseUrl,
-          "/api/v1/compare/planets?ids=terra,mars",
-        );
+        const { json, response } = await getJson(baseUrl, "/api/v1/compare/planets?ids=terra,mars");
 
         assert.equal(response.status, 400);
         assert.equal(json.error.code, "COMPARE_NOT_SUPPORTED");
@@ -246,10 +215,7 @@ async function runCompareStatsApiTests(baseUrl) {
     {
       name: "stats/units/by-faction returns deterministic top aggregates",
       run: async () => {
-        const { json, response } = await getJson(
-          baseUrl,
-          "/api/v1/stats/units/by-faction",
-        );
+        const { json, response } = await getJson(baseUrl, "/api/v1/stats/units/by-faction");
 
         assert.equal(response.status, 200);
         assert.equal(json.meta.resource, "units");
@@ -266,7 +232,7 @@ async function runCompareStatsApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/stats/campaigns/by-organization",
+          "/api/v1/stats/campaigns/by-organization"
         );
 
         assert.equal(response.status, 200);
@@ -282,10 +248,7 @@ async function runCompareStatsApiTests(baseUrl) {
     {
       name: "stats/battlefields/by-faction returns deterministic top aggregates",
       run: async () => {
-        const { json, response } = await getJson(
-          baseUrl,
-          "/api/v1/stats/battlefields/by-faction",
-        );
+        const { json, response } = await getJson(baseUrl, "/api/v1/stats/battlefields/by-faction");
 
         assert.equal(response.status, 200);
         assert.equal(json.meta.resource, "battlefields");
@@ -302,7 +265,7 @@ async function runCompareStatsApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/stats/star-systems/by-segmentum",
+          "/api/v1/stats/star-systems/by-segmentum"
         );
 
         assert.equal(response.status, 200);
@@ -318,10 +281,7 @@ async function runCompareStatsApiTests(baseUrl) {
     {
       name: "stats returns explicit not found error for unsupported grouping",
       run: async () => {
-        const { json, response } = await getJson(
-          baseUrl,
-          "/api/v1/stats/relics/by-era",
-        );
+        const { json, response } = await getJson(baseUrl, "/api/v1/stats/relics/by-era");
 
         assert.equal(response.status, 404);
         assert.equal(json.error.code, "STATS_NOT_FOUND");

@@ -75,110 +75,92 @@ const featuredQueries = [
   },
   {
     title: "Статистика полей битв по фракциям",
-    description:
-      "Тactical analytics для warzone dashboards, filters и compare сценариев.",
+    description: "Тactical analytics для warzone dashboards, filters и compare сценариев.",
     path: "/api/v1/stats/battlefields/by-faction",
   },
   {
     title: "Статистика систем по segmentum",
-    description:
-      "Sector-level обзор для системной навигации и galactic map UI.",
+    description: "Sector-level обзор для системной навигации и galactic map UI.",
     path: "/api/v1/stats/star-systems/by-segmentum",
   },
   {
     title: "Организации внутри Imperium",
-    description:
-      "Подходит для institutional UI, codex browser и сложных relation filters.",
+    description: "Подходит для institutional UI, codex browser и сложных relation filters.",
     path: "/api/v1/organizations?filter[faction]=imperium-of-man&include=factions,leaders,homeworld",
   },
   {
     title: "Звездные системы с мирами",
-    description:
-      "Системный слой для sector maps, route planners и planet navigation UI.",
+    description: "Системный слой для sector maps, route planners и planet navigation UI.",
     path: "/api/v1/star-systems?include=planets,era&sort=name",
   },
   {
     title: "Флоты в активных кампаниях",
-    description:
-      "Подходит для naval dashboards, operation browser и screens про перемещение сил.",
+    description: "Подходит для naval dashboards, operation browser и screens про перемещение сил.",
     path: "/api/v1/fleets?include=factions,commanders,campaigns,currentStarSystem&sort=-strengthRating,name",
   },
   {
     title: "Случайный персонаж",
-    description:
-      "Быстрая ручка для featured card, hero-блоков и экспериментов.",
+    description: "Быстрая ручка для featured card, hero-блоков и экспериментов.",
     path: "/api/v1/random/character?include=faction,race,homeworld",
   },
   {
     title: "Юниты с оружием и keywords",
-    description:
-      "Готовый сценарий для карточек армии, tabs и богатых includes.",
+    description: "Готовый сценарий для карточек армии, tabs и богатых includes.",
     path: "/api/v1/units?filter[faction]=ultramarines&include=factions,weapons,keywords&sort=-powerLevel,name",
   },
   {
     title: "Сравнение юнитов",
-    description:
-      "Готовый compare endpoint для squad browser, build planner и учебных таблиц.",
+    description: "Готовый compare endpoint для squad browser, build planner и учебных таблиц.",
     path: "/api/v1/compare/units?ids=terminator-squad,intercessor-squad&include=factions,weapons,keywords",
   },
   {
     title: "Сравнение организаций",
-    description:
-      "Institutional compare для codex browser, dashboards и political-map UI.",
+    description: "Institutional compare для codex browser, dashboards и political-map UI.",
     path: "/api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus&include=factions,leaders,homeworld,era",
   },
   {
     title: "Сравнение систем",
-    description:
-      "Полезно для galactic map UI, sector navigation и system-level compare.",
+    description: "Полезно для galactic map UI, sector navigation и system-level compare.",
     path: "/api/v1/compare/star-systems?ids=sol-system,macragge-system&include=planets,era",
   },
   {
     title: "Graph explorer для фракции",
-    description:
-      "Готовый graph endpoint для relation maps, connected detail screen и explorer UI.",
+    description: "Готовый graph endpoint для relation maps, connected detail screen и explorer UI.",
     path: "/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4",
   },
   {
     title: "Graph explorer с whitelist ресурсов",
-    description:
-      "Ограничивает graph только нужными типами ресурсов и упрощает connected UI.",
+    description: "Ограничивает graph только нужными типами ресурсов и упрощает connected UI.",
     path: "/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4&resources=campaigns,characters",
   },
   {
     title: "Path finder от героя к реликвии",
-    description:
-      "Кратчайший путь между двумя сущностями для lore explorer и connected UI.",
+    description: "Кратчайший путь между двумя сущностями для lore explorer и connected UI.",
     path: "/api/v1/explore/path?fromResource=characters&fromIdentifier=roboute-guilliman&toResource=relics&toIdentifier=emperors-sword&maxDepth=3&limitPerRelation=6&backlinks=true",
   },
   {
     title: "Поля битв по кампании",
-    description:
-      "Тактический слой для campaign drill-down и graph-heavy docs сценариев.",
+    description: "Тактический слой для campaign drill-down и graph-heavy docs сценариев.",
     path: "/api/v1/battlefields?filter[campaigns]=plague-wars&include=planet,starSystem,factions,characters,campaigns",
   },
   {
     title: "Варп-маршруты через Cadian Gate",
-    description:
-      "Хороший сценарий для map UI, route planner и graph traversal между системами.",
+    description: "Хороший сценарий для map UI, route planner и graph traversal между системами.",
     path: "/api/v1/warp-routes?filter[starSystems]=sol-system,cadian-gate-system&include=fromStarSystem,toStarSystem,factions,campaigns",
   },
   {
     title: "Сравнение полей битв",
-    description:
-      "Готовый tactical compare для warzone cards, map overlays и campaign drill-down.",
+    description: "Готовый tactical compare для warzone cards, map overlays и campaign drill-down.",
     path: "/api/v1/compare/battlefields?ids=hesperon-void-line,kasr-partox-ruins&include=planet,starSystem,era,factions,characters,campaigns",
   },
   {
     title: "Кампании по участникам",
-    description:
-      "Многосторонний ресурс для dashboards, timelines и campaign explorer.",
+    description: "Многосторонний ресурс для dashboards, timelines и campaign explorer.",
     path: "/api/v1/campaigns?filter[factions]=imperium-of-man,black-legion&include=planets,characters,organizations",
   },
   {
     title: "Статистика реликвий по фракциям",
-    description:
-      "Готовая сводка для inventory dashboards и faction identity screens.",
+    description: "Готовая сводка для inventory dashboards и faction identity screens.",
     path: "/api/v1/stats/relics/by-faction",
   },
 ];
@@ -188,97 +170,85 @@ const interactiveScenarios = {
     {
       id: "battlefields",
       label: "Поля битв",
-      description:
-        "Сравни боевые зоны по intensity, terrain, campaign ties и общим участникам.",
+      description: "Сравни боевые зоны по intensity, terrain, campaign ties и общим участникам.",
+      difficulty: "intermediate",
+      featured: true,
       path: "/api/v1/compare/battlefields?ids=hesperon-void-line,kasr-partox-ruins&include=planet,starSystem,era,factions,characters,campaigns",
-      pathResources: [
-        "campaigns",
-        "characters",
-        "factions",
-        "planets",
-        "star-systems",
-      ],
+      pathResources: ["campaigns", "characters", "factions", "planets", "star-systems"],
+      tags: ["compare", "include", "tactical", "campaigns", "shared-entities"],
     },
     {
       id: "campaigns",
       label: "Кампании",
       description:
         "Сравни campaign-level данные по time span, planets, factions, organizations и общим участникам.",
+      difficulty: "intermediate",
+      featured: false,
       path: "/api/v1/compare/campaigns?ids=plague-wars,cadian-gate-counteroffensive&include=era,planets,factions,characters,organizations,battlefields",
-      pathResources: [
-        "battlefields",
-        "characters",
-        "factions",
-        "organizations",
-        "planets",
-      ],
+      pathResources: ["battlefields", "characters", "factions", "organizations", "planets"],
+      tags: ["compare", "include", "campaigns", "timeline", "organizations"],
     },
     {
       id: "factions",
       label: "Фракции",
       description:
         "Сравни большие доменные блоки по alignment, races, leaders, homeworld и power spread.",
+      difficulty: "starter",
+      featured: true,
       path: "/api/v1/compare/factions?ids=imperium-of-man,black-legion&include=races,leaders,homeworld",
-      pathResources: [
-        "campaigns",
-        "characters",
-        "events",
-        "organizations",
-        "planets",
-        "units",
-      ],
+      pathResources: ["campaigns", "characters", "events", "organizations", "planets", "units"],
+      tags: ["compare", "include", "starter", "factions", "leaders"],
     },
     {
       id: "characters",
       label: "Персонажи",
-      description:
-        "Сравни персонажей по alignment, faction, events, keywords и power level.",
+      description: "Сравни персонажей по alignment, faction, events, keywords и power level.",
+      difficulty: "starter",
+      featured: true,
       path: "/api/v1/compare/characters?ids=roboute-guilliman,abaddon-the-despoiler&include=faction,race,homeworld,events",
-      pathResources: [
-        "campaigns",
-        "events",
-        "factions",
-        "organizations",
-        "planets",
-        "relics",
-      ],
+      pathResources: ["campaigns", "events", "factions", "organizations", "planets", "relics"],
+      tags: ["compare", "include", "starter", "characters", "events"],
     },
     {
       id: "organizations",
       label: "Организации",
-      description:
-        "Сравни институции по influence level, faction ties, leaders и homeworld.",
+      description: "Сравни институции по influence level, faction ties, leaders и homeworld.",
+      difficulty: "intermediate",
+      featured: false,
       path: "/api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus&include=factions,leaders,homeworld,era",
-      pathResources: [
-        "campaigns",
-        "characters",
-        "factions",
-        "planets",
-        "relics",
-      ],
+      pathResources: ["campaigns", "characters", "factions", "planets", "relics"],
+      tags: ["compare", "include", "organizations", "institutions", "leaders"],
     },
     {
       id: "relics",
       label: "Реликвии",
       description: "Сравни реликвии по bearer, faction, origin и power spread.",
+      difficulty: "starter",
+      featured: false,
       path: "/api/v1/compare/relics?ids=emperors-sword,talon-of-horus&include=faction,bearer,originPlanet,era,keywords",
       pathResources: ["campaigns", "characters", "factions", "planets"],
+      tags: ["compare", "include", "relics", "inventory", "characters"],
     },
     {
       id: "star-systems",
       label: "Системы",
-      description:
-        "Сравни системы по segmentum, числу миров и общему системному контексту.",
+      description: "Сравни системы по segmentum, числу миров и общему системному контексту.",
+      difficulty: "intermediate",
+      featured: false,
       path: "/api/v1/compare/star-systems?ids=sol-system,macragge-system&include=planets,era",
       pathResources: ["battlefields", "campaigns", "planets"],
+      tags: ["compare", "include", "star-systems", "maps", "planets"],
     },
     {
       id: "units",
       label: "Юниты",
       description:
         "Сравни squad-ы и specialist units по faction, weapons, keywords и power spread.",
+      difficulty: "starter",
+      featured: true,
       path: "/api/v1/compare/units?ids=terminator-squad,intercessor-squad&include=factions,weapons,keywords",
       pathResources: ["factions", "keywords", "weapons"],
+      tags: ["compare", "include", "starter", "units", "keywords"],
     },
   ],
   graph: [
@@ -287,62 +257,88 @@ const interactiveScenarios = {
       label: "Поле битвы",
       description:
         "Тактический graph: campaign, planet, star-system, factions и key characters вокруг одного battlefield.",
+      difficulty: "intermediate",
+      featured: false,
       path: "/api/v1/explore/graph?resource=battlefields&identifier=hesperon-void-line&depth=2&limitPerRelation=4&backlinks=true",
+      tags: ["graph", "backlinks", "battlefields", "tactical", "relations"],
     },
     {
       id: "campaigns",
       label: "Кампания",
-      description:
-        "Кампания как точка входа в planets, factions, characters и organizations.",
+      description: "Кампания как точка входа в planets, factions, characters и organizations.",
+      difficulty: "starter",
+      featured: true,
       path: "/api/v1/explore/graph?resource=campaigns&identifier=plague-wars&depth=2&limitPerRelation=4&backlinks=true",
+      tags: ["graph", "backlinks", "starter", "campaigns", "relations"],
     },
     {
       id: "fleets",
       label: "Флот",
       description:
         "Флот связывает commanders, campaigns, factions и текущую star-system в одном naval graph.",
+      difficulty: "advanced",
+      featured: false,
       path: "/api/v1/explore/graph?resource=fleets&identifier=indomitus-battlegroup&depth=2&limitPerRelation=4&backlinks=true",
+      tags: ["graph", "backlinks", "fleets", "navigation", "campaigns"],
     },
     {
       id: "characters",
       label: "Персонаж",
       description:
         "Классический detail graph: faction, race, homeworld, events и обратные связи через relics и organizations.",
+      difficulty: "starter",
+      featured: true,
       path: "/api/v1/explore/graph?resource=characters&identifier=roboute-guilliman&depth=2&limitPerRelation=4&backlinks=true",
+      tags: ["graph", "backlinks", "starter", "characters", "detail-screen"],
     },
     {
       id: "factions",
       label: "Фракция",
       description:
         "Фракция быстро показывает characters, units, events, organizations и parent-child связи.",
+      difficulty: "starter",
+      featured: true,
       path: "/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4&backlinks=true",
+      tags: ["graph", "backlinks", "starter", "factions", "relations"],
     },
     {
       id: "star-systems",
       label: "Система",
       description:
         "Системный graph связывает worlds, campaigns и battlefields в одном космическом контексте.",
+      difficulty: "intermediate",
+      featured: true,
       path: "/api/v1/explore/graph?resource=star-systems&identifier=sol-system&depth=2&limitPerRelation=4&backlinks=true",
+      tags: ["graph", "backlinks", "star-systems", "maps", "planets"],
     },
     {
       id: "organizations",
       label: "Организация",
       description: "Institutional graph для dashboards и political-map UI.",
+      difficulty: "intermediate",
+      featured: false,
       path: "/api/v1/explore/graph?resource=organizations&identifier=inquisition&depth=2&limitPerRelation=4&backlinks=true",
+      tags: ["graph", "backlinks", "organizations", "institutions", "dashboards"],
     },
     {
       id: "relics",
       label: "Реликвия",
       description:
         "Легкий inventory graph: bearer, faction, planet origin и ключевые relation tags.",
+      difficulty: "starter",
+      featured: false,
       path: "/api/v1/explore/graph?resource=relics&identifier=emperors-sword&depth=2&limitPerRelation=4&backlinks=true",
+      tags: ["graph", "backlinks", "relics", "inventory", "characters"],
     },
     {
       id: "warp-routes",
       label: "Варп-маршрут",
       description:
         "Route graph показывает обе системы, campaigns и factions, завязанные на конкретный варп-маршрут.",
+      difficulty: "advanced",
+      featured: false,
       path: "/api/v1/explore/graph?resource=warp-routes&identifier=sol-macragge-corridor&depth=2&limitPerRelation=4&backlinks=true",
+      tags: ["graph", "backlinks", "warp-routes", "navigation", "star-systems"],
     },
   ],
   path: [
@@ -350,40 +346,56 @@ const interactiveScenarios = {
       id: "campaign-to-hero",
       label: "Campaign -> Hero",
       description: "Кампания к герою через прямое участие в operation graph.",
+      difficulty: "starter",
+      featured: false,
       path: "/api/v1/explore/path?fromResource=campaigns&fromIdentifier=plague-wars&toResource=characters&toIdentifier=roboute-guilliman&maxDepth=3&limitPerRelation=6&backlinks=true",
+      tags: ["path", "backlinks", "starter", "campaigns", "characters"],
     },
     {
       id: "campaign-to-battlefield",
       label: "Campaign -> Battlefield",
-      description:
-        "Прямой путь от кампании к tactical battlefield через новую доменную связь.",
+      description: "Прямой путь от кампании к tactical battlefield через новую доменную связь.",
+      difficulty: "starter",
+      featured: true,
       path: "/api/v1/explore/path?fromResource=campaigns&fromIdentifier=plague-wars&toResource=battlefields&toIdentifier=hesperon-void-line&maxDepth=2&limitPerRelation=6&backlinks=true&resources=battlefields",
+      tags: ["path", "backlinks", "starter", "battlefields", "whitelist"],
     },
     {
       id: "fleet-to-battlefield",
       label: "Fleet -> Battlefield",
       description:
         "Флот к полю битвы через campaign participation без шумных альтернативных веток.",
+      difficulty: "intermediate",
+      featured: true,
       path: "/api/v1/explore/path?fromResource=fleets&fromIdentifier=indomitus-battlegroup&toResource=battlefields&toIdentifier=hesperon-void-line&maxDepth=3&limitPerRelation=6&backlinks=true&resources=campaigns,battlefields",
+      tags: ["path", "backlinks", "fleets", "battlefields", "whitelist"],
     },
     {
       id: "hero-to-relic",
       label: "Hero -> Relic",
-      description:
-        "Короткая цепочка от персонажа к его реликвии через backlink relations.",
+      description: "Короткая цепочка от персонажа к его реликвии через backlink relations.",
+      difficulty: "starter",
+      featured: true,
       path: "/api/v1/explore/path?fromResource=characters&fromIdentifier=roboute-guilliman&toResource=relics&toIdentifier=emperors-sword&maxDepth=3&limitPerRelation=6&backlinks=true",
+      tags: ["path", "backlinks", "starter", "characters", "relics"],
     },
     {
       id: "relic-to-campaign",
       label: "Relic -> Campaign",
       description: "Реликвия к кампании через bearer и campaign participants.",
+      difficulty: "intermediate",
+      featured: true,
       path: "/api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true",
+      tags: ["path", "backlinks", "relics", "campaigns", "relations"],
     },
     {
       id: "route-to-campaign",
       label: "Route -> Campaign",
       description: "Варп-маршрут к кампании через shared operational context.",
+      difficulty: "advanced",
+      featured: false,
       path: "/api/v1/explore/path?fromResource=warp-routes&fromIdentifier=cadian-breach-lane&toResource=campaigns&toIdentifier=cadian-gate-counteroffensive&maxDepth=2&limitPerRelation=6&backlinks=true&resources=campaigns,star-systems",
+      tags: ["path", "backlinks", "warp-routes", "campaigns", "whitelist"],
     },
   ],
 };
@@ -435,14 +447,12 @@ const queryGuide = {
     {
       name: "backlinks",
       example: "backlinks=true",
-      description:
-        "Подключает обратные relation-ребра в `explore/graph` и `explore/path`.",
+      description: "Подключает обратные relation-ребра в `explore/graph` и `explore/path`.",
     },
     {
       name: "resources",
       example: "resources=campaigns,characters",
-      description:
-        "Whitelist типов ресурсов для `search`, `explore/graph` и `explore/path`.",
+      description: "Whitelist типов ресурсов для `search`, `explore/graph` и `explore/path`.",
     },
   ],
   responseShapes: {
@@ -483,8 +493,7 @@ const queryGuide = {
     rateLimitError: {
       error: {
         code: "RATE_LIMIT_EXCEEDED",
-        message:
-          "Rate limit exceeded for /api/v1. Retry after the current window resets.",
+        message: "Rate limit exceeded for /api/v1. Retry after the current window resets.",
         details: [
           {
             limit: 120,
@@ -514,8 +523,7 @@ const queryGuide = {
     },
     {
       title: "Сравнение двух фракций",
-      description:
-        "Один endpoint для compare page с общими и различающимися атрибутами.",
+      description: "Один endpoint для compare page с общими и различающимися атрибутами.",
       path: "/api/v1/compare/factions?ids=imperium-of-man,ultramarines&include=races,leaders,homeworld",
     },
     {
@@ -526,8 +534,7 @@ const queryGuide = {
     },
     {
       title: "Сравнение двух реликвий",
-      description:
-        "Полезно для hero-item UI, inventory compare и detail screen patterns.",
+      description: "Полезно для hero-item UI, inventory compare и detail screen patterns.",
       path: "/api/v1/compare/relics?ids=emperors-sword,talon-of-horus&include=faction,bearer,originPlanet,keywords",
     },
     {
@@ -538,20 +545,17 @@ const queryGuide = {
     },
     {
       title: "Сравнение двух полей битв",
-      description:
-        "Удобно для tactical cards, battlefield browser и campaign drill-down UI.",
+      description: "Удобно для tactical cards, battlefield browser и campaign drill-down UI.",
       path: "/api/v1/compare/battlefields?ids=hesperon-void-line,kasr-partox-ruins&include=planet,starSystem,era,factions,characters,campaigns",
     },
     {
       title: "Graph explorer",
-      description:
-        "Один endpoint возвращает nodes и edges для relation-aware detail screen.",
+      description: "Один endpoint возвращает nodes и edges для relation-aware detail screen.",
       path: "/api/v1/explore/graph?resource=characters&identifier=roboute-guilliman&depth=2&limitPerRelation=4",
     },
     {
       title: "Graph explorer с фильтром ресурсов",
-      description:
-        "Оставляет в графе только выбранные типы ресурсов плюс обязательный root.",
+      description: "Оставляет в графе только выбранные типы ресурсов плюс обязательный root.",
       path: "/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4&resources=campaigns,characters",
     },
     {
@@ -562,14 +566,12 @@ const queryGuide = {
     },
     {
       title: "Path finder с whitelist ресурсов",
-      description:
-        "Позволяет ограничить traversal только нужными промежуточными типами ресурсов.",
+      description: "Позволяет ограничить traversal только нужными промежуточными типами ресурсов.",
       path: "/api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=factions",
     },
     {
       title: "Системная карта миров",
-      description:
-        "Показывает star-systems как отдельный уровень навигации над planets.",
+      description: "Показывает star-systems как отдельный уровень навигации над planets.",
       path: "/api/v1/star-systems?include=planets,era&sort=name",
     },
     {
@@ -580,8 +582,7 @@ const queryGuide = {
     },
     {
       title: "Флоты на театре войны",
-      description:
-        "Даёт naval слой поверх campaigns, commanders и current star systems.",
+      description: "Даёт naval слой поверх campaigns, commanders и current star systems.",
       path: "/api/v1/fleets?include=factions,commanders,campaigns,currentStarSystem&sort=-strengthRating,name",
     },
     {
@@ -592,38 +593,32 @@ const queryGuide = {
     },
     {
       title: "Агрегация для диаграммы",
-      description:
-        "Подготовленные данные для bar chart без ручной агрегации на клиенте.",
+      description: "Подготовленные данные для bar chart без ручной агрегации на клиенте.",
       path: "/api/v1/stats/events/by-era",
     },
     {
       title: "Сводка оружия по keywords",
-      description:
-        "Подходит для charts, legends и exploration UI вокруг weapon profiles.",
+      description: "Подходит для charts, legends и exploration UI вокруг weapon profiles.",
       path: "/api/v1/stats/weapons/by-keyword",
     },
     {
       title: "Кампании по организациям",
-      description:
-        "Агрегация для institutional dashboards и campaign participation charts.",
+      description: "Агрегация для institutional dashboards и campaign participation charts.",
       path: "/api/v1/stats/campaigns/by-organization",
     },
     {
       title: "Поля битв по фракциям",
-      description:
-        "Готовый tactical aggregate для warzone charts и faction pressure overlays.",
+      description: "Готовый tactical aggregate для warzone charts и faction pressure overlays.",
       path: "/api/v1/stats/battlefields/by-faction",
     },
     {
       title: "Системы по segmentum",
-      description:
-        "Сводка системного слоя для sector maps и multi-level navigation UI.",
+      description: "Сводка системного слоя для sector maps и multi-level navigation UI.",
       path: "/api/v1/stats/star-systems/by-segmentum",
     },
     {
       title: "Реликвии с носителем",
-      description:
-        "Детальные карточки, inventory UI и relation-heavy detail pages.",
+      description: "Детальные карточки, inventory UI и relation-heavy detail pages.",
       path: "/api/v1/relics?include=faction,bearer,originPlanet,keywords&sort=-powerLevel,name",
     },
   ],
@@ -748,8 +743,7 @@ const dataset = {
       slug: "tau",
       name: "T'au",
       summary: "Молодая технологичная цивилизация.",
-      description:
-        "T'au Empire сочетает экспансию и технологическое превосходство.",
+      description: "T'au Empire сочетает экспансию и технологическое превосходство.",
       status: "active",
       alignment: "xenos",
       keywords: ["greater-good", "technology"],
@@ -854,8 +848,7 @@ const dataset = {
       slug: "sol-system",
       name: "Sol System",
       summary: "Сердце Imperium и ядро Segmentum Solar.",
-      description:
-        "Вмещает Terra, Mars и главный политический узел человечества.",
+      description: "Вмещает Terra, Mars и главный политический узел человечества.",
       status: "active",
       segmentum: "Segmentum Solar",
       eraId: 4,
@@ -866,8 +859,7 @@ const dataset = {
       slug: "cadian-gate-system",
       name: "Cadian Gate System",
       summary: "Ключевой проход у Великого Разлома.",
-      description:
-        "Связан с Cadia, обороной прохода и множеством контрнаступлений.",
+      description: "Связан с Cadia, обороной прохода и множеством контрнаступлений.",
       status: "contested",
       segmentum: "Segmentum Obscurus",
       eraId: 4,
@@ -878,8 +870,7 @@ const dataset = {
       slug: "macragge-system",
       name: "Macragge System",
       summary: "Система, задающая ритм Ultramar.",
-      description:
-        "Удобна для учебных экранов про governance, defense и systems map.",
+      description: "Удобна для учебных экранов про governance, defense и systems map.",
       status: "active",
       segmentum: "Ultima Segmentum",
       eraId: 4,
@@ -890,8 +881,7 @@ const dataset = {
       slug: "armageddon-system",
       name: "Armageddon System",
       summary: "Тяжелая индустриальная система бесконечной войны.",
-      description:
-        "Подходит для конфликтных dashboards и defense-driven API экспериментов.",
+      description: "Подходит для конфликтных dashboards и defense-driven API экспериментов.",
       status: "active",
       segmentum: "Segmentum Solar",
       eraId: 4,
@@ -902,8 +892,7 @@ const dataset = {
       slug: "fenris-system",
       name: "Fenris System",
       summary: "Суровая пограничная система Space Wolves.",
-      description:
-        "Хорошо показывает связь chapter identity и локального окружения.",
+      description: "Хорошо показывает связь chapter identity и локального окружения.",
       status: "active",
       segmentum: "Segmentum Obscurus",
       eraId: 4,
@@ -914,8 +903,7 @@ const dataset = {
       slug: "baal-system",
       name: "Baal System",
       summary: "Кроваво-красная система Blood Angels.",
-      description:
-        "Сильная опора для campaign detail и homeworld-driven navigation.",
+      description: "Сильная опора для campaign detail и homeworld-driven navigation.",
       status: "scarred",
       segmentum: "Ultima Segmentum",
       eraId: 4,
@@ -928,8 +916,7 @@ const dataset = {
       slug: "sol-macragge-corridor",
       name: "Sol-Macragge Corridor",
       summary: "Основной защищенный маршрут между Terra и Ultramar.",
-      description:
-        "Полезен для логистических экранов, route planners и movement-aware dashboards.",
+      description: "Полезен для логистических экранов, route planners и movement-aware dashboards.",
       status: "active",
       routeType: "secured-corridor",
       stabilityLevel: 88,
@@ -946,8 +933,7 @@ const dataset = {
       slug: "cadian-breach-lane",
       name: "Cadian Breach Lane",
       summary: "Опасный маршрут через разрушенный Cadian Gate.",
-      description:
-        "Дает сильный сценарий для map UI, danger overlays и chaos-heavy traversal.",
+      description: "Дает сильный сценарий для map UI, danger overlays и chaos-heavy traversal.",
       status: "contested",
       routeType: "breach-lane",
       stabilityLevel: 41,
@@ -982,8 +968,7 @@ const dataset = {
       slug: "baal-relief-passage",
       name: "Baal Relief Passage",
       summary: "Экстренный путь подкреплений к Baal.",
-      description:
-        "Поддерживает UI про relief operations, fleet movement и crisis response.",
+      description: "Поддерживает UI про relief operations, fleet movement и crisis response.",
       status: "strained",
       routeType: "relief-lane",
       stabilityLevel: 63,
@@ -1000,8 +985,7 @@ const dataset = {
       slug: "pariah-shadow-route",
       name: "Pariah Shadow Route",
       summary: "Ненадежный путь вблизи Pariah Nexus.",
-      description:
-        "Хороший edge-case ресурс для filters по stability и null-zone traversal.",
+      description: "Хороший edge-case ресурс для filters по stability и null-zone traversal.",
       status: "unstable",
       routeType: "null-zone-passage",
       stabilityLevel: 29,
@@ -1220,8 +1204,7 @@ const dataset = {
       id: 8,
       slug: "xenos",
       name: "Xenos",
-      description:
-        "Технологии и доктрины, характерные для нечеловеческих цивилизаций.",
+      description: "Технологии и доктрины, характерные для нечеловеческих цивилизаций.",
       category: "faction-tag",
     },
     {
@@ -1235,8 +1218,7 @@ const dataset = {
       id: 10,
       slug: "energy",
       name: "Energy",
-      description:
-        "Энергетическое оружие и высокотехнологичные боевые системы.",
+      description: "Энергетическое оружие и высокотехнологичные боевые системы.",
       category: "weapon-profile",
     },
     {
@@ -1257,8 +1239,7 @@ const dataset = {
       id: 13,
       slug: "flame",
       name: "Flame",
-      description:
-        "Огнеметные профили для зачистки и давления на ближней дистанции.",
+      description: "Огнеметные профили для зачистки и давления на ближней дистанции.",
       category: "weapon-profile",
     },
     {
@@ -1275,8 +1256,7 @@ const dataset = {
       slug: "bolt-rifle",
       name: "Bolt Rifle",
       summary: "Универсальное болтерное оружие Primaris Space Marines.",
-      description:
-        "Хороший базовый пример средней дальности, давления и bolt-профиля.",
+      description: "Хороший базовый пример средней дальности, давления и bolt-профиля.",
       status: "active",
       weaponType: "rifle",
       powerLevel: 72,
@@ -1302,8 +1282,7 @@ const dataset = {
       slug: "chainsword",
       name: "Chainsword",
       summary: "Классическое цепное оружие ближнего боя.",
-      description:
-        "Простой и узнаваемый melee-профиль для многих отрядов Imperium и Chaos.",
+      description: "Простой и узнаваемый melee-профиль для многих отрядов Imperium и Chaos.",
       status: "active",
       weaponType: "blade",
       powerLevel: 58,
@@ -1368,8 +1347,7 @@ const dataset = {
       slug: "pulse-rifle",
       name: "Pulse Rifle",
       summary: "Точное дальнобойное оружие T'au Fire Warriors.",
-      description:
-        "Подходит для учебных примеров про технологическое дальнобойное превосходство.",
+      description: "Подходит для учебных примеров про технологическое дальнобойное превосходство.",
       status: "active",
       weaponType: "pulse-weapon",
       powerLevel: 76,
@@ -1382,8 +1360,7 @@ const dataset = {
       slug: "flamer",
       name: "Flamer",
       summary: "Огнемет для зачистки и давления на ближней дистанции.",
-      description:
-        "Хороший пример шаблонного оружия для aggressive short-range UI.",
+      description: "Хороший пример шаблонного оружия для aggressive short-range UI.",
       status: "active",
       weaponType: "flame-weapon",
       powerLevel: 68,
@@ -1409,8 +1386,7 @@ const dataset = {
       slug: "lasgun",
       name: "Lasgun",
       summary: "Массовое стандартное оружие Astra Militarum.",
-      description:
-        "Классический учебный пример дешевого массового ranged loadout.",
+      description: "Классический учебный пример дешевого массового ranged loadout.",
       status: "active",
       weaponType: "laser-rifle",
       powerLevel: 54,
@@ -1436,8 +1412,7 @@ const dataset = {
       slug: "power-fist",
       name: "Power Fist",
       summary: "Тяжелое силовое оружие для elite assault units.",
-      description:
-        "Высокая ударная мощь и визуально понятный high-impact profile.",
+      description: "Высокая ударная мощь и визуально понятный high-impact profile.",
       status: "active",
       weaponType: "power-weapon",
       powerLevel: 88,
@@ -1452,8 +1427,7 @@ const dataset = {
       slug: "intercessor-squad",
       name: "Intercessor Squad",
       summary: "Линейное подразделение Primaris Space Marines.",
-      description:
-        "Хорошая базовая unit-карточка для списков армии и detail page.",
+      description: "Хорошая базовая unit-карточка для списков армии и detail page.",
       status: "active",
       unitType: "line-infantry",
       powerLevel: 85,
@@ -1481,8 +1455,7 @@ const dataset = {
       slug: "battle-sisters-squad",
       name: "Battle Sisters Squad",
       summary: "Основной боевой отряд Adepta Sororitas.",
-      description:
-        "Соединяет line infantry, faith-мотивы и агрессивный short-range pressure.",
+      description: "Соединяет line infantry, faith-мотивы и агрессивный short-range pressure.",
       status: "active",
       unitType: "line-infantry",
       powerLevel: 80,
@@ -1496,8 +1469,7 @@ const dataset = {
       slug: "cadian-shock-troops",
       name: "Cadian Shock Troops",
       summary: "Стандартный строевой отряд Astra Militarum.",
-      description:
-        "Учебный эталон массовой infantry для больших каталогов и cheap-unit UI.",
+      description: "Учебный эталон массовой infantry для больших каталогов и cheap-unit UI.",
       status: "active",
       unitType: "line-infantry",
       powerLevel: 74,
@@ -1511,8 +1483,7 @@ const dataset = {
       slug: "ork-boyz",
       name: "Ork Boyz",
       summary: "Основная боевая масса Orks.",
-      description:
-        "Отличный пример толпового unit с простым, но ярким набором атрибутов.",
+      description: "Отличный пример толпового unit с простым, но ярким набором атрибутов.",
       status: "active",
       unitType: "line-infantry",
       powerLevel: 76,
@@ -1526,8 +1497,7 @@ const dataset = {
       slug: "necron-warriors",
       name: "Necron Warriors",
       summary: "Базовые строевые бойцы пробудившихся династий.",
-      description:
-        "Хорошо подходят для UI со строгими, повторяемыми xenos data patterns.",
+      description: "Хорошо подходят для UI со строгими, повторяемыми xenos data patterns.",
       status: "active",
       unitType: "line-infantry",
       powerLevel: 81,
@@ -1541,8 +1511,7 @@ const dataset = {
       slug: "fire-warrior-team",
       name: "Fire Warrior Team",
       summary: "Строевой отряд T'au Empire с упором на огневую мощь.",
-      description:
-        "Показывает, как технологичная фракция влияет на unit и weapon filters.",
+      description: "Показывает, как технологичная фракция влияет на unit и weapon filters.",
       status: "active",
       unitType: "line-infantry",
       powerLevel: 77,
@@ -1556,8 +1525,7 @@ const dataset = {
       slug: "sanguinary-guard",
       name: "Sanguinary Guard",
       summary: "Элитная ударная гвардия Blood Angels.",
-      description:
-        "Подходит для premium-card UI и compare со стандартной infantry.",
+      description: "Подходит для premium-card UI и compare со стандартной infantry.",
       status: "active",
       unitType: "elite-infantry",
       powerLevel: 90,
@@ -1571,8 +1539,7 @@ const dataset = {
       slug: "havoc-squad",
       name: "Havoc Squad",
       summary: "Тяжелая огневая поддержка Chaos Space Marines.",
-      description:
-        "Удобный пример heavy support unit для build planner и squad browser.",
+      description: "Удобный пример heavy support unit для build planner и squad browser.",
       status: "active",
       unitType: "heavy-support",
       powerLevel: 86,
@@ -1602,8 +1569,7 @@ const dataset = {
       slug: "inquisition",
       name: "Inquisition",
       summary: "Теневой надзор за угрозами Imperium.",
-      description:
-        "Сильный institutional resource для relation-heavy screens и filters.",
+      description: "Сильный institutional resource для relation-heavy screens и filters.",
       status: "active",
       organizationType: "ordo",
       influenceLevel: 95,
@@ -1618,8 +1584,7 @@ const dataset = {
       slug: "adeptus-mechanicus",
       name: "Adeptus Mechanicus",
       summary: "Культ Машины и хранители технологий.",
-      description:
-        "Подходит для связок между Mars, технологиями, relics и campaigns.",
+      description: "Подходит для связок между Mars, технологиями, relics и campaigns.",
       status: "active",
       organizationType: "tech-priesthood",
       influenceLevel: 92,
@@ -1634,8 +1599,7 @@ const dataset = {
       slug: "ecclesiarchy",
       name: "Ecclesiarchy",
       summary: "Имперская церковь и политическая сила веры.",
-      description:
-        "Полезна для faith-driven UI и связи между персонажами, relics и campaigns.",
+      description: "Полезна для faith-driven UI и связи между персонажами, relics и campaigns.",
       status: "active",
       organizationType: "state-church",
       influenceLevel: 88,
@@ -1650,8 +1614,7 @@ const dataset = {
       slug: "deathwatch",
       name: "Deathwatch",
       summary: "Элитное братство для борьбы с xenos.",
-      description:
-        "Хорошо подходит для filters по organizations и военных task-force страниц.",
+      description: "Хорошо подходит для filters по organizations и военных task-force страниц.",
       status: "active",
       organizationType: "chamber-militant",
       influenceLevel: 84,
@@ -1666,8 +1629,7 @@ const dataset = {
       slug: "triarch",
       name: "Triarch",
       summary: "Древний правящий контур династий Necrons.",
-      description:
-        "Добавляет institutional слой для древних держав и campaign analytics.",
+      description: "Добавляет institutional слой для древних держав и campaign analytics.",
       status: "active",
       organizationType: "dynastic-court",
       influenceLevel: 86,
@@ -1698,8 +1660,7 @@ const dataset = {
       slug: "emperors-sword",
       name: "Emperor's Sword",
       summary: "Пламенный клинок, ставший символом возвращения Guilliman.",
-      description:
-        "Сильный flagship relic для detail pages и power-driven sorting.",
+      description: "Сильный flagship relic для detail pages и power-driven sorting.",
       status: "active",
       relicType: "master-crafted-weapon",
       powerLevel: 99,
@@ -1714,8 +1675,7 @@ const dataset = {
       slug: "armour-of-fate",
       name: "Armour of Fate",
       summary: "Реликтовый доспех, поддерживающий Primarch в новой эре.",
-      description:
-        "Хорош для inventory UI и связок между bearer, faction и origin.",
+      description: "Хорош для inventory UI и связок между bearer, faction и origin.",
       status: "active",
       relicType: "armor",
       powerLevel: 95,
@@ -1730,8 +1690,7 @@ const dataset = {
       slug: "talon-of-horus",
       name: "Talon of Horus",
       summary: "Легендарное когтевое оружие Abaddon.",
-      description:
-        "Связывает Chaos, relic cards и сильные compare-сценарии персонажей.",
+      description: "Связывает Chaos, relic cards и сильные compare-сценарии персонажей.",
       status: "active",
       relicType: "weapon",
       powerLevel: 94,
@@ -1760,8 +1719,7 @@ const dataset = {
       slug: "gauntlets-of-ultramar",
       name: "Gauntlets of Ultramar",
       summary: "Знаковые реликтовые перчатки Primarch.",
-      description:
-        "Хороший пример hero relic с четкой faction identity и power sorting.",
+      description: "Хороший пример hero relic с четкой faction identity и power sorting.",
       status: "active",
       relicType: "weapon-system",
       powerLevel: 92,
@@ -1776,8 +1734,7 @@ const dataset = {
       slug: "ardent-blade",
       name: "Ardent Blade",
       summary: "Оружие святой войны Saint Celestine.",
-      description:
-        "Соединяет faith, bearer detail и faction-tagged relic lists.",
+      description: "Соединяет faith, bearer detail и faction-tagged relic lists.",
       status: "active",
       relicType: "sacred-weapon",
       powerLevel: 88,
@@ -1889,8 +1846,7 @@ const dataset = {
       slug: "armageddon-defense-front",
       name: "Armageddon Defense Front",
       summary: "Кампания обороны Armageddon против Orks.",
-      description:
-        "Хороший пример campaign explorer с planet, factions и iconic defenders.",
+      description: "Хороший пример campaign explorer с planet, factions и iconic defenders.",
       status: "historical",
       campaignType: "defense",
       eraId: 3,
@@ -1943,8 +1899,7 @@ const dataset = {
       slug: "cadian-gate-counteroffensive",
       name: "Cadian Gate Counteroffensive",
       summary: "Серия ответных операций после падения Cadia.",
-      description:
-        "Полезна для dashboards по multi-faction campaign pressure и recovery efforts.",
+      description: "Полезна для dashboards по multi-faction campaign pressure и recovery efforts.",
       status: "active",
       campaignType: "counteroffensive",
       eraId: 4,
@@ -1963,8 +1918,7 @@ const dataset = {
       slug: "indomitus-battlegroup",
       name: "Indomitus Battlegroup",
       summary: "Ударное соединение флотов периода Indomitus.",
-      description:
-        "Связывает fleets, campaigns и system-level movement вокруг Ultramar.",
+      description: "Связывает fleets, campaigns и system-level movement вокруг Ultramar.",
       status: "active",
       fleetType: "expeditionary-battlegroup",
       mobilityClass: "rapid-response",
@@ -1982,8 +1936,7 @@ const dataset = {
       slug: "black-crusade-armada",
       name: "Black Crusade Armada",
       summary: "Флот вторжения Black Legion.",
-      description:
-        "Опорный naval ресурс для chaos traversal, route pressure и campaign-heavy UI.",
+      description: "Опорный naval ресурс для chaos traversal, route pressure и campaign-heavy UI.",
       status: "active",
       fleetType: "invasion-armada",
       mobilityClass: "assault-wave",
@@ -2038,8 +1991,7 @@ const dataset = {
       slug: "sautekh-harvest-armada",
       name: "Sautekh Harvest Armada",
       summary: "Неcron флот экспансии в contested systems.",
-      description:
-        "Расширяет xenos naval слой и позволяет строить graphs вокруг древних династий.",
+      description: "Расширяет xenos naval слой и позволяет строить graphs вокруг древних династий.",
       status: "active",
       fleetType: "dynastic-armada",
       mobilityClass: "harvest-wave",
@@ -2058,8 +2010,7 @@ const dataset = {
       slug: "hesperon-void-line",
       name: "Hesperon Void Line",
       summary: "Космический рубеж кампании Plague Wars.",
-      description:
-        "Связывает Macragge System, Ultramar и контратаки против Black Legion.",
+      description: "Связывает Macragge System, Ultramar и контратаки против Black Legion.",
       status: "active",
       battlefieldType: "void-front",
       terrain: "orbital-bastions",
@@ -2133,8 +2084,7 @@ const dataset = {
       slug: "kasr-partox-ruins",
       name: "Kasr Partox Ruins",
       summary: "Поле боев после падения Cadia.",
-      description:
-        "Сильная точка для search, compare и campaign-driven battlefield lists.",
+      description: "Сильная точка для search, compare и campaign-driven battlefield lists.",
       status: "active",
       battlefieldType: "ruined-fortress",
       terrain: "fortress-ruins",
@@ -2152,8 +2102,7 @@ const dataset = {
       slug: "eternity-gate-approach",
       name: "Eternity Gate Approach",
       summary: "Последний рубеж обороны Терры во времена Ереси.",
-      description:
-        "Исторический battlefield для связки Emperor, Horus Heresy и core-world graph.",
+      description: "Исторический battlefield для связки Emperor, Horus Heresy и core-world graph.",
       status: "historical",
       battlefieldType: "siege-gate",
       terrain: "palace-fortress",
@@ -2197,10 +2146,7 @@ const dataset = {
       homeworldId: 4,
       eraId: 4,
       eventIds: [2, 5],
-      titles: [
-        "Primarch of the Ultramarines",
-        "Lord Commander of the Imperium",
-      ],
+      titles: ["Primarch of the Ultramarines", "Lord Commander of the Imperium"],
       keywords: ["primarch", "ultramar"],
       alignment: "imperium",
       powerLevel: 98,
@@ -2396,8 +2342,7 @@ const resourceOrder = [
 const resourceDefinitions = {
   eras: {
     label: "Эры",
-    description:
-      "Хронологические периоды для timeline и исторических фильтров.",
+    description: "Хронологические периоды для timeline и исторических фильтров.",
     defaultSort: "yearOrder,name",
     previewParams: { limit: 4, sort: "yearOrder,name" },
     searchFields: ["name", "summary", "description", "keywords"],
@@ -2422,10 +2367,7 @@ const resourceDefinitions = {
         description: "Поле для сортировки.",
       },
     ],
-    sampleQueries: [
-      "/api/v1/eras?sort=yearOrder",
-      "/api/v1/eras?filter[status]=active",
-    ],
+    sampleQueries: ["/api/v1/eras?sort=yearOrder", "/api/v1/eras?filter[status]=active"],
   },
   races: {
     label: "Расы",
@@ -2446,15 +2388,11 @@ const resourceDefinitions = {
       { name: "name", type: "string", description: "Название вида." },
       { name: "alignment", type: "string", description: "Общий полюс роли." },
     ],
-    sampleQueries: [
-      "/api/v1/races?sort=name",
-      "/api/v1/races?filter[alignment]=xenos",
-    ],
+    sampleQueries: ["/api/v1/races?sort=name", "/api/v1/races?filter[alignment]=xenos"],
   },
   "star-systems": {
     label: "Звездные системы",
-    description:
-      "Слой системного масштаба для maps, graph traversal и навигации между мирами.",
+    description: "Слой системного масштаба для maps, graph traversal и навигации между мирами.",
     defaultSort: "name",
     previewParams: { limit: 6, sort: "name", include: "planets,era" },
     searchFields: ["name", "summary", "description", "segmentum", "keywords"],
@@ -2517,13 +2455,7 @@ const resourceDefinitions = {
       include: "fromStarSystem,toStarSystem,factions,campaigns,era",
     },
     searchFields: ["name", "summary", "description", "routeType", "keywords"],
-    sortFields: [
-      "name",
-      "status",
-      "routeType",
-      "stabilityLevel",
-      "transitTimeRating",
-    ],
+    sortFields: ["name", "status", "routeType", "stabilityLevel", "transitTimeRating"],
     filters: {
       status: { type: "attribute", field: "status", label: "Статус" },
       type: { type: "attribute", field: "routeType", label: "Тип маршрута" },
@@ -2753,21 +2685,8 @@ const resourceDefinitions = {
       sort: "-strengthRating,name",
       include: "factions,commanders,campaigns,currentStarSystem,homePort,era",
     },
-    searchFields: [
-      "name",
-      "summary",
-      "description",
-      "fleetType",
-      "mobilityClass",
-      "keywords",
-    ],
-    sortFields: [
-      "name",
-      "status",
-      "fleetType",
-      "mobilityClass",
-      "strengthRating",
-    ],
+    searchFields: ["name", "summary", "description", "fleetType", "mobilityClass", "keywords"],
+    sortFields: ["name", "status", "fleetType", "mobilityClass", "strengthRating"],
     filters: {
       status: { type: "attribute", field: "status", label: "Статус" },
       type: { type: "attribute", field: "fleetType", label: "Тип флота" },
@@ -2885,21 +2804,14 @@ const resourceDefinitions = {
   },
   organizations: {
     label: "Организации",
-    description:
-      "Институции, ордена и командные структуры для более сложных графов связей.",
+    description: "Институции, ордена и командные структуры для более сложных графов связей.",
     defaultSort: "-influenceLevel,name",
     previewParams: {
       limit: 6,
       sort: "-influenceLevel,name",
       include: "factions,leaders,homeworld",
     },
-    searchFields: [
-      "name",
-      "summary",
-      "description",
-      "organizationType",
-      "keywords",
-    ],
+    searchFields: ["name", "summary", "description", "organizationType", "keywords"],
     sortFields: ["name", "status", "organizationType", "influenceLevel"],
     filters: {
       status: { type: "attribute", field: "status", label: "Статус" },
@@ -2988,8 +2900,7 @@ const resourceDefinitions = {
   },
   keywords: {
     label: "Keywords",
-    description:
-      "Нормализованные теги для units и weapons, полезные для chips, filters и legends.",
+    description: "Нормализованные теги для units и weapons, полезные для chips, filters и legends.",
     defaultSort: "name",
     previewParams: { limit: 8, sort: "name" },
     searchFields: ["name", "description", "category"],
@@ -3286,8 +3197,7 @@ const resourceDefinitions = {
   },
   events: {
     label: "События",
-    description:
-      "Исторические и современные конфликты для timeline и dashboard.",
+    description: "Исторические и современные конфликты для timeline и dashboard.",
     defaultSort: "-yearOrder,name",
     previewParams: {
       limit: 5,
@@ -3362,14 +3272,7 @@ const resourceDefinitions = {
       sort: "-yearOrder,name",
       include: "era,planets,factions,characters,organizations,battlefields",
     },
-    searchFields: [
-      "name",
-      "summary",
-      "description",
-      "campaignType",
-      "yearLabel",
-      "keywords",
-    ],
+    searchFields: ["name", "summary", "description", "campaignType", "yearLabel", "keywords"],
     sortFields: ["name", "status", "campaignType", "yearOrder"],
     filters: {
       status: { type: "attribute", field: "status", label: "Статус" },
@@ -3495,21 +3398,8 @@ const resourceDefinitions = {
       sort: "-intensityLevel,name",
       include: "planet,starSystem,era,factions,characters,campaigns",
     },
-    searchFields: [
-      "name",
-      "summary",
-      "description",
-      "battlefieldType",
-      "terrain",
-      "keywords",
-    ],
-    sortFields: [
-      "name",
-      "status",
-      "battlefieldType",
-      "terrain",
-      "intensityLevel",
-    ],
+    searchFields: ["name", "summary", "description", "battlefieldType", "terrain", "keywords"],
+    sortFields: ["name", "status", "battlefieldType", "terrain", "intensityLevel"],
     filters: {
       status: { type: "attribute", field: "status", label: "Статус" },
       type: {
@@ -3614,22 +3504,14 @@ const resourceDefinitions = {
   },
   characters: {
     label: "Персонажи",
-    description:
-      "Самый удобный ресурс для карточек, search, filters и detail page.",
+    description: "Самый удобный ресурс для карточек, search, filters и detail page.",
     defaultSort: "-powerLevel,name",
     previewParams: {
       limit: 6,
       sort: "-powerLevel,name",
       include: "faction,race,homeworld,events",
     },
-    searchFields: [
-      "name",
-      "summary",
-      "description",
-      "titles",
-      "keywords",
-      "alignment",
-    ],
+    searchFields: ["name", "summary", "description", "titles", "keywords", "alignment"],
     sortFields: ["name", "status", "alignment", "powerLevel"],
     filters: {
       faction: {

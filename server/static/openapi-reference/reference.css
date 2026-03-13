@@ -1,0 +1,158 @@
+body {
+  margin: 0;
+  background: #140f0d;
+  color: #f2eadf;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+.reference-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(209, 163, 90, 0.16), transparent 24%),
+    radial-gradient(circle at right 20%, rgba(143, 47, 47, 0.18), transparent 30%),
+    linear-gradient(160deg, #0f0a08 0%, #18110f 35%, #120e0c 100%);
+}
+
+.reference-topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid rgba(214, 181, 129, 0.18);
+  background: rgba(16, 10, 8, 0.86);
+  backdrop-filter: blur(18px);
+}
+
+.reference-topbar h1 {
+  margin: 0 0 10px;
+  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  font-size: clamp(1.4rem, 2vw, 2.1rem);
+}
+
+.reference-topbar p {
+  max-width: 72ch;
+  margin: 0;
+  color: #c6b8a1;
+}
+
+.reference-kicker {
+  margin-bottom: 10px;
+  color: #d1a35a;
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.reference-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.reference-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(209, 163, 90, 0.45);
+  border-radius: 999px;
+  color: #f2eadf;
+  text-decoration: none;
+  background: linear-gradient(180deg, rgba(209, 163, 90, 0.16), rgba(209, 163, 90, 0.08));
+}
+
+#swagger-ui {
+  padding: 22px 18px 40px;
+}
+
+.swagger-ui .topbar {
+  display: none;
+}
+
+.swagger-ui .info,
+.swagger-ui .scheme-container,
+.swagger-ui .opblock-tag-section,
+.swagger-ui .opblock,
+.swagger-ui .responses-inner,
+.swagger-ui .response-col_status,
+.swagger-ui .response-col_description,
+.swagger-ui .model-box,
+.swagger-ui .model,
+.swagger-ui section.models {
+  box-shadow: none;
+}
+
+.swagger-ui .scheme-container,
+.swagger-ui .wrapper {
+  background: transparent;
+}
+
+.swagger-ui .info .title,
+.swagger-ui .opblock-tag,
+.swagger-ui .opblock-summary-path,
+.swagger-ui .responses-inner h4,
+.swagger-ui .responses-inner h5,
+.swagger-ui .model-title,
+.swagger-ui section.models h4 {
+  font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+}
+
+.swagger-ui .info .title,
+.swagger-ui .info,
+.swagger-ui,
+.swagger-ui .opblock-tag,
+.swagger-ui .opblock-description-wrapper p,
+.swagger-ui .response-col_description__inner p,
+.swagger-ui .parameter__name,
+.swagger-ui .parameter__type,
+.swagger-ui .model,
+.swagger-ui section.models h4 span {
+  color: #f2eadf;
+}
+
+.swagger-ui .info a,
+.swagger-ui .response-col_links a,
+.swagger-ui .tab li button.tablinks,
+.swagger-ui .opblock-summary-path,
+.swagger-ui .parameter__name.required span,
+.swagger-ui .opblock-summary-method,
+.swagger-ui .link {
+  color: #f3d6a0;
+}
+
+.swagger-ui .opblock-tag,
+.swagger-ui .opblock,
+.swagger-ui section.models,
+.swagger-ui .scheme-container {
+  border-color: rgba(214, 181, 129, 0.18);
+  background: rgba(37, 24, 20, 0.8);
+}
+
+.swagger-ui .opblock .opblock-summary,
+.swagger-ui .model-box {
+  border-color: rgba(214, 181, 129, 0.16);
+}
+
+.swagger-ui .btn.execute {
+  background: #8f2f2f;
+  border-color: #8f2f2f;
+}
+
+.swagger-ui .btn.authorize,
+.swagger-ui .btn.try-out__btn,
+.swagger-ui .btn.cancel {
+  border-radius: 999px;
+}
+
+@media (max-width: 960px) {
+  .reference-topbar {
+    flex-direction: column;
+    padding: 24px 18px 18px;
+  }
+
+  #swagger-ui {
+    padding: 16px 8px 28px;
+  }
+}

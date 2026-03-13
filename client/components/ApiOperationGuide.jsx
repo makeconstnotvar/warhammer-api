@@ -36,9 +36,7 @@ function orderParameters(parameters, parameterOrder = []) {
   }
 
   const orderedNames = new Set(parameterOrder);
-  const parameterMap = new Map(
-    parameters.map((parameter) => [parameter.name, parameter]),
-  );
+  const parameterMap = new Map(parameters.map((parameter) => [parameter.name, parameter]));
 
   return [
     ...parameterOrder.map((name) => parameterMap.get(name)).filter(Boolean),
@@ -67,9 +65,7 @@ function OperationParameterCard({ parameter }) {
       <p>{parameter.description}</p>
       {parameter.example !== undefined ? (
         <div className="tag-list">
-          <span className="metric-chip">
-            example {formatOpenApiValue(parameter.example)}
-          </span>
+          <span className="metric-chip">example {formatOpenApiValue(parameter.example)}</span>
         </div>
       ) : null}
     </article>
@@ -91,10 +87,7 @@ function ApiOperationGuide({
     return null;
   }
 
-  const parameters = orderParameters(
-    getOpenApiParameters(spec, path, method),
-    parameterOrder,
-  );
+  const parameters = orderParameters(getOpenApiParameters(spec, path, method), parameterOrder);
   const snippets = buildRequestSnippets(requestPath);
 
   return (
@@ -117,9 +110,7 @@ function ApiOperationGuide({
         <div className="tag-list">
           <span className="metric-chip">{String(method).toUpperCase()}</span>
           <span className="tag">{path}</span>
-          {operation.operationId ? (
-            <span className="tag">{operation.operationId}</span>
-          ) : null}
+          {operation.operationId ? <span className="tag">{operation.operationId}</span> : null}
           {operation.summary && operation.summary !== description ? (
             <span className="tag">{operation.summary}</span>
           ) : null}
@@ -140,8 +131,7 @@ function ApiOperationGuide({
           <div>
             <h2>Live request snippets</h2>
             <p className="muted-line">
-              Сниппеты строятся из текущего request path, а не из вручную
-              поддерживаемых строк.
+              Сниппеты строятся из текущего request path, а не из вручную поддерживаемых строк.
             </p>
           </div>
           {requestPath ? (

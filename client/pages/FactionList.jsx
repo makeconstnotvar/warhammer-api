@@ -1,18 +1,17 @@
 // client/pages/FactionList.jsx
-import {h} from 'preact';
-import {inject, observer} from "mobx-react";
-import {useEffect, useState} from "preact/hooks";
-import {Pager} from "../components/Pager";
+import { inject, observer } from "mobx-react";
+import { useEffect, useState } from "preact/hooks";
+import { Pager } from "../components/Pager";
 
-const FactionList = inject('$factionsStore')(observer(FactionListComponent));
+const FactionList = inject("$factionsStore")(observer(FactionListComponent));
 
 function FactionListComponent(props) {
-  const {$factionsStore} = props;
+  const { $factionsStore } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
   useEffect(() => {
-    $factionsStore.fetchData({page: currentPage, limit:pageSize});
+    $factionsStore.fetchData({ page: currentPage, limit: pageSize });
   }, [currentPage]); // Запрос при изменении страницы
 
   const handlePageChange = (page) => {
@@ -38,8 +37,10 @@ function FactionListComponent(props) {
       ) : (
         <div className="card">
           <ul className="list-group list-group-flush">
-            {$factionsStore.data.map(faction => (
-              <li key={faction.id} className="list-group-item">{faction.name}</li>
+            {$factionsStore.data.map((faction) => (
+              <li key={faction.id} className="list-group-item">
+                {faction.name}
+              </li>
             ))}
           </ul>
         </div>
@@ -55,4 +56,4 @@ function FactionListComponent(props) {
   );
 }
 
-export {FactionList};
+export { FactionList };

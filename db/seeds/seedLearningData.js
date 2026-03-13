@@ -1,9 +1,9 @@
-const path = require('path');
-const dotenv = require('dotenv');
-const { createClient } = require('../scripts/_db');
-const { dataset } = require('../../server/content/warhammerContent');
+const path = require("path");
+const dotenv = require("dotenv");
+const { createClient } = require("../scripts/_db");
+const { dataset } = require("../../server/content/warhammerContent");
 
-dotenv.config({ path: path.resolve(__dirname, '../../server/.env') });
+dotenv.config({ path: path.resolve(__dirname, "../../server/.env") });
 
 async function insertEras(client) {
   for (const era of dataset.eras) {
@@ -120,14 +120,14 @@ async function insertWarpRoutes(client) {
 
     for (const factionId of warpRoute.factionIds || []) {
       await client.query(
-        'INSERT INTO warp_route_factions (warp_route_id, faction_id) VALUES ($1, $2)',
+        "INSERT INTO warp_route_factions (warp_route_id, faction_id) VALUES ($1, $2)",
         [warpRoute.id, factionId]
       );
     }
 
     for (const campaignId of warpRoute.campaignIds || []) {
       await client.query(
-        'INSERT INTO warp_route_campaigns (warp_route_id, campaign_id) VALUES ($1, $2)',
+        "INSERT INTO warp_route_campaigns (warp_route_id, campaign_id) VALUES ($1, $2)",
         [warpRoute.id, campaignId]
       );
     }
@@ -162,7 +162,7 @@ async function insertFactions(client) {
   for (const faction of dataset.factions) {
     for (const raceId of faction.raceIds || []) {
       await client.query(
-        'INSERT INTO faction_races (faction_id, race_id, is_primary) VALUES ($1, $2, $3)',
+        "INSERT INTO faction_races (faction_id, race_id, is_primary) VALUES ($1, $2, $3)",
         [faction.id, raceId, raceId === faction.raceIds[0]]
       );
     }
@@ -175,13 +175,7 @@ async function insertKeywords(client) {
       `INSERT INTO keywords (
         id, slug, name, description, category
       ) VALUES ($1, $2, $3, $4, $5)`,
-      [
-        keyword.id,
-        keyword.slug,
-        keyword.name,
-        keyword.description,
-        keyword.category,
-      ]
+      [keyword.id, keyword.slug, keyword.name, keyword.description, keyword.category]
     );
   }
 }
@@ -208,10 +202,10 @@ async function insertWeapons(client) {
     );
 
     for (const keywordId of weapon.keywordIds || []) {
-      await client.query(
-        'INSERT INTO weapon_keywords (weapon_id, keyword_id) VALUES ($1, $2)',
-        [weapon.id, keywordId]
-      );
+      await client.query("INSERT INTO weapon_keywords (weapon_id, keyword_id) VALUES ($1, $2)", [
+        weapon.id,
+        keywordId,
+      ]);
     }
   }
 }
@@ -238,23 +232,23 @@ async function insertUnits(client) {
 
     for (const factionId of unit.factionIds || []) {
       await client.query(
-        'INSERT INTO unit_factions (unit_id, faction_id, is_primary) VALUES ($1, $2, $3)',
+        "INSERT INTO unit_factions (unit_id, faction_id, is_primary) VALUES ($1, $2, $3)",
         [unit.id, factionId, factionId === unit.factionIds[0]]
       );
     }
 
     for (const keywordId of unit.keywordIds || []) {
-      await client.query(
-        'INSERT INTO unit_keywords (unit_id, keyword_id) VALUES ($1, $2)',
-        [unit.id, keywordId]
-      );
+      await client.query("INSERT INTO unit_keywords (unit_id, keyword_id) VALUES ($1, $2)", [
+        unit.id,
+        keywordId,
+      ]);
     }
 
     for (const weaponId of unit.weaponIds || []) {
-      await client.query(
-        'INSERT INTO unit_weapons (unit_id, weapon_id) VALUES ($1, $2)',
-        [unit.id, weaponId]
-      );
+      await client.query("INSERT INTO unit_weapons (unit_id, weapon_id) VALUES ($1, $2)", [
+        unit.id,
+        weaponId,
+      ]);
     }
   }
 }
@@ -283,14 +277,14 @@ async function insertOrganizations(client) {
 
     for (const factionId of organization.factionIds || []) {
       await client.query(
-        'INSERT INTO organization_factions (organization_id, faction_id, is_primary) VALUES ($1, $2, $3)',
+        "INSERT INTO organization_factions (organization_id, faction_id, is_primary) VALUES ($1, $2, $3)",
         [organization.id, factionId, factionId === organization.factionIds[0]]
       );
     }
 
     for (const leaderId of organization.leaderIds || []) {
       await client.query(
-        'INSERT INTO organization_leaders (organization_id, character_id) VALUES ($1, $2)',
+        "INSERT INTO organization_leaders (organization_id, character_id) VALUES ($1, $2)",
         [organization.id, leaderId]
       );
     }
@@ -321,10 +315,10 @@ async function insertRelics(client) {
     );
 
     for (const keywordId of relic.keywordIds || []) {
-      await client.query(
-        'INSERT INTO relic_keywords (relic_id, keyword_id) VALUES ($1, $2)',
-        [relic.id, keywordId]
-      );
+      await client.query("INSERT INTO relic_keywords (relic_id, keyword_id) VALUES ($1, $2)", [
+        relic.id,
+        keywordId,
+      ]);
     }
   }
 }
@@ -356,7 +350,7 @@ async function insertCharacters(client) {
 
     for (const [index, title] of (character.titles || []).entries()) {
       await client.query(
-        'INSERT INTO character_titles (character_id, title, sort_order) VALUES ($1, $2, $3)',
+        "INSERT INTO character_titles (character_id, title, sort_order) VALUES ($1, $2, $3)",
         [character.id, title, index]
       );
     }
@@ -364,10 +358,10 @@ async function insertCharacters(client) {
 
   for (const faction of dataset.factions) {
     for (const leaderId of faction.leaderIds || []) {
-      await client.query(
-        'INSERT INTO faction_leaders (faction_id, character_id) VALUES ($1, $2)',
-        [faction.id, leaderId]
-      );
+      await client.query("INSERT INTO faction_leaders (faction_id, character_id) VALUES ($1, $2)", [
+        faction.id,
+        leaderId,
+      ]);
     }
   }
 }
@@ -394,15 +388,24 @@ async function insertEvents(client) {
     );
 
     for (const planetId of event.planetIds || []) {
-      await client.query('INSERT INTO event_planets (event_id, planet_id) VALUES ($1, $2)', [event.id, planetId]);
+      await client.query("INSERT INTO event_planets (event_id, planet_id) VALUES ($1, $2)", [
+        event.id,
+        planetId,
+      ]);
     }
 
     for (const factionId of event.factionIds || []) {
-      await client.query('INSERT INTO event_factions (event_id, faction_id) VALUES ($1, $2)', [event.id, factionId]);
+      await client.query("INSERT INTO event_factions (event_id, faction_id) VALUES ($1, $2)", [
+        event.id,
+        factionId,
+      ]);
     }
 
     for (const characterId of event.characterIds || []) {
-      await client.query('INSERT INTO event_characters (event_id, character_id) VALUES ($1, $2)', [event.id, characterId]);
+      await client.query("INSERT INTO event_characters (event_id, character_id) VALUES ($1, $2)", [
+        event.id,
+        characterId,
+      ]);
     }
   }
 }
@@ -431,28 +434,28 @@ async function insertCampaigns(client) {
 
     for (const planetId of campaign.planetIds || []) {
       await client.query(
-        'INSERT INTO campaign_planets (campaign_id, planet_id, is_primary) VALUES ($1, $2, $3)',
+        "INSERT INTO campaign_planets (campaign_id, planet_id, is_primary) VALUES ($1, $2, $3)",
         [campaign.id, planetId, planetId === campaign.planetIds[0]]
       );
     }
 
     for (const factionId of campaign.factionIds || []) {
       await client.query(
-        'INSERT INTO campaign_factions (campaign_id, faction_id) VALUES ($1, $2)',
+        "INSERT INTO campaign_factions (campaign_id, faction_id) VALUES ($1, $2)",
         [campaign.id, factionId]
       );
     }
 
     for (const characterId of campaign.characterIds || []) {
       await client.query(
-        'INSERT INTO campaign_characters (campaign_id, character_id) VALUES ($1, $2)',
+        "INSERT INTO campaign_characters (campaign_id, character_id) VALUES ($1, $2)",
         [campaign.id, characterId]
       );
     }
 
     for (const organizationId of campaign.organizationIds || []) {
       await client.query(
-        'INSERT INTO campaign_organizations (campaign_id, organization_id) VALUES ($1, $2)',
+        "INSERT INTO campaign_organizations (campaign_id, organization_id) VALUES ($1, $2)",
         [campaign.id, organizationId]
       );
     }
@@ -485,23 +488,23 @@ async function insertFleets(client) {
 
     for (const factionId of fleet.factionIds || []) {
       await client.query(
-        'INSERT INTO fleet_factions (fleet_id, faction_id, is_primary) VALUES ($1, $2, $3)',
+        "INSERT INTO fleet_factions (fleet_id, faction_id, is_primary) VALUES ($1, $2, $3)",
         [fleet.id, factionId, factionId === fleet.factionIds[0]]
       );
     }
 
     for (const commanderId of fleet.commanderIds || []) {
-      await client.query(
-        'INSERT INTO fleet_commanders (fleet_id, character_id) VALUES ($1, $2)',
-        [fleet.id, commanderId]
-      );
+      await client.query("INSERT INTO fleet_commanders (fleet_id, character_id) VALUES ($1, $2)", [
+        fleet.id,
+        commanderId,
+      ]);
     }
 
     for (const campaignId of fleet.campaignIds || []) {
-      await client.query(
-        'INSERT INTO fleet_campaigns (fleet_id, campaign_id) VALUES ($1, $2)',
-        [fleet.id, campaignId]
-      );
+      await client.query("INSERT INTO fleet_campaigns (fleet_id, campaign_id) VALUES ($1, $2)", [
+        fleet.id,
+        campaignId,
+      ]);
     }
   }
 }
@@ -532,21 +535,21 @@ async function insertBattlefields(client) {
 
     for (const factionId of battlefield.factionIds || []) {
       await client.query(
-        'INSERT INTO battlefield_factions (battlefield_id, faction_id) VALUES ($1, $2)',
+        "INSERT INTO battlefield_factions (battlefield_id, faction_id) VALUES ($1, $2)",
         [battlefield.id, factionId]
       );
     }
 
     for (const characterId of battlefield.characterIds || []) {
       await client.query(
-        'INSERT INTO battlefield_characters (battlefield_id, character_id) VALUES ($1, $2)',
+        "INSERT INTO battlefield_characters (battlefield_id, character_id) VALUES ($1, $2)",
         [battlefield.id, characterId]
       );
     }
 
     for (const campaignId of battlefield.campaignIds || []) {
       await client.query(
-        'INSERT INTO battlefield_campaigns (battlefield_id, campaign_id) VALUES ($1, $2)',
+        "INSERT INTO battlefield_campaigns (battlefield_id, campaign_id) VALUES ($1, $2)",
         [battlefield.id, campaignId]
       );
     }
@@ -581,7 +584,7 @@ async function run() {
   await client.connect();
 
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
     await client.query(`
       TRUNCATE TABLE
         warp_route_campaigns,
@@ -645,10 +648,10 @@ async function run() {
     await insertFleets(client);
     await insertBattlefields(client);
     await resetSequences(client);
-    await client.query('COMMIT');
-    console.log('seed complete');
+    await client.query("COMMIT");
+    console.log("seed complete");
   } catch (error) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     throw error;
   } finally {
     await client.end();

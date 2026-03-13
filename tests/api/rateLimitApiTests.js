@@ -32,50 +32,35 @@ async function runRateLimitApiTests() {
     {
       name: "api/v1 rate limiting publishes headers blocks bursts and resets after window",
       run: async () => {
-        await withRateLimitServer(
-          { maxRequests: 2, windowMs: 300 },
-          async (baseUrl) => {
-            const firstResponse = await fetch(`${baseUrl}/api/v1/overview`);
-            await firstResponse.json();
+        await withRateLimitServer({ maxRequests: 2, windowMs: 300 }, async (baseUrl) => {
+          const firstResponse = await fetch(`${baseUrl}/api/v1/overview`);
+          await firstResponse.json();
 
-            assert.equal(firstResponse.status, 200);
-            assert.equal(firstResponse.headers.get("ratelimit-limit"), "2");
-            assert.equal(firstResponse.headers.get("ratelimit-remaining"), "1");
-            assert.equal(
-              firstResponse.headers.get("ratelimit-policy"),
-              "2;w=1",
-            );
+          assert.equal(firstResponse.status, 200);
+          assert.equal(firstResponse.headers.get("ratelimit-limit"), "2");
+          assert.equal(firstResponse.headers.get("ratelimit-remaining"), "1");
+          assert.equal(firstResponse.headers.get("ratelimit-policy"), "2;w=1");
 
-            const secondResponse = await fetch(`${baseUrl}/api/v1/overview`);
-            assert.equal(secondResponse.status, 200);
-            assert.equal(
-              secondResponse.headers.get("ratelimit-remaining"),
-              "0",
-            );
+          const secondResponse = await fetch(`${baseUrl}/api/v1/overview`);
+          assert.equal(secondResponse.status, 200);
+          assert.equal(secondResponse.headers.get("ratelimit-remaining"), "0");
 
-            const thirdResponse = await fetch(`${baseUrl}/api/v1/overview`);
-            const thirdJson = await thirdResponse.json();
+          const thirdResponse = await fetch(`${baseUrl}/api/v1/overview`);
+          const thirdJson = await thirdResponse.json();
 
-            assert.equal(thirdResponse.status, 429);
-            assert.equal(thirdJson.error.code, "RATE_LIMIT_EXCEEDED");
-            assert.equal(thirdResponse.headers.get("ratelimit-limit"), "2");
-            assert.equal(thirdResponse.headers.get("ratelimit-remaining"), "0");
-            assert.equal(
-              thirdResponse.headers.get("ratelimit-policy"),
-              "2;w=1",
-            );
-            assert.equal(thirdResponse.headers.get("retry-after"), "1");
+          assert.equal(thirdResponse.status, 429);
+          assert.equal(thirdJson.error.code, "RATE_LIMIT_EXCEEDED");
+          assert.equal(thirdResponse.headers.get("ratelimit-limit"), "2");
+          assert.equal(thirdResponse.headers.get("ratelimit-remaining"), "0");
+          assert.equal(thirdResponse.headers.get("ratelimit-policy"), "2;w=1");
+          assert.equal(thirdResponse.headers.get("retry-after"), "1");
 
-            await new Promise((resolve) => setTimeout(resolve, 350));
+          await new Promise((resolve) => setTimeout(resolve, 350));
 
-            const fourthResponse = await fetch(`${baseUrl}/api/v1/overview`);
-            assert.equal(fourthResponse.status, 200);
-            assert.equal(
-              fourthResponse.headers.get("ratelimit-remaining"),
-              "1",
-            );
-          },
-        );
+          const fourthResponse = await fetch(`${baseUrl}/api/v1/overview`);
+          assert.equal(fourthResponse.status, 200);
+          assert.equal(fourthResponse.headers.get("ratelimit-remaining"), "1");
+        });
       },
     },
   ];

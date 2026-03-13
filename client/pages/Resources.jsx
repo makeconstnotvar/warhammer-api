@@ -1,7 +1,7 @@
-import { docsApi } from '../api/docsApi';
-import { StateNotice } from '../components/StateNotice';
-import { useAsyncData } from '../hooks/useAsyncData';
-import { buildQueryString } from '../lib/query';
+import { docsApi } from "../api/docsApi";
+import { StateNotice } from "../components/StateNotice";
+import { useAsyncData } from "../hooks/useAsyncData";
+import { buildQueryString } from "../lib/query";
 
 function Resources() {
   const { data, loading, error } = useAsyncData(() => docsApi.getCatalog(), []);
@@ -22,8 +22,8 @@ function Resources() {
           <div className="section-eyebrow">Resources</div>
           <h1>Каталог сущностей</h1>
           <p className="page-lead">
-            Ресурсы построены так, чтобы их можно было использовать и по отдельности,
-            и в комбинации для dashboard, compare page и детальных экранов.
+            Ресурсы построены так, чтобы их можно было использовать и по отдельности, и в комбинации
+            для dashboard, compare page и детальных экранов.
           </p>
         </div>
       </section>
@@ -41,18 +41,22 @@ function Resources() {
             <p>{resource.description}</p>
             <div className="tag-list">
               {resource.filters.map((filter) => (
-                <span key={filter.id} className="tag">{filter.id}</span>
+                <span key={filter.id} className="tag">
+                  {filter.id}
+                </span>
               ))}
             </div>
             <div className="resource-card-actions">
-              <a className="action-link" href={`/resources/${resource.id}`}>Открыть документацию</a>
+              <a className="action-link" href={`/resources/${resource.id}`}>
+                Открыть документацию
+              </a>
               <a
                 className="action-link action-link-muted"
                 href={`/resources/${resource.id}${buildQueryString({
-                  mode: 'list',
+                  mode: "list",
                   limit: resource.previewParams?.limit || 5,
-                  sort: resource.previewParams?.sort || '',
-                  include: resource.previewParams?.include || '',
+                  sort: resource.previewParams?.sort || "",
+                  include: resource.previewParams?.include || "",
                 })}`}
               >
                 Открыть live preview

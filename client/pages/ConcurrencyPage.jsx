@@ -1,27 +1,27 @@
-import { useEffect, useState } from 'preact/hooks';
-import { docsApi } from '../api/docsApi';
-import { CodeBlock } from '../components/CodeBlock';
-import { JsonViewer } from '../components/JsonViewer';
-import { StateNotice } from '../components/StateNotice';
-import { extractError, useAsyncData } from '../hooks/useAsyncData';
+import { useEffect, useState } from "preact/hooks";
+import { docsApi } from "../api/docsApi";
+import { CodeBlock } from "../components/CodeBlock";
+import { JsonViewer } from "../components/JsonViewer";
+import { StateNotice } from "../components/StateNotice";
+import { extractError, useAsyncData } from "../hooks/useAsyncData";
 
 function ConcurrencyPage() {
   const exampleState = useAsyncData(() => docsApi.getConcurrencyExample(), []);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   async function runExample() {
     setLoading(true);
-    setError('');
+    setError("");
 
     const startedAt = performance.now();
 
     try {
       const [factions, characters, events] = await Promise.all([
-        docsApi.getResourceList('factions', { limit: 4, sort: 'name' }),
-        docsApi.getResourceList('characters', { limit: 4, sort: '-powerLevel,name' }),
-        docsApi.getResourceList('events', { limit: 4, sort: '-yearOrder,name' }),
+        docsApi.getResourceList("factions", { limit: 4, sort: "name" }),
+        docsApi.getResourceList("characters", { limit: 4, sort: "-powerLevel,name" }),
+        docsApi.getResourceList("events", { limit: 4, sort: "-yearOrder,name" }),
       ]);
 
       setResult({
@@ -59,7 +59,7 @@ function ConcurrencyPage() {
           <p className="page-lead">{example.description}</p>
         </div>
         <button className="action-button" onClick={runExample} disabled={loading}>
-          {loading ? 'Выполняется...' : 'Повторить пример'}
+          {loading ? "Выполняется..." : "Повторить пример"}
         </button>
       </section>
 
@@ -67,7 +67,9 @@ function ConcurrencyPage() {
         <h2>Endpoint-ы</h2>
         <div className="endpoint-list">
           {example.endpoints.map((endpoint) => (
-            <a key={endpoint} className="query-link" href={endpoint}>{endpoint}</a>
+            <a key={endpoint} className="query-link" href={endpoint}>
+              {endpoint}
+            </a>
           ))}
         </div>
       </section>

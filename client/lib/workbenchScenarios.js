@@ -1,6 +1,22 @@
 import { buildQueryString, parseCsvParam } from "./query";
 
 const WORKBENCH_BASE_URL = "http://localhost";
+const WORKBENCH_GROUP_LABELS = {
+  compare: "Compare",
+  graph: "Graph",
+  path: "Path",
+};
+const WORKBENCH_GROUP_ORDER = {
+  compare: 0,
+  graph: 1,
+  path: 2,
+};
+const WORKBENCH_DIFFICULTY_ORDER = {
+  starter: 0,
+  intermediate: 1,
+  advanced: 2,
+};
+const DEFAULT_WORKBENCH_DIFFICULTY = "intermediate";
 
 function parseScenarioUrl(path) {
   return new URL(path || "/", WORKBENCH_BASE_URL);
@@ -16,11 +32,51 @@ function readOptionalBooleanParam(searchParams, key, fallback = "true") {
 }
 
 function sanitizeResourceKeys(values = []) {
-  return [
-    ...new Set(
-      (values || []).map((value) => String(value).trim()).filter(Boolean),
-    ),
-  ];
+  return [...new Set((values || []).map((value) => String(value).trim()).filter(Boolean))];
+}
+
+function sanitizeScenarioTags(values = []) {
+  return sanitizeResourceKeys(values);
+}
+
+function normalizeWorkbenchDifficulty(value) {
+  const normalizedValue = String(value || "").trim();
+
+  return WORKBENCH_DIFFICULTY_ORDER[normalizedValue] === undefined
+    ? DEFAULT_WORKBENCH_DIFFICULTY
+    : normalizedValue;
+}
+
+function normalizeWorkbenchValues(values) {
+  if (Array.isArray(values)) {
+    return values.filter(Boolean);
+  }
+
+  return values ? [values] : [];
+}
+
+function enrichWorkbenchScenario(scenario, groupKey, scope, relatedResources = []) {
+  return {
+    ...scenario,
+    difficulty: normalizeWorkbenchDifficulty(scenario.difficulty),
+    featured: scenario.featured === true,
+    groupKey,
+    groupLabel: WORKBENCH_GROUP_LABELS[groupKey] || groupKey,
+    relatedResources: sanitizeResourceKeys(relatedResources),
+    scope,
+    tags: sanitizeScenarioTags(scenario.tags),
+  };
+}
+
+function formatWorkbenchDifficulty(difficulty) {
+  switch (normalizeWorkbenchDifficulty(difficulty)) {
+    case "starter":
+      return "Starter";
+    case "advanced":
+      return "Advanced";
+    default:
+      return "Intermediate";
+  }
 }
 
 function buildCompareWorkbenchDocsPath(scenario) {
@@ -73,10 +129,14 @@ function parseCompareWorkbenchScenarios(document) {
       pathResources: sanitizeResourceKeys(scenario.pathResources),
       resource,
     };
+    const scopedScenario = enrichWorkbenchScenario(parsedScenario, "compare", resource, [
+      resource,
+      ...parsedScenario.pathResources,
+    ]);
 
     return {
-      ...parsedScenario,
-      docsPath: buildCompareWorkbenchDocsPath(parsedScenario),
+      ...scopedScenario,
+      docsPath: buildCompareWorkbenchDocsPath(scopedScenario),
     };
   });
 }
@@ -90,18 +150,20 @@ function parseGraphWorkbenchScenarios(document) {
       backlinks: readOptionalBooleanParam(url.searchParams, "backlinks"),
       depth: readOptionalParam(url.searchParams, "depth", "2"),
       identifier: readOptionalParam(url.searchParams, "identifier"),
-      limitPerRelation: readOptionalParam(
-        url.searchParams,
-        "limitPerRelation",
-        "4",
-      ),
+      limitPerRelation: readOptionalParam(url.searchParams, "limitPerRelation", "4"),
       resource: readOptionalParam(url.searchParams, "resource"),
       resourceFilterKeys: parseCsvParam(url.searchParams.get("resources")),
     };
+    const scopedScenario = enrichWorkbenchScenario(
+      parsedScenario,
+      "graph",
+      parsedScenario.resource,
+      [parsedScenario.resource, ...parsedScenario.resourceFilterKeys]
+    );
 
     return {
-      ...parsedScenario,
-      docsPath: buildGraphWorkbenchDocsPath(parsedScenario),
+      ...scopedScenario,
+      docsPath: buildGraphWorkbenchDocsPath(scopedScenario),
     };
   });
 }
@@ -115,21 +177,112 @@ function parsePathWorkbenchScenarios(document) {
       backlinks: readOptionalBooleanParam(url.searchParams, "backlinks"),
       fromIdentifier: readOptionalParam(url.searchParams, "fromIdentifier"),
       fromResource: readOptionalParam(url.searchParams, "fromResource"),
-      limitPerRelation: readOptionalParam(
-        url.searchParams,
-        "limitPerRelation",
-        "6",
-      ),
+      limitPerRelation: readOptionalParam(url.searchParams, "limitPerRelation", "6"),
       maxDepth: readOptionalParam(url.searchParams, "maxDepth", "4"),
       resourceFilterKeys: parseCsvParam(url.searchParams.get("resources")),
       toIdentifier: readOptionalParam(url.searchParams, "toIdentifier"),
       toResource: readOptionalParam(url.searchParams, "toResource"),
     };
+    const scopedScenario = enrichWorkbenchScenario(
+      parsedScenario,
+      "path",
+      `${parsedScenario.fromResource} -> ${parsedScenario.toResource}`,
+      [parsedScenario.fromResource, parsedScenario.toResource, ...parsedScenario.resourceFilterKeys]
+    );
 
     return {
-      ...parsedScenario,
-      docsPath: buildPathWorkbenchDocsPath(parsedScenario),
+      ...scopedScenario,
+      docsPath: buildPathWorkbenchDocsPath(scopedScenario),
     };
+  });
+}
+
+function sortWorkbenchScenarios(scenarios = []) {
+  return [...scenarios].sort((left, right) => {
+    if (left.featured !== right.featured) {
+      return left.featured ? -1 : 1;
+    }
+
+    const difficultyDelta =
+      (WORKBENCH_DIFFICULTY_ORDER[left.difficulty] ?? 99) -
+      (WORKBENCH_DIFFICULTY_ORDER[right.difficulty] ?? 99);
+
+    if (difficultyDelta !== 0) {
+      return difficultyDelta;
+    }
+
+    const groupDelta =
+      (WORKBENCH_GROUP_ORDER[left.groupKey] ?? 99) - (WORKBENCH_GROUP_ORDER[right.groupKey] ?? 99);
+
+    if (groupDelta !== 0) {
+      return groupDelta;
+    }
+
+    return left.label.localeCompare(right.label);
+  });
+}
+
+function parseWorkbenchScenarios(document) {
+  return sortWorkbenchScenarios([
+    ...parseCompareWorkbenchScenarios(document),
+    ...parseGraphWorkbenchScenarios(document),
+    ...parsePathWorkbenchScenarios(document),
+  ]);
+}
+
+function selectWorkbenchScenarios(scenarios, options = {}) {
+  const {
+    difficulty,
+    featuredOnly = false,
+    groupLimit = Number.POSITIVE_INFINITY,
+    groups,
+    limit = Number.POSITIVE_INFINITY,
+    resources,
+    tags,
+  } = options;
+  const allowedDifficulties = new Set(
+    normalizeWorkbenchValues(difficulty).map((value) => normalizeWorkbenchDifficulty(value))
+  );
+  const allowedGroups = new Set(normalizeWorkbenchValues(groups));
+  const allowedResources = new Set(sanitizeResourceKeys(normalizeWorkbenchValues(resources)));
+  const allowedTags = new Set(sanitizeScenarioTags(normalizeWorkbenchValues(tags)));
+  const selectedByGroup = {};
+
+  return sortWorkbenchScenarios(scenarios).filter((scenario) => {
+    if (featuredOnly && !scenario.featured) {
+      return false;
+    }
+
+    if (allowedDifficulties.size && !allowedDifficulties.has(scenario.difficulty)) {
+      return false;
+    }
+
+    if (allowedGroups.size && !allowedGroups.has(scenario.groupKey)) {
+      return false;
+    }
+
+    if (
+      allowedResources.size &&
+      !scenario.relatedResources.some((resource) => allowedResources.has(resource))
+    ) {
+      return false;
+    }
+
+    if (allowedTags.size && !scenario.tags.some((tag) => allowedTags.has(tag))) {
+      return false;
+    }
+
+    if ((selectedByGroup[scenario.groupKey] || 0) >= groupLimit) {
+      return false;
+    }
+
+    if (Object.values(selectedByGroup).reduce((sum, count) => sum + count, 0) >= limit) {
+      return false;
+    }
+
+    selectedByGroup[scenario.groupKey] = (selectedByGroup[scenario.groupKey] || 0) + 1;
+
+    return true;
   });
 }
 
@@ -144,7 +297,10 @@ function findWorkbenchScenarioByResource(scenarios, resource) {
 export {
   findWorkbenchScenarioById,
   findWorkbenchScenarioByResource,
+  formatWorkbenchDifficulty,
   parseCompareWorkbenchScenarios,
   parseGraphWorkbenchScenarios,
+  parseWorkbenchScenarios,
   parsePathWorkbenchScenarios,
+  selectWorkbenchScenarios,
 };

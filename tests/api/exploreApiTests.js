@@ -8,7 +8,7 @@ async function runExploreApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4",
+          "/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4"
         );
 
         assert.equal(response.status, 200);
@@ -17,9 +17,7 @@ async function runExploreApiTests(baseUrl) {
         assert.ok(json.meta.edgeCount >= 10);
         assert.ok(json.meta.resourceTypes.includes("factions"));
         assert.ok(json.meta.resourceTypes.includes("characters"));
-        assert.ok(
-          json.data.nodes.some((node) => node.resource === "campaigns"),
-        );
+        assert.ok(json.data.nodes.some((node) => node.resource === "campaigns"));
       },
     },
     {
@@ -27,14 +25,11 @@ async function runExploreApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4&resources=campaigns,characters",
+          "/api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4&resources=campaigns,characters"
         );
 
         assert.equal(response.status, 200);
-        assert.deepEqual(json.meta.requestedResourceTypes, [
-          "campaigns",
-          "characters",
-        ]);
+        assert.deepEqual(json.meta.requestedResourceTypes, ["campaigns", "characters"]);
         assert.deepEqual([...json.meta.resourceTypes].sort(), [
           "campaigns",
           "characters",
@@ -42,8 +37,8 @@ async function runExploreApiTests(baseUrl) {
         ]);
         assert.ok(
           json.data.nodes.every((node) =>
-            ["campaigns", "characters", "factions"].includes(node.resource),
-          ),
+            ["campaigns", "characters", "factions"].includes(node.resource)
+          )
         );
         assert.equal(json.data.root.resource, "factions");
       },
@@ -53,7 +48,7 @@ async function runExploreApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/explore/graph?resource=factions&depth=2",
+          "/api/v1/explore/graph?resource=factions&depth=2"
         );
 
         assert.equal(response.status, 400);
@@ -65,42 +60,35 @@ async function runExploreApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/explore/graph?resource=unknown-resource&identifier=&depth=0&backlinks=maybe&resources=campaigns,unknown-resource",
+          "/api/v1/explore/graph?resource=unknown-resource&identifier=&depth=0&backlinks=maybe&resources=campaigns,unknown-resource"
         );
 
         assert.equal(response.status, 400);
         assert.equal(json.error.code, "VALIDATION_ERROR");
         assert.ok(
           json.error.details.some(
-            (detail) =>
-              detail.field === "resource" && detail.code === "UNKNOWN_RESOURCE",
-          ),
+            (detail) => detail.field === "resource" && detail.code === "UNKNOWN_RESOURCE"
+          )
         );
         assert.ok(
           json.error.details.some(
-            (detail) =>
-              detail.field === "identifier" && detail.code === "REQUIRED",
-          ),
+            (detail) => detail.field === "identifier" && detail.code === "REQUIRED"
+          )
         );
         assert.ok(
           json.error.details.some(
-            (detail) =>
-              detail.field === "depth" &&
-              detail.code === "INVALID_POSITIVE_INTEGER",
-          ),
+            (detail) => detail.field === "depth" && detail.code === "INVALID_POSITIVE_INTEGER"
+          )
         );
         assert.ok(
           json.error.details.some(
-            (detail) =>
-              detail.field === "backlinks" && detail.code === "INVALID_BOOLEAN",
-          ),
+            (detail) => detail.field === "backlinks" && detail.code === "INVALID_BOOLEAN"
+          )
         );
         assert.ok(
           json.error.details.some(
-            (detail) =>
-              detail.field === "resources" &&
-              detail.code === "UNKNOWN_RESOURCE",
-          ),
+            (detail) => detail.field === "resources" && detail.code === "UNKNOWN_RESOURCE"
+          )
         );
       },
     },
@@ -109,7 +97,7 @@ async function runExploreApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=factions",
+          "/api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=factions"
         );
 
         assert.equal(response.status, 200);
@@ -118,13 +106,9 @@ async function runExploreApiTests(baseUrl) {
         assert.deepEqual(json.meta.requestedResourceTypes, ["factions"]);
         assert.deepEqual(
           json.data.path.nodes.map((node) => node.name),
-          ["Emperor's Sword", "Imperium of Man", "Plague Wars"],
+          ["Emperor's Sword", "Imperium of Man", "Plague Wars"]
         );
-        assert.deepEqual([...json.meta.resourceTypes].sort(), [
-          "campaigns",
-          "factions",
-          "relics",
-        ]);
+        assert.deepEqual([...json.meta.resourceTypes].sort(), ["campaigns", "factions", "relics"]);
       },
     },
     {
@@ -132,7 +116,7 @@ async function runExploreApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=organizations",
+          "/api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=organizations"
         );
 
         assert.equal(response.status, 200);
@@ -146,7 +130,7 @@ async function runExploreApiTests(baseUrl) {
       run: async () => {
         const { json, response } = await getJson(
           baseUrl,
-          "/api/v1/explore/path?fromResource=characters&toResource=relics",
+          "/api/v1/explore/path?fromResource=characters&toResource=relics"
         );
 
         assert.equal(response.status, 400);

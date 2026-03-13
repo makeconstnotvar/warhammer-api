@@ -1,7 +1,7 @@
-const { createValidationError } = require('./apiErrors');
+const { createValidationError } = require("./apiErrors");
 
 function isValueMissing(value) {
-  return value === undefined || value === null || String(value).trim() === '';
+  return value === undefined || value === null || String(value).trim() === "";
 }
 
 function createValidationDetail(field, code, message, value, extra = {}) {
@@ -19,7 +19,7 @@ function createValidationDetail(field, code, message, value, extra = {}) {
   return detail;
 }
 
-function throwIfValidationErrors(details, message = 'Invalid query parameters') {
+function throwIfValidationErrors(details, message = "Invalid query parameters") {
   if (details.length) {
     throw createValidationError(message, details);
   }
@@ -27,20 +27,15 @@ function throwIfValidationErrors(details, message = 'Invalid query parameters') 
 
 function parseRequiredString(value, field, details) {
   if (isValueMissing(value)) {
-    details.push(createValidationDetail(field, 'REQUIRED', `Parameter "${field}" is required`));
-    return '';
+    details.push(createValidationDetail(field, "REQUIRED", `Parameter "${field}" is required`));
+    return "";
   }
 
   return String(value).trim();
 }
 
 function parseOptionalPositiveInt(value, options) {
-  const {
-    defaultValue,
-    details,
-    field,
-    maxValue,
-  } = options;
+  const { defaultValue, details, field, maxValue } = options;
 
   if (value === undefined || value === null) {
     return defaultValue;
@@ -52,10 +47,10 @@ function parseOptionalPositiveInt(value, options) {
     details.push(
       createValidationDetail(
         field,
-        'INVALID_POSITIVE_INTEGER',
+        "INVALID_POSITIVE_INTEGER",
         `Parameter "${field}" must be a positive integer`,
-        value,
-      ),
+        value
+      )
     );
     return defaultValue;
   }
@@ -66,10 +61,10 @@ function parseOptionalPositiveInt(value, options) {
     details.push(
       createValidationDetail(
         field,
-        'INVALID_POSITIVE_INTEGER',
+        "INVALID_POSITIVE_INTEGER",
         `Parameter "${field}" must be a positive integer`,
-        value,
-      ),
+        value
+      )
     );
     return defaultValue;
   }
@@ -88,21 +83,21 @@ function parseOptionalBoolean(value, field, defaultValue, details) {
 
   const normalized = String(value).trim().toLowerCase();
 
-  if (normalized === 'true') {
+  if (normalized === "true") {
     return true;
   }
 
-  if (normalized === 'false') {
+  if (normalized === "false") {
     return false;
   }
 
   details.push(
     createValidationDetail(
       field,
-      'INVALID_BOOLEAN',
+      "INVALID_BOOLEAN",
       `Parameter "${field}" must be "true" or "false"`,
-      value,
-    ),
+      value
+    )
   );
 
   return defaultValue;
