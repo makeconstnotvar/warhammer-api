@@ -89,6 +89,33 @@ async function runDomainApiTests(baseUrl) {
       },
     },
     {
+      name: "legacy openapi endpoint publishes deprecated CRUD contract",
+      run: async () => {
+        const { json, response } = await getJson(baseUrl, "/api/openapi.json");
+
+        assert.equal(response.status, 200);
+        assert.equal(json.openapi, "3.1.0");
+        assert.match(json.info.title, /Legacy CRUD API/i);
+        assert.ok(json.paths["/api/openapi.json"]);
+        assert.ok(json.paths["/api/factions"]);
+        assert.ok(json.paths["/api/factions/{id}"]);
+        assert.ok(json.paths["/api/characters"]);
+        assert.ok(json.paths["/api/races/{id}"]);
+        assert.equal(json.paths["/api/factions"].get.deprecated, true);
+        assert.equal(json.paths["/api/factions"].get["x-replacement"], "/api/v1/factions");
+        assert.ok(
+          json.paths["/api/characters"].get.parameters.some(
+            (parameter) => parameter.$ref === "#/components/parameters/LegacyFactionIdFilter"
+          )
+        );
+        assert.equal(json.components.headers.Deprecation.example, "@1772841600");
+        assert.equal(json.components.headers.Sunset.example, "Wed, 30 Sep 2026 23:59:59 GMT");
+        assert.ok(json.components.schemas.LegacyFactionResource);
+        assert.ok(json.components.schemas.LegacyCharacterWritePayload);
+        assert.ok(json.components.schemas.LegacyStringErrorResponse);
+      },
+    },
+    {
       name: "openapi reference page serves local swagger ui shell",
       run: async () => {
         const response = await fetch(`${baseUrl}/openapi/reference`);
@@ -99,6 +126,19 @@ async function runDomainApiTests(baseUrl) {
         assert.match(html, /swagger-ui-bundle\.js/);
         assert.match(html, /\/api\/v1\/openapi\.json/);
         assert.match(html, /OpenAPI Reference/i);
+      },
+    },
+    {
+      name: "legacy reference page serves local swagger ui shell",
+      run: async () => {
+        const response = await fetch(`${baseUrl}/legacy/reference`);
+        const html = await response.text();
+
+        assert.equal(response.status, 200);
+        assert.match(response.headers.get("content-type") || "", /text\/html/i);
+        assert.match(html, /swagger-ui-bundle\.js/);
+        assert.match(html, /\/api\/openapi\.json/);
+        assert.match(html, /Legacy API Reference/i);
       },
     },
     {

@@ -29,6 +29,7 @@ const docsApi = {
     unwrap(client.get(`/${resource}/${idOrSlug}`, { params })),
   getQueryGuide: () => unwrap(client.get("/query-guide")),
   getOpenApiSpec: () => unwrap(client.get("/openapi.json")),
+  getLegacyOpenApiSpec: () => unwrap(axios.get("/api/openapi.json")),
   getChangelog: () => unwrap(client.get("/changelog")),
   getDeprecationPolicy: () => unwrap(client.get("/deprecation-policy")),
   getConcurrencyExample: () => unwrap(client.get("/examples/concurrency")),

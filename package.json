@@ -10,6 +10,15 @@
     "type": "git",
     "url": "git+https://github.com/makeconstnotvar/warhammer-api.git"
   },
+  "exports": {
+    "./package.json": "./package.json",
+    "./sdk": {
+      "types": "./sdk/warhammerApiV1Client.d.ts",
+      "import": "./sdk/warhammerApiV1Client.mjs"
+    },
+    "./sdk/module": "./sdk/warhammerApiV1Client.mjs",
+    "./sdk/types": "./sdk/warhammerApiV1Client.d.ts"
+  },
   "license": "ISC",
   "author": "",
   "main": "index.js",
@@ -31,19 +40,19 @@
     "db:setup": "npm run db:migrate && npm run db:seed"
   },
   "dependencies": {
-    "axios": "^1.8.4",
+    "axios": "^1.13.6",
     "bootstrap": "^5.3.5",
     "cors": "^2.8.5",
     "css-loader": "^7.1.2",
     "dotenv": "^16.4.7",
-    "express": "^5.0.1",
+    "express": "^5.2.1",
     "helmet": "^8.1.0",
-    "morgan": "^1.10.0",
+    "morgan": "^1.10.1",
     "pg": "^8.14.1",
     "preact-iso": "^2.9.1",
     "preact-render-to-string": "^6.6.6",
     "query-core": "^0.2.2",
-    "sass": "^1.86.3",
+    "sass": "^1.98.0",
     "sass-loader": "^16.0.5",
     "style-loader": "^4.0.0",
     "swagger-ui-dist": "^5.17.14"
@@ -55,7 +64,7 @@
     "@babel/plugin-proposal-decorators": "^7.25.9",
     "@babel/preset-env": "^7.26.9",
     "@babel/preset-react": "^7.26.3",
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "^9.39.4",
     "babel-loader": "^10.0.0",
     "css-loader": "^7.1.2",
     "eslint": "^9.39.4",
@@ -68,9 +77,9 @@
     "preact": "^10.26.4",
     "prettier": "^3.8.1",
     "style-loader": "^4.0.0",
-    "webpack": "^5.98.0",
+    "webpack": "^5.105.4",
     "webpack-bundle-analyzer": "^4.10.2",
     "webpack-cli": "^6.0.1",
-    "webpack-dev-server": "^5.2.1"
+    "webpack-dev-server": "^5.2.3"
   }
 }

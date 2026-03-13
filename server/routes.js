@@ -2,9 +2,14 @@ const express = require("express");
 const { factionHandler } = require("./handlers/factionHandler");
 const { characterHandler } = require("./handlers/characterHandler");
 const { raceHandler } = require("./handlers/raceHandler");
+const { buildLegacyOpenApiSpec } = require("./content/legacyOpenApiSpec");
 
 // Фракции
 const apiRoutes = express.Router();
+
+apiRoutes.get("/openapi.json", (req, res) => {
+  res.json(buildLegacyOpenApiSpec());
+});
 
 apiRoutes.get("/factions", factionHandler.getAll);
 apiRoutes.post("/factions", factionHandler.create);

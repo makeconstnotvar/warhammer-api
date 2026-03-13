@@ -42,10 +42,13 @@
 - Added generated ESM SDK workflow:
   - `scripts/generateSdk.js`
   - committed artifact `sdk/warhammerApiV1Client.mjs`
+  - committed type declarations `sdk/warhammerApiV1Client.d.ts`
   - `npm run sdk:generate`
   - `npm run sdk:check`
   - static runtime delivery at `/sdk/warhammerApiV1Client.mjs`
+  - static typed delivery at `/sdk/warhammerApiV1Client.d.ts`
   - integration tests that call live API through the generated client
+  - package export subpath `warhammer-api/sdk`
 - Added delivery tooling baseline:
   - `eslint.config.js`
   - `.prettierrc.json` + `.prettierignore`
@@ -99,14 +102,22 @@
   - OpenAPI spec includes `/api/v1/examples/workbench`
   - includes `WorkbenchScenariosResponse`
   - now has explicit schemas for graph/path/stats/included payloads
+- `server/content/legacyOpenApiSpec.js`
+  - standalone OpenAPI 3.1 builder for deprecated `/api`
+  - documents read migration targets, legacy write posture and deprecation headers
 - `server/app.js`
   - now serves `/openapi/reference`
+  - now also serves `/legacy/reference`
   - exposes local Swagger UI static assets
   - now also serves `/sdk/*`
 - `scripts/generateSdk.js`
-  - builds the generated ESM client from the current OpenAPI spec
+  - builds the generated ESM client and `.d.ts` declarations from the current OpenAPI spec
 - `sdk/warhammerApiV1Client.mjs`
   - generated runtime client with `createWarhammerApiClient`, `operations`, `WarhammerApiError`
+- `sdk/warhammerApiV1Client.d.ts`
+  - generated typed surface for operation ids, options, responses and client methods
+- `sdk/README.md`
+  - short consumer-facing examples for generated SDK usage
 
 ### Client
 
@@ -152,9 +163,15 @@
   - hero panel now links directly into list/detail/workbench flows
 - `client/pages/OpenApiPage.jsx`
   - links to the local interactive reference viewer
-  - now also links to the generated SDK module and shows direct usage snippet
+  - now also links to the generated SDK module, its `.d.ts` pair and shows direct usage snippet
+  - now also shows package-style import example via `warhammer-api/sdk`
+- `client/pages/LegacyApiPage.jsx`
+  - dedicated docs page for deprecated `/api`
+  - loads `/api/openapi.json` plus deprecation policy
+  - shows legacy surface summary, migration targets and raw spec
 - `client/components/Menu.jsx`
   - now links to `/openapi/reference`
+  - now also links to `/legacy-api`
 - `eslint.config.js`
   - ESLint flat config for client/server/tests with Babel parser and JSX handling
 - `.github/workflows/ci.yml`
@@ -168,7 +185,7 @@
 - `tests/client/workbenchPivotsTests.js`
   - verifies generated hrefs for entity/stats/resource hero actions and scenario selection
 - `tests/client/generatedSdkTests.js`
-  - verifies static SDK delivery, generated operations metadata, query serialization and error handling
+  - verifies static `.mjs`/`.d.ts` SDK delivery, package export import path, generated operations metadata, query serialization and error handling
 - `client/pages/Playground.jsx`
   - contract-driven operation guide + live snippets
 - `client/pages/ResourcePage.jsx`
@@ -180,6 +197,7 @@
 
 - `tests/api/domainApiTests.js`
   - coverage for workbench endpoint and overview metadata
+  - now also covers `/api/openapi.json` and `/legacy/reference`
 - `tests/api/compareStatsApiTests.js`
   - compare behavior and sparse fieldset coverage
 - `README.md`
@@ -220,21 +238,40 @@
   - `npm run sdk:check` passes
   - `npm run verify` passes
   - `/sdk/warhammerApiV1Client.mjs` is served by Express and covered by tests
+  - `/sdk/warhammerApiV1Client.d.ts` is served by Express and covered by tests
   - generated client works with both host-only `baseUrl` and `.../api/v1` baseUrl
+- Verified after the dependency hardening cycle:
+  - `npm audit` returns `0 vulnerabilities`
+  - direct updates landed for `axios`, `express`, `morgan`, `webpack`, `webpack-dev-server`, `sass`
+  - `@eslint/js` now matches ESLint 9 and `npm ls` no longer reports that mismatch
+- Verified after the SDK export cycle:
+  - package subpath import `warhammer-api/sdk` resolves correctly in tests
+  - `npm run verify` still passes after adding package exports
+- Added legacy contract documentation parity:
+  - machine-readable deprecated CRUD spec at `/api/openapi.json`
+  - dedicated local Swagger UI shell at `/legacy/reference`
+  - docs page `/legacy-api`
+  - integration coverage for legacy spec + reference routes
+  - OpenAPI docs page now links to both primary `/api/v1` and legacy `/api` contracts
+- Verified after the legacy contract parity cycle:
+  - `npm run lint` passes
+  - `npm run build-dev` passes
+  - `npm test` passes
+  - `/api/openapi.json` is served and covered by tests
+  - `/legacy/reference` is served and covered by tests
 - After the DB config fix:
   - config can be required without preloading dotenv elsewhere
   - existing running server must be restarted to pick up the new config code
 
 ## Known Non-Blocking Issues
 
-- npm audit still reports 17 vulnerabilities after dependency updates
 - repo now has a formatting baseline, so future diffs should avoid ad hoc style churn and stick to `npm run format`
 
 ## Best Next Steps
 
 1. If runtime issues continue after restart, re-check effective DB env values loaded from `server/.env` and confirm the server was actually restarted after the `server/config.js` fix.
-2. The previous docs-first wave is effectively complete; the next product expansion can move to legacy `/api` parity docs, route-specific rate limits, or SDK type declarations/examples beyond the current ESM client.
-3. If delivery hardening continues, the next logical layer is vulnerability cleanup, optional lint rule tightening, and branch protection wired to the new CI workflow.
+2. The previous docs-first wave is effectively complete; the next product expansion can move from legacy docs parity to runtime parity for legacy `/api` errors and write behavior, route-specific rate limits, or stronger SDK ergonomics such as package publishing.
+3. If delivery hardening continues, the next logical layer is optional lint rule tightening, branch protection wired to the new CI workflow, and package publishing strategy for the generated SDK.
 
 ## Resume Notes
 

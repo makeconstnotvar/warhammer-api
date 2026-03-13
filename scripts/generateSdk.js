@@ -3,7 +3,8 @@ const path = require("node:path");
 const prettier = require("prettier");
 const { getOpenApiSpec } = require("../server/content/contentApi");
 
-const OUTPUT_PATH = path.resolve(__dirname, "../sdk/warhammerApiV1Client.mjs");
+const OUTPUT_MODULE_PATH = path.resolve(__dirname, "../sdk/warhammerApiV1Client.mjs");
+const OUTPUT_TYPES_PATH = path.resolve(__dirname, "../sdk/warhammerApiV1Client.d.ts");
 const HTTP_METHODS = new Set(["get", "post", "put", "patch", "delete"]);
 const CHECK_MODE = process.argv.includes("--check");
 
@@ -22,6 +23,10 @@ function resolveRef(spec, ref) {
 
       return current[part];
     }, spec);
+}
+
+function getRefName(ref) {
+  return ref.split("/").at(-1);
 }
 
 function resolveParameter(spec, parameter) {
@@ -45,6 +50,10 @@ function normalizeParameter(parameter) {
   };
 }
 
+function getSuccessResponseSchema(operation) {
+  return operation.responses?.["200"]?.content?.["application/json"]?.schema || null;
+}
+
 function buildOperations(spec) {
   return Object.entries(spec.paths)
     .flatMap(([pathKey, pathItem]) =>
@@ -61,6 +70,7 @@ function buildOperations(spec) {
             path: pathKey,
             pathParameters: parameters.filter((parameter) => parameter.in !== "query"),
             queryParameters: parameters.filter((parameter) => parameter.in === "query"),
+            responseSchema: getSuccessResponseSchema(operation),
             summary: operation.summary || "",
             tags: operation.tags || [],
           };
@@ -240,13 +250,16 @@ async function requestOperation({
   const headers = Object.fromEntries(response.headers.entries());
 
   if (!response.ok) {
-    throw new WarhammerApiError(data?.error?.message || \`Request failed with status \${response.status}\`, {
-      data,
-      headers,
-      operation,
-      status: response.status,
-      url,
-    });
+    throw new WarhammerApiError(
+      data?.error?.message || \`Request failed with status \${response.status}\`,
+      {
+        data,
+        headers,
+        operation,
+        status: response.status,
+        url,
+      }
+    );
   }
 
   return {
@@ -281,6 +294,356 @@ export { WarhammerApiError, buildUrl, createWarhammerApiClient, operations };
 `;
 }
 
+function toPascalCase(value) {
+  return String(value)
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .split(/[^A-Za-z0-9]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
+}
+
+function quoteProperty(name) {
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) ? name : JSON.stringify(name);
+}
+
+function literalType(value) {
+  if (value === null) {
+    return "null";
+  }
+
+  return JSON.stringify(value);
+}
+
+function uniqueTypes(types) {
+  return [...new Set(types.filter(Boolean))];
+}
+
+function schemaToTs(schema) {
+  if (!schema) {
+    return "unknown";
+  }
+
+  if (schema.$ref) {
+    return getRefName(schema.$ref);
+  }
+
+  if (schema.oneOf) {
+    return uniqueTypes(schema.oneOf.map((entry) => schemaToTs(entry))).join(" | ");
+  }
+
+  if (schema.anyOf) {
+    return uniqueTypes(schema.anyOf.map((entry) => schemaToTs(entry))).join(" | ");
+  }
+
+  if (schema.allOf) {
+    return uniqueTypes(schema.allOf.map((entry) => schemaToTs(entry))).join(" & ");
+  }
+
+  if (schema.enum) {
+    return uniqueTypes(schema.enum.map((value) => literalType(value))).join(" | ");
+  }
+
+  if (Array.isArray(schema.type)) {
+    return uniqueTypes(schema.type.map((type) => schemaToTs({ ...schema, type }))).join(" | ");
+  }
+
+  if (schema.type === "array" || schema.items) {
+    return `Array<${schemaToTs(schema.items || {})}>`;
+  }
+
+  if (schema.type === "object" || schema.properties || schema.additionalProperties !== undefined) {
+    return objectSchemaToTs(schema);
+  }
+
+  switch (schema.type) {
+    case "boolean":
+      return "boolean";
+    case "integer":
+    case "number":
+      return "number";
+    case "null":
+      return "null";
+    case "string":
+      return "string";
+    default:
+      return "unknown";
+  }
+}
+
+function objectSchemaToTs(schema) {
+  const properties = Object.entries(schema.properties || {});
+  const required = new Set(schema.required || []);
+
+  if (!properties.length) {
+    if (schema.additionalProperties === false) {
+      return "Record<string, never>";
+    }
+
+    if (schema.additionalProperties && schema.additionalProperties !== true) {
+      return `Record<string, ${schemaToTs(schema.additionalProperties)}>`;
+    }
+
+    return "Record<string, unknown>";
+  }
+
+  const lines = properties.map(([name, propertySchema]) => {
+    const optional = required.has(name) ? "" : "?";
+    return `${quoteProperty(name)}${optional}: ${schemaToTs(propertySchema)};`;
+  });
+
+  if (schema.additionalProperties && schema.additionalProperties !== false) {
+    lines.push(
+      `[key: string]: ${
+        schema.additionalProperties === true ? "unknown" : schemaToTs(schema.additionalProperties)
+      };`
+    );
+  }
+
+  return `{
+${lines.map((line) => `  ${line}`).join("\n")}
+}`;
+}
+
+function isCsvParameter(parameter) {
+  return parameter.in === "query" && /Comma-separated/i.test(parameter.description || "");
+}
+
+function parameterToTs(parameter) {
+  if (parameter.style === "deepObject") {
+    return "WarhammerDeepQueryObject";
+  }
+
+  const schema = parameter.schema || {};
+  const baseType = schemaToTs(schema);
+
+  if (isCsvParameter(parameter) && schema.type === "string" && !schema.enum) {
+    return "string | readonly string[]";
+  }
+
+  return baseType;
+}
+
+function hasRequiredOperationInputs(operation) {
+  return (
+    operation.pathParameters.some((parameter) => parameter.required) ||
+    operation.queryParameters.some((parameter) => parameter.required)
+  );
+}
+
+function buildQueryInterface(operation) {
+  const interfaceName = `${toPascalCase(operation.operationId)}Query`;
+
+  if (!operation.queryParameters.length) {
+    return {
+      interfaceName,
+      source: `export interface ${interfaceName} {}\n`,
+    };
+  }
+
+  const lines = operation.queryParameters.map((parameter) => {
+    const optional = parameter.required ? "" : "?";
+    return `  ${quoteProperty(parameter.name)}${optional}: ${parameterToTs(parameter)};`;
+  });
+
+  return {
+    interfaceName,
+    source: `export interface ${interfaceName} {\n${lines.join("\n")}\n}\n`,
+  };
+}
+
+function buildOptionsInterface(operation, queryInterfaceName) {
+  const interfaceName = `${toPascalCase(operation.operationId)}Options`;
+  const lines = operation.pathParameters.map(
+    (parameter) => `  ${quoteProperty(parameter.name)}: ${parameterToTs(parameter)};`
+  );
+
+  lines.push(
+    `  query${operation.queryParameters.some((parameter) => parameter.required) ? "" : "?"}: ${queryInterfaceName};`
+  );
+  lines.push("  init?: WarhammerRequestInit;");
+
+  return {
+    interfaceName,
+    source: `export interface ${interfaceName} {\n${lines.join("\n")}\n}\n`,
+  };
+}
+
+function buildResponseType(operation) {
+  const typeName = `${toPascalCase(operation.operationId)}ResponseBody`;
+  const bodyType = operation.responseSchema ? schemaToTs(operation.responseSchema) : "unknown";
+
+  return {
+    typeName,
+    source: `export type ${typeName} = ${bodyType};\n`,
+  };
+}
+
+function buildSdkTypesSource(spec, operations) {
+  const schemaTypes = Object.entries(spec.components.schemas)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([name, schema]) => `export type ${name} = ${schemaToTs(schema)};\n`)
+    .join("\n");
+
+  const queryInterfaces = [];
+  const optionsInterfaces = [];
+  const responseTypes = [];
+  const operationMapLines = [];
+  const responseMapLines = [];
+  const operationsMapLines = [];
+  const clientMethodLines = [];
+
+  operations.forEach((operation) => {
+    const queryInterface = buildQueryInterface(operation);
+    const optionsInterface = buildOptionsInterface(operation, queryInterface.interfaceName);
+    const responseType = buildResponseType(operation);
+    const optionsParameter = hasRequiredOperationInputs(operation)
+      ? `options: ${optionsInterface.interfaceName}`
+      : `options?: ${optionsInterface.interfaceName}`;
+
+    queryInterfaces.push(queryInterface.source);
+    optionsInterfaces.push(optionsInterface.source);
+    responseTypes.push(responseType.source);
+    operationMapLines.push(`  ${operation.operationId}: ${optionsInterface.interfaceName};`);
+    responseMapLines.push(`  ${operation.operationId}: ${responseType.typeName};`);
+    operationsMapLines.push(`  ${operation.operationId}: WarhammerOperationDefinition;`);
+    clientMethodLines.push(
+      `  ${operation.operationId}(${optionsParameter}): Promise<WarhammerApiResponse<${responseType.typeName}>>;`
+    );
+  });
+
+  const operationIds = operations
+    .map((operation) => JSON.stringify(operation.operationId))
+    .join(" | ");
+
+  return `/**
+ * Generated from /api/v1/openapi.json via scripts/generateSdk.js.
+ * Do not edit manually.
+ */
+
+export type WarhammerOperationId = ${operationIds};
+export type WarhammerHttpMethod = "DELETE" | "GET" | "PATCH" | "POST" | "PUT";
+export type WarhammerScalar = string | number | boolean;
+export type WarhammerQueryObjectValue =
+  | WarhammerScalar
+  | readonly WarhammerScalar[]
+  | null
+  | undefined;
+export type WarhammerDeepQueryObject = Record<string, WarhammerQueryObjectValue>;
+
+export interface WarhammerHeadersLike {
+  entries(): IterableIterator<[string, string]>;
+  get(name: string): string | null;
+}
+
+export interface WarhammerResponseLike {
+  headers: WarhammerHeadersLike;
+  json(): Promise<unknown>;
+  ok: boolean;
+  status: number;
+  text(): Promise<string>;
+}
+
+export interface WarhammerRequestInit {
+  body?: unknown;
+  headers?: Record<string, string> | Array<[string, string]>;
+  method?: string;
+  [key: string]: unknown;
+}
+
+export type WarhammerFetchLike = (
+  input: string,
+  init?: WarhammerRequestInit
+) => Promise<WarhammerResponseLike>;
+
+export interface WarhammerOperationParameterDefinition {
+  description: string;
+  example?: unknown;
+  explode: boolean;
+  in: "path" | "query";
+  name: string;
+  required: boolean;
+  schema: unknown;
+  style: string;
+}
+
+export interface WarhammerOperationDefinition {
+  method: WarhammerHttpMethod;
+  path: string;
+  pathParameters: readonly WarhammerOperationParameterDefinition[];
+  queryParameters: readonly WarhammerOperationParameterDefinition[];
+  summary: string;
+  tags: readonly string[];
+}
+
+export interface WarhammerApiResponse<TData = unknown> {
+  data: TData;
+  headers: Record<string, string>;
+  operation: WarhammerOperationDefinition;
+  status: number;
+  url: string;
+}
+
+export declare class WarhammerApiError<TData = unknown> extends Error {
+  constructor(
+    message: string,
+    details?: Partial<WarhammerApiResponse<TData>> & {
+      data?: TData;
+    }
+  );
+
+  data: TData;
+  headers: Record<string, string>;
+  operation: WarhammerOperationDefinition | null;
+  status: number;
+  url: string;
+}
+
+${schemaTypes}
+
+${responseTypes.join("\n")}
+
+${queryInterfaces.join("\n")}
+
+${optionsInterfaces.join("\n")}
+
+export interface WarhammerOperationOptionsMap {
+${operationMapLines.join("\n")}
+}
+
+export interface WarhammerOperationResponseMap {
+${responseMapLines.join("\n")}
+}
+
+export interface WarhammerOperationsMap {
+${operationsMapLines.join("\n")}
+}
+
+export interface WarhammerApiClient {
+  operations: WarhammerOperationsMap;
+  request<TOperationId extends WarhammerOperationId>(
+    operationId: TOperationId,
+    options?: WarhammerOperationOptionsMap[TOperationId]
+  ): Promise<WarhammerApiResponse<WarhammerOperationResponseMap[TOperationId]>>;
+${clientMethodLines.join("\n")}
+}
+
+export declare const operations: WarhammerOperationsMap;
+
+export declare function buildUrl(
+  baseUrl: string,
+  pathTemplate: string,
+  pathParams?: Record<string, unknown>,
+  query?: Record<string, unknown>
+): string;
+
+export declare function createWarhammerApiClient(options?: {
+  baseUrl?: string;
+  fetchImpl?: WarhammerFetchLike;
+}): WarhammerApiClient;
+`;
+}
+
 async function writeFileIfNeeded(filePath, contents) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
 
@@ -309,18 +672,23 @@ async function writeFileIfNeeded(filePath, contents) {
   console.log(`Generated ${path.relative(process.cwd(), filePath)}`);
 }
 
-async function main() {
-  const spec = getOpenApiSpec();
-  const operations = buildOperations(spec);
-  const source = buildSdkSource(spec, operations);
-  const formatted = await prettier.format(source, {
-    parser: "babel",
+async function buildOutput(filePath, parser, contents) {
+  const formatted = await prettier.format(contents, {
+    parser,
     printWidth: 100,
     singleQuote: false,
     trailingComma: "es5",
   });
 
-  await writeFileIfNeeded(OUTPUT_PATH, formatted);
+  await writeFileIfNeeded(filePath, formatted);
+}
+
+async function main() {
+  const spec = getOpenApiSpec();
+  const operations = buildOperations(spec);
+
+  await buildOutput(OUTPUT_MODULE_PATH, "babel", buildSdkSource(spec, operations));
+  await buildOutput(OUTPUT_TYPES_PATH, "typescript", buildSdkTypesSource(spec, operations));
 
   if (CHECK_MODE && process.exitCode) {
     process.exit(process.exitCode);

@@ -9,7 +9,7 @@
 
 - клиент-документация на Preact
 - `api/v1` с `overview`, `catalog/resources`, `query-guide`, `openapi.json`, `search`, `explore/graph`, `explore/path`, `examples/concurrency`, `examples/workbench`
-- docs-клиент со страницами `Quick Start`, `Resources`, `Query Guide`, `OpenAPI`, `Changelog`, `Deprecation Policy`, `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Concurrency`
+- docs-клиент со страницами `Quick Start`, `Resources`, `Query Guide`, `OpenAPI`, `Legacy API`, `Changelog`, `Deprecation Policy`, `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Concurrency`
 - каноническая схема PostgreSQL для `eras`, `races`, `planets`, `factions`, `characters`, `events`
 - домен расширен ресурсами `organizations`, `relics`, `campaigns`, `star-systems`, `battlefields`, `fleets`, `warp-routes`
 - seed-набор данных по известным сущностям Warhammer 40k
@@ -25,7 +25,12 @@
 - `Compare`, `Graph`, `Path` и `Playground` теперь показывают operation contract и live `curl` / `fetch` / `axios` snippets из текущего request path
 - `Compare`, `Graph` и `Path` теперь также читают placeholders и numeric option ranges из OpenAPI examples/defaults, а не держат их вручную в UI
 - `OpenAPI` теперь имеет локальный interactive reference viewer на `/openapi/reference`
-- рядом со spec теперь есть generated ESM SDK на `/sdk/warhammerApiV1Client.mjs`, который собирается из того же OpenAPI-контракта
+- deprecated `/api` теперь тоже имеет отдельный machine-readable contract на `/api/openapi.json` и локальный reference viewer на `/legacy/reference`
+- рядом со spec теперь есть generated SDK pair:
+  - `/sdk/warhammerApiV1Client.mjs`
+  - `/sdk/warhammerApiV1Client.d.ts`
+    оба файла собираются из того же OpenAPI-контракта
+  - package subpath export `warhammer-api/sdk` теперь резолвится в тот же generated client pair
 - OpenAPI schemas для `included`, `graph`, `path` и `stats` теперь описаны точнее и больше не держатся на generic `object`
 - в репозитории теперь есть рабочий quality/delivery слой: `ESLint`, `Prettier`, `npm run verify`, GitHub Actions CI и release checklist
 - `Compare`, `Graph` и `Path` теперь получают preset-сценарии из server docs endpoint-а `/api/v1/examples/workbench`, а не из локальных констант в клиенте
@@ -67,8 +72,8 @@ npm run client-watch
 - `npm run lint:fix` - автоматически исправить безопасные lint-проблемы
 - `npm run format` - отформатировать репозиторий через Prettier
 - `npm run format:check` - проверить форматирование без изменений
-- `npm run sdk:generate` - пересобрать generated ESM SDK из `/api/v1/openapi.json`
-- `npm run sdk:check` - проверить, что committed SDK синхронизирован с текущим spec
+- `npm run sdk:generate` - пересобрать generated SDK (`.mjs` + `.d.ts`) из `/api/v1/openapi.json`
+- `npm run sdk:check` - проверить, что committed SDK-артефакты синхронизированы с текущим spec
 - `npm run build-dev` - собрать клиент
 - `npm test` - прогнать integration tests для `api/v1` и lightweight client-helper tests для docs pivot links
 - `npm run verify` - полный локальный quality gate: lint + format check + sdk check + build + test
@@ -79,6 +84,7 @@ CI:
 
 - GitHub Actions workflow `.github/workflows/ci.yml` поднимает PostgreSQL 16, выполняет `npm run db:setup`, затем `npm run verify`
 - релизный ручной smoke-checklist лежит в `RELEASE_CHECKLIST.md`
+- `npm audit` после обновления dependency tree сейчас возвращает `0 vulnerabilities`
 
 ## Ключевые маршруты
 
@@ -106,8 +112,11 @@ CI:
 - `GET /api/v1/random/character?include=faction,race,homeworld`
 - `GET /api/v1/random/unit?include=factions,weapons,keywords`
 - `GET /api/v1/openapi.json`
+- `GET /api/openapi.json`
 - `GET /openapi/reference`
+- `GET /legacy/reference`
 - `GET /sdk/warhammerApiV1Client.mjs`
+- `GET /sdk/warhammerApiV1Client.d.ts`
 - `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion&include=races,leaders,homeworld`
 - `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion&fields[factions]=id,name,slug`
 - `GET /api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus&include=factions,leaders,homeworld,era`
@@ -134,8 +143,11 @@ CI:
 Rate limiting для `api/v1` по умолчанию настроен как `120` запросов на `60` секунд и может быть переопределен через `API_V1_RATE_LIMIT_MAX_REQUESTS` и `API_V1_RATE_LIMIT_WINDOW_MS`.
 Ошибки валидации query-параметров теперь приходят как `VALIDATION_ERROR` с детальным массивом `details` по каждому некорректному полю.
 `/openapi/reference` отдает локальный Swagger UI поверх того же `/api/v1/openapi.json`, без внешней CDN.
+`/legacy/reference` отдает отдельный локальный Swagger UI поверх `/api/openapi.json`, чтобы deprecated CRUD-слой был задокументирован как явный контракт, а не только как набор старых handlers.
 `/sdk/warhammerApiV1Client.mjs` отдает generated ESM client с `createWarhammerApiClient()`, deep-object query serialization и единым `WarhammerApiError`.
-`npm test` поднимает приложение на временном порту и прогоняет HTTP integration tests для `explore/graph`, `explore/path`, `compare`, `stats`, `star-systems`, `battlefields`, `fleets`, `warp-routes`, `campaigns -> battlefields`, `openapi/reference` и client-helper tests для deeplink/pivot-генерации на реальной PostgreSQL.
+`/sdk/warhammerApiV1Client.d.ts` отдает typed surface для того же клиента: operation ids, option types, response bodies и `WarhammerApiClient`.
+Если пакет подключать как dependency, SDK также доступен через `import { createWarhammerApiClient } from "warhammer-api/sdk"`.
+`npm test` поднимает приложение на временном порту и прогоняет HTTP integration tests для `explore/graph`, `explore/path`, `compare`, `stats`, `star-systems`, `battlefields`, `fleets`, `warp-routes`, `campaigns -> battlefields`, `openapi/reference`, generated SDK delivery и client-helper tests для deeplink/pivot-генерации на реальной PostgreSQL.
 
 ## Shareable docs links
 
@@ -143,6 +155,7 @@ Rate limiting для `api/v1` по умолчанию настроен как `1
 - `/changelog`
 - `/deprecation-policy`
 - `/openapi`
+- `/legacy-api`
 - `/compare?resource=units&ids=terminator-squad,intercessor-squad&include=factions,weapons,keywords`
 - `/compare?resource=star-systems&ids=sol-system,macragge-system&include=planets,era`
 - `/compare?resource=battlefields&ids=hesperon-void-line,kasr-partox-ruins&include=planet,starSystem,era,factions,characters,campaigns`

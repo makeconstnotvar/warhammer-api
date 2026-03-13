@@ -10,7 +10,7 @@
 
 ## API Contract
 
-1. Smoke-test `GET /api/v1/overview`, `GET /api/v1/openapi.json`, `GET /openapi/reference`, and `GET /sdk/warhammerApiV1Client.mjs`.
+1. Smoke-test `GET /api/v1/overview`, `GET /api/v1/openapi.json`, `GET /openapi/reference`, `GET /sdk/warhammerApiV1Client.mjs`, and `GET /sdk/warhammerApiV1Client.d.ts`.
 2. Confirm `/api/v1` still returns `RateLimit-*` headers and `429` errors with `Retry-After`.
 3. Confirm legacy `/api/*` still returns `Deprecation`, `Sunset`, and `Link` headers.
 4. Re-check at least one deep relation request for each flow:
@@ -27,6 +27,8 @@
 3. Verify hero actions, pivot links, and workbench cards still deep-link into prefilled flows.
 4. Verify `Playground`, `Compare`, `Graph`, and `Path` still render structured `error.details`.
 5. Verify the generated SDK snippet shown on `/openapi` still matches the actual exported API.
+6. Verify the `.d.ts` asset still exposes `WarhammerApiClient` and operation-specific option/response types.
+7. Verify package subpath import `warhammer-api/sdk` still resolves to the generated SDK pair.
 
 ## Database and Content
 

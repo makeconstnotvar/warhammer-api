@@ -8,6 +8,10 @@ async function loadGeneratedSdkModule() {
   return import(pathToFileURL(modulePath).href);
 }
 
+async function loadSdkPackageExport() {
+  return import("warhammer-api/sdk");
+}
+
 async function runGeneratedSdkTests(baseUrl) {
   const sdkModule = await loadGeneratedSdkModule();
   const { WarhammerApiError, createWarhammerApiClient, operations } = sdkModule;
@@ -31,6 +35,31 @@ async function runGeneratedSdkTests(baseUrl) {
         );
         assert.match(source, /createWarhammerApiClient/);
         assert.match(source, /compareResources/);
+      },
+    },
+    {
+      name: "generated sdk type declarations are served as local dts asset",
+      run: async () => {
+        const response = await fetch(`${baseUrl}/sdk/warhammerApiV1Client.d.ts`);
+        const source = await response.text();
+
+        assert.equal(response.status, 200);
+        assert.match(
+          response.headers.get("content-type") || "",
+          /text\/plain|typescript|application\/octet-stream/i
+        );
+        assert.match(source, /export interface WarhammerApiClient/);
+        assert.match(source, /export interface ListResourceOptions/);
+        assert.match(source, /export type ListResourceResponseBody/);
+      },
+    },
+    {
+      name: "generated sdk can be imported through package export subpath",
+      run: async () => {
+        const packageSdk = await loadSdkPackageExport();
+
+        assert.equal(typeof packageSdk.createWarhammerApiClient, "function");
+        assert.ok(packageSdk.operations.getOverview);
       },
     },
     {

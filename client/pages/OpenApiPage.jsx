@@ -33,8 +33,14 @@ function OpenApiPage() {
             <a className="action-link" href="/openapi/reference">
               Открыть Reference UI
             </a>
+            <a className="action-link action-link-muted" href="/legacy-api">
+              Legacy contract
+            </a>
             <a className="action-link action-link-muted" href="/sdk/warhammerApiV1Client.mjs">
               Generated SDK
+            </a>
+            <a className="action-link action-link-muted" href="/sdk/warhammerApiV1Client.d.ts">
+              Type Declarations
             </a>
             <a className="action-link action-link-muted" href="/api/v1/openapi.json">
               Raw spec
@@ -82,6 +88,22 @@ function OpenApiPage() {
             deep-object query и единый error handling.
           </p>
         </section>
+        <section className="stat-card">
+          <div className="section-eyebrow">Generated Asset</div>
+          <div className="stat-value">Type Surface</div>
+          <p>
+            Рядом лежит `/sdk/warhammerApiV1Client.d.ts` с operation metadata, option types,
+            response bodies и typed сигнатурами клиента.
+          </p>
+        </section>
+        <section className="stat-card">
+          <div className="section-eyebrow">Parallel Contract</div>
+          <div className="stat-value">Legacy `/api`</div>
+          <p>
+            Deprecated CRUD-слой теперь тоже описан отдельным `/api/openapi.json` и локальным
+            reference UI, чтобы миграция не опиралась на чтение исходников.
+          </p>
+        </section>
       </div>
 
       <section className="section-card">
@@ -92,6 +114,20 @@ function OpenApiPage() {
         <p className="muted-line">
           Спецификация отдается как обычный JSON без docs-envelope, чтобы ее могли напрямую читать
           generators и tooling.
+        </p>
+      </section>
+
+      <section className="section-card">
+        <h2>Legacy contract</h2>
+        <a className="query-link" href="/api/openapi.json">
+          /api/openapi.json
+        </a>
+        <a className="query-link" href="/legacy/reference">
+          /legacy/reference
+        </a>
+        <p className="muted-line">
+          Deprecated CRUD surface живет рядом как отдельный контракт и reference viewer, чтобы
+          старые `/api` сценарии можно было мигрировать осознанно.
         </p>
       </section>
 
@@ -108,6 +144,10 @@ const { data } = await client.listResource({
     fields: { characters: "id,name,slug" },
   },
 });`}</CodeBlock>
+        <CodeBlock label="package import">{`import { createWarhammerApiClient } from "warhammer-api/sdk";
+
+const client = createWarhammerApiClient({ baseUrl: "http://localhost:3000" });
+const { data } = await client.getOverview();`}</CodeBlock>
         <CodeBlock label="openapi-typescript">{`npx openapi-typescript http://localhost:3000/api/v1/openapi.json -o client/generated/warhammer-api.d.ts`}</CodeBlock>
         <CodeBlock label="fetch spec">{`const spec = await fetch('/api/v1/openapi.json').then((response) => response.json());\nconst compareOperation = spec.paths['/api/v1/compare/{resource}'].get;`}</CodeBlock>
       </div>
@@ -116,6 +156,9 @@ const { data } = await client.listResource({
         <h2>Generated module</h2>
         <a className="query-link" href="/sdk/warhammerApiV1Client.mjs">
           /sdk/warhammerApiV1Client.mjs
+        </a>
+        <a className="query-link" href="/sdk/warhammerApiV1Client.d.ts">
+          /sdk/warhammerApiV1Client.d.ts
         </a>
         <p className="muted-line">
           Обновляется через `npm run sdk:generate`, проверяется через `npm run sdk:check` и входит в

@@ -12,6 +12,7 @@ const Menu = () => {
           <a href="/resources">Resources</a>
           <a href="/query-guide">Query Guide</a>
           <a href="/openapi">OpenAPI</a>
+          <a href="/legacy-api">Legacy API</a>
           <a href="/openapi/reference">Reference</a>
           <a href="/changelog">Changelog</a>
           <a href="/deprecation-policy">Deprecation</a>

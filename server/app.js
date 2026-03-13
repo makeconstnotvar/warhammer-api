@@ -30,11 +30,23 @@ function createApp(options = {}) {
   const distPath = path.join(__dirname, "../client/dist");
   const generatedSdkPath = path.join(__dirname, "../sdk");
   const openApiReferencePath = path.join(__dirname, "static/openapi-reference");
-  app.use("/sdk", express.static(generatedSdkPath));
+  app.use(
+    "/sdk",
+    express.static(generatedSdkPath, {
+      setHeaders(res, filePath) {
+        if (filePath.endsWith(".d.ts")) {
+          res.type("application/typescript; charset=utf-8");
+        }
+      },
+    })
+  );
   app.use("/swagger-ui-assets", express.static(swaggerUiDist.getAbsoluteFSPath()));
   app.use("/openapi-reference-assets", express.static(openApiReferencePath));
   app.get("/openapi/reference", (req, res) => {
     res.sendFile(path.join(openApiReferencePath, "index.html"));
+  });
+  app.get("/legacy/reference", (req, res) => {
+    res.sendFile(path.join(openApiReferencePath, "legacy-index.html"));
   });
   app.use(express.static(distPath));
 
