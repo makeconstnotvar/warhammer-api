@@ -2,1228 +2,234 @@
 
 ## Назначение проекта
 
-Этот репозиторий содержит учебный REST API и легковесный клиент для работы с данными по вселенной Warhammer 40,000.
+Этот репозиторий содержит учебный docs-first API по вселенной Warhammer 40,000.
 
-Основные цели продукта:
+Цель продукта:
 
-- сделать широкий, но понятный API для обучения веб-разработке
-- сохранить за клиентом роль публичной документации и примеров
-- позволить быстро собирать простые эксперименты, при этом поддерживая сложные запросы и связи между сущностями
+- дать новичкам и энтузиастам интересный API для web-разработки
+- сохранить один понятный публичный контракт
+- показывать сложные query-возможности, связи и граф домена без перегруза базовым CRUD-шумом
 
-Вторичная цель:
+Контентное правило:
 
-- использовать узнаваемые фракции, персонажей, миры, конфликты и артефакты Warhammer 40k, чтобы набор данных был интересным и запоминающимся
-
-Важное правило по контенту:
-
-- использовать оригинальные короткие описания и структурированные факты
+- использовать короткие оригинальные summaries и структурированные факты
 - не копировать длинные тексты из wiki, codex, novels и официальных источников
-- отдавать приоритет фактическим сводкам, нормализованным метаданным и графу связей
+- отдавать приоритет связям, метаданным и нормализованным фактам
 
-## Текущее состояние репозитория
+## Текущее состояние
 
-В репозитории уже есть рабочая основа:
+- публичный API только один: `/api/v1`
+- старый `/api/*` больше не обслуживается и отвечает `410 LEGACY_API_REMOVED`
+- старые docs aliases только редиректят:
+  - `/legacy-api` -> `/openapi`
+  - `/legacy/reference` -> `/openapi/reference`
+- сервер читает учебный домен из PostgreSQL
+- клиент на Preact выполняет роль публичной документации и интерактивного workbench
+- OpenAPI, reference UI и generated SDK описывают только `/api/v1`
 
-- сервер на Node.js + Express
-- доступ к PostgreSQL через `pg`
-- простая слоистая структура серверной части: `handler -> service -> repository -> model`
-- клиент на Preact, который теперь играет роль публичной документации
-- новый `api/v1` с богатым read API поверх учебного набора данных
-- канонические migrations и seed scripts для PostgreSQL
-- документационные страницы, playground и demo конкурентных запросов
-- раздача собранного клиента через Express
+## Что уже есть
 
-Актуально сейчас:
+- Node.js + Express 5
+- PostgreSQL + `pg`
+- docs-first клиент на Preact + `preact-iso`
+- OpenAPI 3.1 endpoint: `/api/v1/openapi.json`
+- local reference viewer: `/openapi/reference`
+- generated SDK assets:
+  - `/sdk/warhammerApiV1Client.mjs`
+  - `/sdk/warhammerApiV1Client.d.ts`
+  - package export `warhammer-api/sdk`
+- rate limiting для `api/v1`
+- системная validation/error envelope для `api/v1`
+- changelog и deprecation policy endpoints/pages
+- CI, ESLint, Prettier, `npm run verify`
 
-- `api/v1` является основным публичным учебным API
-- старый `/api` сохранен как legacy CRUD-слой для `races`, `factions`, `characters`
-- клиент больше не является списочным demo UI, а работает как docs-first приложение
-- база данных может быть поднята из кода через `db:migrate` и `db:seed`
-- `api/v1` теперь читает из PostgreSQL, а не из in-memory набора
-- домен расширен ресурсами `keywords`, `weapons`, `units`
-- домен расширен ресурсами `organizations`, `relics`, `campaigns`
-- домен расширен ресурсами `star-systems`, `battlefields`
-- домен расширен ресурсами `fleets`, `warp-routes`
-- `search` ранжирует результаты по релевантности
-- `compare` поддерживает `factions`, `characters`, `units`, `organizations`, `relics`, `campaigns`, `star-systems`, `battlefields`
-- `explore/graph` поддерживает `resource`, `identifier`, `depth`, `limitPerRelation`, `backlinks`, `resources`
-- `explore/path` поддерживает `fromResource`, `fromIdentifier`, `toResource`, `toIdentifier`, `maxDepth`, `limitPerRelation`, `backlinks`, `resources`
-- `stats` поддерживает `factions/by-race`, `events/by-era`, `units/by-faction`, `weapons/by-keyword`, `relics/by-faction`, `campaigns/by-organization`, `battlefields/by-faction`, `star-systems/by-segmentum`
-- docs-клиент поддерживает deep-linking через query params для `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Resources/:resource`
-- страница `Stats` содержит реальные SVG charts, а не только JSON и списки
-- страница `Compare` содержит visual bars, shared overlaps и быстрые переходы в `detail` и `graph`
-- страница `Compare` умеет открывать `Path` между двумя сравниваемыми сущностями с готовым whitelist ресурсов
-- страница `Graph` показывает SVG-схему узлов и связей поверх `explore/graph`
-- страница `Graph` поддерживает selection узлов, фокус на edges и переход в `Compare` для двух совместимых узлов
-- страницы `Graph` и `Path` поддерживают whitelist типов ресурсов через `resources=...`
-- страница `Path` показывает кратчайшую цепочку между двумя сущностями и маршрут по relation graph
+## Основные возможности API
 
-## Структура верхнего уровня
+Базовые read endpoint-ы:
 
-- `server/`
-  - Express-приложение
-  - регистрация routes
-  - подключение к PostgreSQL
-  - handlers, services, repositories, models
-  - `v1Routes.js` и `content/` для публичного учебного API
-  - `contentDb.js` строит SQL-чтение для `api/v1`
-- `client/`
-  - приложение на Preact
-  - публичная документация API
-  - страницы `Quick Start`, `Resources`, `Query Guide`, `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Concurrency`
-  - webpack build
-- `db/`
-  - `migrations/` с канонической схемой
-  - `seeds/` с учебным набором данных
-  - `scripts/` для запуска migrations
-- `tests/`
-  - integration tests для публичного `api/v1`
-- `agents.md`
-  - этот файл
-- `README.md`
-  - быстрый локальный запуск и обзор scripts
-- `package.json`
-  - scripts и зависимости
+- `GET /api/v1/{resource}`
+- `GET /api/v1/{resource}/{idOrSlug}`
+- `GET /api/v1/random/{resource}`
 
-## Стек
-
-Backend:
-
-- Node.js
-- Express 5
-- PostgreSQL
-- `pg`
-- `helmet`
-- `cors`
-- `dotenv`
-
-Frontend:
-
-- Preact
-- `preact-iso`
-- MobX
-- Axios
-- Bootstrap 5 с кастомным SCSS import
-- Webpack
-
-## Существующие scripts
-
-Из `package.json`:
-
-- `npm run server`
-  - запускает `server/index.js`
-- `npm run server-watch`
-  - запускает сервер через `nodemon`
-- `npm run client-watch`
-  - запускает webpack в режиме watch
-- `npm run build-dev`
-  - собирает клиент в `client/dist`
-- `npm test`
-  - запускает HTTP integration tests для `explore/graph`, `explore/path`, `compare`, `stats` и новых доменных ресурсов
-- `npm run db:migrate`
-  - применяет migrations
-- `npm run db:seed`
-  - перезаписывает учебные данные в PostgreSQL
-- `npm run db:setup`
-  - выполняет migrations и затем seed
-
-Что было проверено во время анализа:
-
-- `npm run build-dev` выполняется успешно
-- серверные модули загружаются без синтаксических ошибок
-- `npm run db:migrate` выполняется успешно
-- `npm run db:seed` выполняется успешно
-- `GET /api/v1/overview` отвечает через HTTP
-- legacy `GET /api/factions` продолжает работать после миграций
-- `GET /api/v1/factions?include=leaders,races,homeworld` отвечает из PostgreSQL
-- `GET /api/v1/characters?filter[faction]=ultramarines&include=faction,race,homeworld,events` отвечает из PostgreSQL
-- `GET /api/v1/random/character` отвечает из PostgreSQL
-- `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion` отвечает из PostgreSQL
-- `GET /api/v1/stats/factions/by-race` и `GET /api/v1/stats/events/by-era` отвечают из PostgreSQL
-- `GET /api/v1/keywords`, `GET /api/v1/weapons`, `GET /api/v1/units` отвечают из PostgreSQL
-- `GET /api/v1/organizations`, `GET /api/v1/relics`, `GET /api/v1/campaigns` отвечают из PostgreSQL
-- `GET /api/v1/star-systems` и `GET /api/v1/battlefields` отвечают из PostgreSQL
-- `GET /api/v1/fleets` и `GET /api/v1/warp-routes` отвечают из PostgreSQL
-- `GET /api/v1/random/unit` отвечает из PostgreSQL
-- `GET /api/v1/compare/units?ids=terminator-squad,intercessor-squad` отвечает из PostgreSQL
-- `GET /api/v1/compare/organizations?ids=inquisition,adeptus-mechanicus` отвечает из PostgreSQL
-- `GET /api/v1/compare/relics?ids=emperors-sword,talon-of-horus` отвечает из PostgreSQL
-- `GET /api/v1/compare/campaigns?ids=plague-wars,cadian-gate-counteroffensive` отвечает из PostgreSQL
-- `GET /api/v1/compare/star-systems?ids=sol-system,macragge-system` отвечает из PostgreSQL
-- `GET /api/v1/compare/battlefields?ids=hesperon-void-line,kasr-partox-ruins` отвечает из PostgreSQL
-- `GET /api/v1/search?search=cadia` сортирует результаты по релевантности
-- `GET /api/v1/stats/units/by-faction` отвечает из PostgreSQL
-- `GET /api/v1/stats/weapons/by-keyword` отвечает из PostgreSQL
-- `GET /api/v1/stats/relics/by-faction` отвечает из PostgreSQL
-- `GET /api/v1/stats/campaigns/by-organization` отвечает из PostgreSQL
-- `GET /api/v1/stats/battlefields/by-faction` отвечает из PostgreSQL
-- `GET /api/v1/stats/star-systems/by-segmentum` отвечает из PostgreSQL
-- `GET /api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4` отвечает из PostgreSQL
-- `GET /api/v1/explore/graph?resource=factions&identifier=imperium-of-man&depth=2&limitPerRelation=4&resources=campaigns,characters` отвечает и возвращает только `factions`, `campaigns`, `characters`
-- `GET /api/v1/explore/path?fromResource=characters&fromIdentifier=roboute-guilliman&toResource=relics&toIdentifier=emperors-sword&maxDepth=3&limitPerRelation=6&backlinks=true` отвечает из PostgreSQL
-- `GET /api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=factions` отвечает и строит путь только через `factions`
-- `GET /api/v1/explore/path?fromResource=relics&fromIdentifier=emperors-sword&toResource=campaigns&toIdentifier=plague-wars&maxDepth=4&limitPerRelation=6&backlinks=true&resources=organizations` отвечает с `found=false`
-- `npm test` проходит и проверяет whitelist, shortest path и error envelope для `explore/graph` и `explore/path`
-- `GET /api/v1/star-systems?include=planets,era&sort=name` отвечает и возвращает `included` с `planets` и `eras`
-- `GET /api/v1/battlefields?filter[campaigns]=plague-wars&include=planet,starSystem,factions,characters,campaigns` отвечает и возвращает rich include-набор
-- `GET /api/v1/campaigns/plague-wars?include=planets,battlefields` отвечает и отдает связанное battlefield
-- `npm test` проходит и дополнительно проверяет `compare`, `stats`, `star-systems`, `battlefields`, `fleets`, `warp-routes` и `campaigns -> battlefields`
-- `GET /api/v1/fleets?include=factions,commanders,campaigns,currentStarSystem,homePort&sort=-strengthRating,name` отвечает и возвращает rich include-набор
-- `GET /api/v1/warp-routes?filter[starSystems]=sol-system,baal-system&include=fromStarSystem,toStarSystem,factions,campaigns` отвечает и отдает связанный route-layer
-- `GET /api/v1/explore/path?fromResource=fleets&fromIdentifier=indomitus-battlegroup&toResource=battlefields&toIdentifier=hesperon-void-line&resources=campaigns,battlefields` отвечает и строит path через campaign graph
-- клиентская сборка проходит после добавления query-param deep-linking для `Stats`, `Compare`, `Graph`, `Playground`, `Resources/:resource`
-- `GET /api/v1/stats/events/by-era` теперь отдает `yearLabel` и `yearOrder` для timeline charts
-- клиентская сборка проходит после добавления workbench, node selection и compare-bridge на страницу `Graph`
-- клиентская сборка проходит после добавления страницы `Path` и path traversal UI
-- клиентская сборка проходит после добавления resource whitelist filters на страницы `Graph` и `Path`
-
-Чего сейчас нет:
-
-- linting
-- formatting scripts
-- OpenAPI или Swagger
-- Docker-конфигурации
-
-## Архитектура сервера
-
-### Точка входа
-
-`server/index.js`
-
-Рядом есть `server/app.js`, где собирается Express-приложение. Это позволяет использовать один и тот же app и для runtime, и для integration tests.
-
-Зона ответственности:
-
-- `server/app.js`
-  - загружает env из `server/.env`
-  - настраивает `cors()`
-  - настраивает `helmet()`
-  - включает разбор JSON-тела запроса
-  - монтирует API routes под `/api` и `/api/v1`
-  - раздает static-файлы из `client/dist`
-  - использует SPA fallback на `client/dist/index.html`
-  - использует общий обработчик ошибок
-- `server/index.js`
-  - создает app через `createApp()`
-  - поднимает HTTP server на `config.server.port`
-
-Примечания:
-
-- `morgan` включен
-- для `api/v1` есть отдельный 404 обработчик неизвестных endpoint-ов в `server/v1Routes.js`
-- нет middleware для валидации входных данных
-- нет rate limit
-- нет auth
-
-### Маршрутизация
-
-`server/routes.js`
-
-Текущие ресурсы:
-
-- `/api/factions`
-- `/api/characters`
-- `/api/races`
-
-Для каждого ресурса сейчас есть:
-
-- `GET /`
-- `POST /`
-- `GET /:id`
-- `PUT /:id`
-- `DELETE /:id`
-
-### Слои
-
-Текущий backend flow:
-
-- обработчик разбирает query/body/params
-- service почти напрямую делегирует в repository
-- repository содержит SQL
-- model преобразует DB snake_case в API camelCase
-
-Эта структура уже достаточно понятная для роста, но слой service пока слишком тонкий и почти не содержит бизнес-правил.
-
-## Текущее поведение API
-
-### Списковые endpoint-ы
-
-Все три endpoint-а списков поддерживают пагинацию:
+Общие query-возможности:
 
 - `page`
 - `limit`
-
-Поддерживаемые фильтры:
-
-`GET /api/characters`
-
-- `name`
-- `faction_id`
-- `race_id`
-
-`GET /api/factions`
-
-- `name`
-
-`GET /api/races`
-
-- `name`
-
-Текущая форма ответа списков:
-
-```json
-{
-  "data": [],
-  "total": 0
-}
-```
-
-### Форма ответа сущностей
-
-Текущие model преобразуют поля примерно к такому виду:
-
-`character`
-
-```json
-{
-  "id": 1,
-  "name": "Roboute Guilliman",
-  "description": "string or null",
-  "factionId": 1,
-  "raceId": 1,
-  "imageUrl": "string or null",
-  "createdAt": "timestamp or null",
-  "updatedAt": "timestamp or null"
-}
-```
-
-`faction`
-
-```json
-{
-  "id": 1,
-  "name": "Ultramarines",
-  "description": "string or null",
-  "imageUrl": "string or null",
-  "createdAt": "timestamp or null",
-  "updatedAt": "timestamp or null"
-}
-```
-
-`race`
-
-```json
-{
-  "id": 1,
-  "name": "Human",
-  "description": "string or null",
-  "imageUrl": "string or null",
-  "createdAt": "timestamp or null",
-  "updatedAt": "timestamp or null"
-}
-```
-
-### Поведение SQL-слоя
-
-Repository реализуют:
-
-- пагинированный `findAll`
-- `findById`
-- `create`
-- `update`
-- `delete`
-
-В списковых запросах уже есть одна полезная вещь:
-
-- запросы на данные и count выполняются параллельно через `Promise.all`
-
-Сейчас это единственное место, где проект демонстрирует конкурентную работу на сервере.
-
-## Архитектура клиента
-
-### Роль клиента
-
-Сейчас клиент является небольшим интерфейсом в браузере.
-
-Целевая роль на будущее:
-
-- публичная документация
-- интерактивный обозреватель API
-- практический пример приложения для frontend-разработчиков
-
-Он не должен сначала превращаться в тяжелый прикладной клиент. Его задача - объяснять и демонстрировать API.
-
-### Текущие страницы
-
-Маршруты в `client/router.js`:
-
-- `/`
-- `/races`
-- `/factions`
-- `/characters`
-- fallback-страница 404
-
-Что страницы делают сейчас:
-
-- главную страницу с коротким вступлением
-- страницы списков с серверной пагинацией
-- базовые состояния загрузки и ошибок
-
-Чего страницы пока не делают:
-
-- не показывают документацию по endpoint-ам
-- не показывают примеры запросов
-- не показывают примеры ответов
-- не показывают UI для filters и sort
-- не показывают страницы деталей сущностей
-- не показывают граф связей
-- не показывают сравнения рядом друг с другом
-- не показывают live code snippets
-
-### Управление состоянием
-
-Store создаются в `client/stores.js`.
-
-Текущие store:
-
-- `$factionsStore`
-- `$racesStore`
-- `$raceStore`
-- `$charactersStore`
-
-Decorator-ы в `client/stores/utils/createDecorator.js` дают переиспользуемую fetch-логику для:
-
-- array store
-- object store
-
-### API wrapper-ы клиента
-
-Текущие wrapper-ы:
-
-- `client/api/charactersApi.js`
-- `client/api/factionsApi.js`
-- `client/api/racesApi.js`
-
-Базовый URL:
-
-- `//localhost:3000/api`
-
-Важное ограничение:
-
-- адрес API жестко захардкожен
-- нет конфигурации API URL, зависящей от окружения для клиента
-
-## Восстановленное состояние базы данных
-
-В репозитории нет migration или схема-файла.
-
-Однако в JetBrains `.idea/dataSources/...xml` есть снимок схемы. По нему можно предположить, что база когда-то выглядела так:
-
-`races`
-
-- `id`
-- `name`
-- `description`
-
-`factions`
-
-- `id`
-- `name`
-- `description`
-- `race_id`
-
-`characters`
-
-- `id`
-- `name`
-- `description`
-- `rank`
-- `faction_id`
-
-Тот же снимок показывает:
-
-- unique key на `races.name` и `factions.name`
-- foreign key `factions.race_id -> races.id`
-- foreign key `characters.faction_id -> factions.id`
-
-## Критичное расхождение: код против снимок схемы
-
-Текущий код и снимок схемы из IDE не совпадают.
-
-Код ожидает поля, которых не видно в снимок:
-
-- `characters.race_id`
-- `characters.image_url`
-- `factions.image_url`
-- `races.image_url`
-- `created_at`
-- `updated_at`
-
-Снимок показывает поля, которые не используются кодом:
-
-- `characters.rank`
-- `factions.race_id`
-
-Практический вывод:
-
-- реальная текущая схема базы неясна
-- чистую установку нельзя безопасно восстановить только по репозиторию
-- первой крупной технической задачей должно стать формальное описание схема через migrations и seeds
-
-## Текущие проблемы качества
-
-Это самые важные проблемы для любого агента, который будет менять проект.
-
-### Данные и схема
-
-- в репозитории нет канонической схема
-- нет истории migrations
-- нет seed data
-- нет словаря данных
-- нет задокументированных ограничений
-
-### Контракт API
-
-- нет versioning
-- нет OpenAPI spec
-- нет единой error envelope
-- нет слоя валидации
-- нет поддержки sort
-- нет выборки полей
-- нет relation include
-- нет compound filters
-- нет search endpoint
-
-### Поведение backend
-
-- legacy service-слой под `/api` в основном просто пробрасывает вызовы
-- основная доменная логика публичного API живет в `contentApi.js` и `contentDb.js`
-- `api/v1` использует единый error envelope, но legacy `/api` все еще менее консистентен
-- request logging включен через `morgan`
-- слой валидации query/body по-прежнему точечный, а не системный
-
-### Поведение клиента
-
-- клиент работает как docs-first приложение, а не как list demo
-- есть страницы `Quick Start`, `Resources`, `Query Guide`, `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Concurrency`
-- есть live preview для `Resources/:resource`
-- есть deep-linking для документационных сценариев
-- docs API использует относительный `/api/v1`, а webpack dev server проксирует `/api`
-- отдельного SSR, auth и role-based поведения нет
-
-### Delivery и DX
-
-- есть integration tests для `explore/graph` и `explore/path`
-- нет linting
-- нет CI
-- нет форматтера и автоматического style enforcement
-- нет OpenAPI-generated client SDK
-
-## Направление продукта
-
-Этот проект должен стать одним из лучших учебных API для frontend и fullstack-практики.
-
-Здесь нужно удержать баланс между двумя конкурирующими требованиями:
-
-1. Новичок должен иметь возможность быстро собрать небольшое приложение.
-2. API должен быть достаточно богатым для сложных запросов, caching, routing, dashboard и UI с множеством связей.
-
-Правильный ответ не в том, чтобы просто сделать все огромным и сложным.
-
-Правильный ответ такой:
-
-- богатый домен
-- единые правила
-- предсказуемые формы ответов
-- послойная сложность
-- сильный клиент с документацией
-
-## Принципы будущего API
-
-### Принцип 1: простой первый запрос
-
-Новый пользователь должен за 15-30 минут собрать что-то полезное:
-
-- главную страницу
-- список factions
-- каталог characters
-- страница деталей
-- search
-- пагинацию
-
-### Принцип 2: глубокая реляционная модель данных
-
-Тот же API должен потом поддерживать:
-
-- multi-resource dashboard
-- сложные filters
-- explorer связанных сущностей
-- compare page
-- timeстрока view
-- карту миров
-- эксперименты с коллекциями и bookmark
-
-### Принцип 3: единые соглашения
-
-Каждый ресурс должен использовать общие паттерны:
-
-- пагинация
-- sort
-- filtering
+- `sort`
+- `search`
+- `filter[...]`
 - `include`
-- выборка полей
-- блок `meta`
-- error envelope
+- `fields[...]`
 
-### Принцип 4: сильная документация
+Специальные endpoint-ы:
 
-Клиент должен объяснять:
+- `GET /api/v1/search`
+- `GET /api/v1/compare/{resource}`
+- `GET /api/v1/explore/graph`
+- `GET /api/v1/explore/path`
+- `GET /api/v1/stats/{resource}/{groupKey}`
+- `GET /api/v1/examples/concurrency`
+- `GET /api/v1/examples/workbench`
 
-- какие сущности существуют
-- как устроены связи
-- какие filters доступны
-- как комбинировать endpoint-ы
-- как использовать конкурентные запросы
-- как использовать caching и пагинацию
+## Домен
 
-### Принцип 5: учебный реализм
-
-API должен ощущаться как настоящий публичный сервис:
-
-- стабильные контракты
-- rate limit
-- deprecation policy
-- examples
-- changelog
-- versioning
-
-## Рекомендуемая целевая доменная модель
-
-Трех существующих сущностей недостаточно.
-
-API нужно строить вокруг графа узнаваемых фактов из Warhammer 40k.
-
-### Базовые сущности
-
-Ключевые сущности первого большого этапа:
+Стабилизированный публичный набор ресурсов сейчас включает:
 
 - `races`
 - `factions`
 - `characters`
 - `planets`
-- `sectors`
-- `systems`
-- `events`
 - `eras`
-- `units`
-- `roles`
-- `weapons`
+- `events`
 - `keywords`
-
-### Join-сущности и связи
-
-Чтобы поддерживать действительно глубокие запросы, нужны нормализованные join table:
-
-- `character_factions`
-- `character_titles`
-- `character_relationships`
-- `faction_races`
-- `faction_leaders`
-- `event_participants`
-- `event_locations`
-- `planet_factions`
-- `character_events`
-- `unit_factions`
-- `unit_keywords`
-- `character_keywords`
-- `weapon_keywords`
-
-### Дополнительные продвинутые сущности
-
-После стабилизации основы:
-
-- `legions`
-- `chapters`
-- `craftworlds`
-- `dynasties`
-- `clans`
-- `hive_fleets`
-- `relics`
-- `ships`
+- `weapons`
+- `units`
 - `organizations`
+- `relics`
 - `campaigns`
-- `battlefronts`
-- `media_references`
+- `star-systems`
+- `battlefields`
+- `fleets`
+- `warp-routes`
+
+Отдельно поддерживаются:
+
+- `search` с ранжированием по релевантности
+- `compare` для `factions`, `characters`, `units`, `organizations`, `relics`, `campaigns`, `star-systems`, `battlefields`
+- `explore/graph` с `resource`, `identifier`, `depth`, `limitPerRelation`, `backlinks`, `resources`
+- `explore/path` с `fromResource`, `fromIdentifier`, `toResource`, `toIdentifier`, `maxDepth`, `limitPerRelation`, `backlinks`, `resources`
+- `stats` для:
+  - `factions/by-race`
+  - `events/by-era`
+  - `units/by-faction`
+  - `weapons/by-keyword`
+  - `relics/by-faction`
+  - `campaigns/by-organization`
+  - `battlefields/by-faction`
+  - `star-systems/by-segmentum`
+
+## Клиентская docs-first оболочка
+
+Канонические страницы:
+
+- `Home`
+- `Quick Start`
+- `Resources`
+- `Query Guide`
+- `OpenAPI`
+- `Changelog`
+- `Deprecation Policy`
+- `Stats`
+- `Compare`
+- `Graph`
+- `Path`
+- `Playground`
+- `Concurrency`
+
+Текущее UI-поведение:
+
+- `Stats`, `Compare`, `Graph`, `Path`, `Playground` и `Resources/:resource` поддерживают deep-linking
+- `Stats` показывает реальные SVG charts
+- `Compare` показывает visual bars, overlaps и быстрые переходы
+- `Graph` показывает SVG relation map, selection и compare bridge
+- `Path` показывает кратчайшую цепочку по relation graph
+- `Playground` и другие interactive pages используют OpenAPI/examples для contract hints и snippets
+- onboarding и workbench flows питаются server-owned metadata из `/api/v1/examples/workbench`
+
+## Архитектура
+
+### Server
+
+Ключевые файлы:
+
+- `server/index.js`
+  - поднимает HTTP server
+- `server/app.js`
+  - собирает Express app
+  - монтирует только `/api/v1`
+  - отдает `410 LEGACY_API_REMOVED` на `/api/*`
+  - раздает `client/dist`, `/openapi/reference` и `/sdk/*`
+- `server/v1Routes.js`
+  - основной публичный route tree
+- `server/content/contentApi.js`
+  - docs/data handlers для `api/v1`
+- `server/content/contentDb.js`
+  - SQL-чтение доменного графа из PostgreSQL
+- `server/content/openApiSpec.js`
+  - OpenAPI contract
+- `server/content/warhammerContent.js`
+  - docs metadata, examples и seed-oriented content
+
+### Client
+
+Ключевые файлы:
+
+- `client/router.js`
+- `client/api/docsApi.js`
+- `client/pages/*`
+- `client/components/ApiOperationGuide.jsx`
+- `client/components/WorkbenchScenarioSection.jsx`
+- `client/components/PivotActionLinks.jsx`
+- `client/lib/openApi.js`
+- `client/lib/workbenchScenarios.js`
+- `client/lib/workbenchPivots.js`
+
+### Data
 
-### Почему эта модель работает
-
-Она поддерживает простые приложения:
-
-- список factions
-- просмотр characters
-- фильтрацию по race
-- timeстрока событий
-
-И одновременно поддерживает продвинутые приложения:
-
-- сравнение factions по race, home sector и известным лидерам
-- построение timeстрока персонажей по событиям
-- получение character вместе с faction, world, allies, enemies и keywords
-- запрос всех events, в которых участвовала faction в заданную era
-
-## Рекомендуемые правила проектирования данных
-
-### Общие поля для большинства основных сущностей
-
-Нужно использовать единый набор полей, например:
-
-- `id`
-- `slug`
-- `name`
-- `summary`
-- `description`
-- `status`
-- `image_url`
-- `icon_url`
-- `origin`
-- `created_at`
-- `updated_at`
-
-Для lore-ориентированных сущностей, когда уместно, добавлять:
-
-- `era_id`
-- `homeworld_id`
-- `faction_id`
-- `race_id`
-- `alignment`
-- `is_playable`
-- `power_level`
-- `first_appearance_note`
-
-### Жесткие правила именования
-
-- использовать либо singular table names, либо plural table names последовательно во всей DB
-- сохранять единообразие между API resource names и соглашениями DB
-- если в PostgreSQL используется snake_case, а в API camelCase, это должно быть явно задокументировано
-- добавить `slug` каждой публичной сущности
-
-### Работа с неоднозначным canon
-
-Нужно добавить метаполя там, где в лоре есть неоднозначность:
-
-- `canon_level`
-- `source_note`
-- `is_approximate`
-
-Так API не будет притворяться, что весь лор идеально чистый, но при этом сохранит структурированность данных.
-
-### Подход к контенту с учетом copyright
-
-Нельзя строить набор данных на копировании длинных описаний.
-
-Нужно строить его вокруг:
-
-- имен
-- связей
-- принадлежностей
-- маркеров timeстрока
-- коротких оригинальных описаний
-- тегов и структурированных фактов
-
-## Рекомендуемый стиль API
-
-Нужно оставить REST и добавить к нему единые расширенные query-возможности. Не надо раньше времени переходить на GraphQL.
-
-Причины:
-
-- REST проще для новичков
-- его проще публично документировать
-- на нем проще показывать caching, пагинацию и конкурентные запросы
-- его уже достаточно для сложных `include`, filtering, sort и aggregate endpoint-ов
-
-### Рекомендуемая форма ответа
-
-Ответ списка:
-
-```json
-{
-  "data": [],
-  "meta": {
-    "page": 1,
-    "limit": 20,
-    "total": 125,
-    "totalPages": 7
-  },
-  "links": {
-    "self": "/api/v1/characters?page=1&limit=20",
-    "next": "/api/v1/characters?page=2&limit=20"
-  },
-  "included": {}
-}
-```
-
-Ответ detail endpoint-а:
-
-```json
-{
-  "data": {},
-  "included": {},
-  "meta": {}
-}
-```
-
-Ответ с ошибкой:
-
-```json
-{
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid query parameters",
-    "details": []
-  }
-}
-```
-
-### Рекомендуемые query-соглашения
-
-Они должны быть мощными, но читаемыми:
-
-- `page=1`
-- `limit=20`
-- `sort=name,-updatedAt`
-- `search=guilliman`
-- `filter[faction]=ultramarines`
-- `filter[race]=human`
-- `filter[era]=indomitus-crusade`
-- `filter[keywords]=primarch,imperium`
-- `include=faction,race,homeworld,events`
-- `полеs[characters]=id,name,slug,summary`
-- `полеs[factions]=id,name,slug`
-
-### Специальные учебные endpoint-ы
-
-Стоит добавить несколько специально спроектированных endpoint-ов для более интересных demo-сценариев:
-
-- `/api/v1/search`
-- `/api/v1/random/character`
-- `/api/v1/random/faction`
-- `/api/v1/compare/factions?ids=1,2`
-- `/api/v1/compare/characters?ids=1,2`
-- `/api/v1/timeстрока/events`
-- `/api/v1/explore/graph?character=roboute-guilliman`
-- `/api/v1/stats/factions/by-race`
-- `/api/v1/stats/events/by-era`
-
-Такие endpoint-ы делают API заметно интереснее, не усложняя базовый CRUD.
-
-## Какие учебные сценарии должен поддерживать API
-
-API нужно проектировать так, чтобы frontend-разработчик мог быстро реализовать такие упражнения.
-
-### Базовый уровень
-
-- пагинированный список factions
-- поиск characters по имени
-- страница деталей race
-- маршрутизация на стороне клиента со страницей деталей
-- состояния загрузки и ошибок
-
-### Средний уровень
-
-- фильтрация characters по faction и race
-- получение списка и total для пагинации
-- конкурентные запросы через `Promise.all`
-- debounced search
-- страница деталей с связанными сущностями
-- сравнение двух factions
-
-### Продвинутый уровень
-
-- dashboard, который загружает factions, events и featured characters параллельно
-- обозреватель графа связанных сущностей
-- infinite scroll вместе с filters
-- UI, полностью управляемый query string
-- optimistic admin-прототип против sandbox write endpoint-ов
-- SSR или предварительно сгенерированные страницы документации
-
-## Подробный roadmap: как сделать самый крутой учебный API
-
-Этот roadmap упорядочен так, чтобы максимизировать ценность и минимизировать лишнюю работу.
-
-### Фаза 0: зафиксировать основу
-
-Цель:
-
-- сделать текущий проект воспроизводимым
-
-Задачи:
-
-- выбрать каноническую схема DB и закоммитить migrations
-- добавить seed scripts
-- добавить README по локальному запуску
-- добавить version prefix `/api/v1`
-- стандартизировать работу с env для сервера и клиента
-- задокументировать локальные команды
-- расширить test coverage на repositories, legacy routes и client-side сценарии
-
-Критерии успеха:
-
-- fresh clone можно запустить без скрытого состояния в IDE
-- схема восстанавливается только из кода
-- sample data существует
-
-### Фаза 1: починить текущий прототип
-
-Цель:
-
-- сделать текущие сущности надежными до расширения домена
-
-Задачи:
-
-- привести в согласованное состояние схема для `races`, `factions`, `characters`
-- решить, принадлежит ли `factions` одной race, многим races, или нужно поддерживать оба сценария через join model
-- решить, должен ли `characters` хранить прямой `race_id`, или race будет выводиться из faction с возможностью явного override
-- добавить валидацию на create/update
-- возвращать корректный 404 для отсутствующих сущностей
-- добавить единый error envelope
-- добавить sort
-- добавить `slug`
-
-Рекомендуемое решение по данным:
-
-- оставить `characters.race_id`, потому что так проще для beginner-фильтрации
-- сделать поддержку связи `factions` со многими races через join table, если нужна лорная гибкость
-- если нужна более простая первая версия, можно ввести `factions.primary_race_id`, а позже добавить `faction_races`
-
-Критерии успеха:
-
-- три существующих ресурса стабильны и хорошо задокументированы
-- клиентские страницы списков могут корректно показывать filters и страницы деталей
-
-### Фаза 2: расширить учебный домен
-
-Цель:
-
-- создать более богатый граф сущностей с высокой учебной ценностью
-
-Задачи:
-
-- добавить `planets`
-- добавить `systems`
-- добавить `sectors`
-- добавить `events`
-- добавить `eras`
-- добавить `units`
-- добавить `weapons`
-- добавить `keywords`
-- добавить relation table
-
-Рекомендации по набору данных:
-
-- начинать с известных, широких и переиспользуемых сущностей
-- отдавать приоритет знаковым примерам из Imperium, Chaos, Aeldari, Orks, Necrons, Tyranids, T'au
-
-Рекомендуемый объем первого большого seed-набора:
-
-- 10-15 races/species groups
-- 20-30 factions/subfactions
-- 80-150 characters
-- 40-80 planets и systems
-- 50-100 events
-- 60-120 units
-- 40-80 weapons и relic-подобных сущностей
-
-Критерии успеха:
-
-- на одних только данных можно построить как минимум 10 разных типов frontend-упражнений
-
-### Фаза 3: сделать querying действительно сильным
-
-Цель:
-
-- сделать API полезным для продвинутой frontend-практики
-
-Задачи:
-
-- добавить `include`
-- добавить выборку полей
-- добавить compound filters
-- добавить full-text search или trigram search в PostgreSQL
-- добавить sort по нескольким полям
-- добавить aggregate/stat endpoint-ы
-- добавить endpoint-ы связанных ресурсов
-
-Примеры:
-
-- `GET /api/v1/characters?filter[faction]=black-legion&include=faction,events`
-- `GET /api/v1/events?filter[era]=horus-heresy&sort=year_start,name`
-- `GET /api/v1/planets?filter[controller]=imperium&include=sector,notableCharacters`
-
-Критерии успеха:
-
-- API достаточно интересен для dashboard, explorer, compare tool и UI с активным search
-
-### Фаза 4: превратить клиент в публичную документацию
-
-Цель:
-
-- сделать клиент лучшей точкой входа в API
-
-Задачи:
-
-- главная страница, объясняющая API и его назначение
-- каталог сущностей
-- страницы документации для каждого ресурса и endpoint-а
-- интерактивный конструктор запросов
-- интерактивный просмотрщик ответов
-- примеры на cURL
-- примеры на `fetch`
-- примеры на Axios
-- примеры на React/Preact
-- объяснение пагинации, filtering, sort и include
-- страницы с демонстрацией конкурентных запросов
-- страницы с демонстрацией caching и revalidation
-
-Рекомендуемые разделы docs client:
-
-- Главная
-- Быстрый старт
-- Ресурсы
-- Руководство по запросам
-- Примеры
-- Playground
-- Changelog
-- FAQ
-
-Критерии успеха:
-
-- frontend-разработчик понимает, как пользоваться API, только по клиенту
-
-### Фаза 5: сделать проект похожим на настоящий публичный API
-
-Цель:
-
-- перейти от student project к полированной публичной учебной платформе
-
-Задачи:
-
-- rate limiting
-- API keys для опциональной аналитики, но не как обязательное условие для базового публичного read access
-- ETag и cache headers
-- changelog и deprecation policy
-- health endpoint
-- metrics endpoint
-- request ID
-- logs
-- CI pipeстрока
-- deployment docs
-
-Критерии успеха:
-
-- проект выглядит и ведет себя как серьезный публичный API
-
-## Рекомендуемый опыт использования docs client
-
-Клиент должен объяснять API через рабочие примеры, а не только через статический текст.
-
-### Минимальный docs UX
-
-- каждая страница ресурса показывает поля и filters
-- каждая страница endpoint-а показывает example URL
-- пример ответа виден прямо на странице
-- есть кнопки `copy cURL`, `copy fetch`, `copy axios`
-
-### Наиболее полезные интерактивные возможности
-
-- интерактивный конструктор запросов для filters, sort, include и полеs
-- preset-сценарии вроде `Load dashboard data`
-- пример рядом друг с другом: последовательные запросы против конкурентных
-- графическое представление связей для character или faction
-- страница changelog API
-
-### Примеры документации, которые особенно стоит поддерживать
-
-Конкурентные запросы:
-
-```js
-const [factions, characters, events] = await Promise.all([
-  fetch("/api/v1/factions?limit=5").then((r) => r.json()),
-  fetch("/api/v1/characters?limit=5").then((r) => r.json()),
-  fetch("/api/v1/events?limit=5").then((r) => r.json()),
-]);
-```
-
-Включение связанных сущностей:
-
-```js
-const response = await fetch(
-  "/api/v1/characters?filter[faction]=ultramarines&include=faction,homeworld,events"
-).then((r) => r.json());
-```
-
-Эти примеры напрямую поддерживают цель проекта: разработка приложения поверх API не должна занимать много времени.
-
-## Рекомендуемая стратегия реализации с точки зрения сопровождения
-
-### Backend
-
-Рекомендуемые структурные additions:
-
-- `server/validators/`
-- `server/errors/`
-- `server/middleware/`
-- `server/serializers/`
 - `db/migrations/`
 - `db/seeds/`
-- `docs/`
+- `db/scripts/`
 
-Рекомендуемые технические улучшения:
+## Scripts
 
-- перейти на TypeScript после стабилизации схема, или
-- остаться на JavaScript, но добавить строгую валидацию и генерацию OpenAPI
-
-Рекомендуемый подход к persistence:
-
-- оставить PostgreSQL
-- сохранять высокую видимость SQL
-- использовать migrations с самого начала
-
-Raw SQL здесь допустим, если:
-
-- запросы остаются явными
-- filters централизованы
-- контракты задокументированы
-
-### Frontend
-
-Клиент должен оставаться легким и documentation-centric:
-
-- route на каждый раздел docs
-- общие components для примеров
-- переиспользуемый просмотрщик ответов
-- переиспользуемый генератор code snippets
-- небольшие элементы управления для playground, которые собирают query string
-
-## Ближайшие приоритеты
-
-Если продолжать развитие из текущего состояния репозитория, самые ценные следующие шаги такие:
-
-1. Создать канонические migrations DB для трех существующих ресурсов.
-2. Добавить seed data для знаковых races, factions и characters.
-3. Нормализовать error handling и валидацию.
-4. Добавить detail endpoint-ы в клиент и задокументировать текущие filters.
-5. Добавить `slug`, `sort`, `search` и `include`.
-6. Добавить `planets` и `events` как следующие крупные ресурсы.
-7. Превратить клиент в полноценный сайт документации с examples и playground.
-
-## Рекомендуемый первый канонический набор данных
-
-Первая волна seed data должна оставаться узнаваемой и широкой.
-
-Стоит использовать известные сущности, например:
-
-- Imperium of Man
-- Space Marines
-- Ultramarines
-- Blood Angels
-- Astra Militarum
-- Adepta Sororitas
-- Chaos Space Marines
-- Black Legion
-- Death Guard
-- Aeldari
-- Craftworld Aeldari
-- Drukhari
-- Orks
-- Necrons
-- Tyranids
-- T'au Empire
-
-Для characters стоит брать максимально узнаваемых:
-
-- The Emperor of Mankind
-- Roboute Guilliman
-- Lion El'Jonson
-- Horus Lupercal
-- Abaddon the Despoiler
-- Ghazghkull Thraka
-- Eldrad Ulthran
-- Imotekh the Stormlord
-- Commander Shadowsun
-- Saint Celestine
-- Commissar Yarrick
-
-Для events приоритет у сущностей, полезных для временной шкалы:
-
-- Horus Heresy
-- Fall of Cadia
-- Indomitus Crusade
-- Third War for Armageddon
-- Battle of Macragge
-
-Для planets и systems приоритет у сущностей, которые легко переиспользовать в приложениях:
-
-- Terra
-- Mars
-- Cadia
-- Armageddon
-- Macragge
-- Fenris
-- Baal
-- worlds of Ultramar
-
-## Что должны делать агенты при работе с проектом
-
-- сохранять учебный фокус проекта
-- делать API сначала простым для освоения, а уже потом хитрым
-- предпочитать единые межресурсные соглашения вместо разового поведения отдельных endpoint-ов
-- не прятать правила схема в IDE-файлах или локальном состоянии базы
-- при добавлении lore-контента отдавать приоритет структурированным фактам и коротким оригинальным описаниям
-- при добавлении новых ресурсов обновлять и server docs, и client docs
-- при добавлении filters сразу документировать их в публичном клиенте
-
-## Определение успеха
-
-Проект можно считать успешным, когда:
-
-- новичок может быстро собрать небольшое приложение по Warhammer
-- разработчик среднего уровня может тренировать реальные паттерны интеграции с API
-- продвинутый разработчик может собирать dashboard и explorer связей
-- docs client объясняет использование API без внешних пояснений
-- набор данных богатый, узнаваемый и юридически безопаснее, потому что строится на структурированных фактах, а не на копировании длинных текстов
-
-## Точка продолжения
-
-Последняя завершенная итерация:
-
-- добавлены новые ресурсы `fleets` и `warp-routes`
-- добавлена migration `db/migrations/006_fleets_warp_routes.sql`
-- seed обновлен под `fleets` и `warp-routes`
-- `api/v1` читает `fleets` и `warp-routes` из PostgreSQL
-- `Graph` получил presets для `fleets` и `warp-routes`
-- `Path` получил presets `Fleet -> Battlefield` и `Route -> Campaign`
-- `Compare` уже умеет строить bridge в `Path` и `Graph`
-
-Что подтверждено последней проверкой:
-
-- `npm run db:migrate` проходит
-- `npm run db:seed` проходит
-- `npm test` проходит
-- `npm run build-dev` проходит
-- `GET /api/v1/fleets?include=factions,commanders,campaigns,currentStarSystem,homePort&sort=-strengthRating,name` отвечает
-- `GET /api/v1/warp-routes?filter[starSystems]=sol-system,baal-system&include=fromStarSystem,toStarSystem,factions,campaigns` отвечает
-- `GET /api/v1/explore/path?fromResource=fleets&fromIdentifier=indomitus-battlegroup&toResource=battlefields&toIdentifier=hesperon-void-line&maxDepth=3&limitPerRelation=6&backlinks=true&resources=campaigns,battlefields` отвечает и строит путь через `campaigns`
-
-С какого места продолжать:
-
-1. добавить `compare/fleets`
-2. добавить `compare/warp-routes`
-3. затем добавить `stats/fleets/by-faction`
-4. затем добавить `stats/warp-routes/by-status`
-5. после этого вывести новые compare/stats сценарии в docs-клиент
-
-Если нужно быстро восстановить рабочее состояние локально:
-
-- `npm run db:setup`
-- `npm test`
+- `npm run server`
+- `npm run server-watch`
+- `npm run client-watch`
 - `npm run build-dev`
+- `npm run db:migrate`
+- `npm run db:seed`
+- `npm run db:setup`
+- `npm run lint`
+- `npm run lint:fix`
+- `npm run format`
+- `npm run format:check`
+- `npm run sdk:generate`
+- `npm run sdk:check`
+- `npm test`
+- `npm run verify`
+
+## Проверенное состояние
+
+Актуально на текущем этапе:
+
+- `npm run verify` проходит
+- `npm audit` возвращает `0 vulnerabilities`
+- `npm run build-dev` собирает клиент без warnings
+- `/api/v1/openapi.json` отдается и покрыт тестами
+- `/openapi/reference` работает и покрыт тестами
+- generated SDK раздается сервером и покрыт тестами
+- `/api/factions` и `/api/openapi.json` возвращают `410 LEGACY_API_REMOVED`
+
+## Продуктовые правила
+
+- считать `/api/v1` единственным публичным контрактом
+- не возвращать проект к модели двух публичных API
+- не вводить write-heavy public surface без отдельного продуктового решения
+- любую публичную возможность сразу отражать в docs, OpenAPI и, где нужно, в generated SDK
+- удерживать баланс: простой первый запрос для новичка и богатый relation/query слой для более сложных UI
+
+## Что важно не сломать
+
+- единый error envelope для `api/v1`
+- общий validation flow
+- rate limit headers и `429 RATE_LIMIT_EXCEEDED`
+- OpenAPI / SDK синхронизацию
+- workbench metadata как source of truth для docs scenarios
+- docs-first роль клиента вместо произвольного CRUD demo UI
+
+## Ближайшее направление разработки
+
+- развивать только `/api/v1`
+- расширять домен, filters, examples и traversal use-cases
+- улучшать docs/workbench/SDK вокруг того же контракта
+- не тратить время на resurrect legacy surface

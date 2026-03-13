@@ -8,7 +8,6 @@ const { createApp } = require("../server/app");
 const { runCompareStatsApiTests } = require("./api/compareStatsApiTests");
 const { runDomainApiTests } = require("./api/domainApiTests");
 const { runExploreApiTests } = require("./api/exploreApiTests");
-const { runLegacyApiTests } = require("./api/legacyApiTests");
 const { runRateLimitApiTests } = require("./api/rateLimitApiTests");
 const { runGeneratedSdkTests } = require("./client/generatedSdkTests");
 const { runWorkbenchPivotTests } = require("./client/workbenchPivotsTests");
@@ -24,7 +23,6 @@ async function main() {
     failures.push(...(await runExploreApiTests(baseUrl)));
     failures.push(...(await runCompareStatsApiTests(baseUrl)));
     failures.push(...(await runDomainApiTests(baseUrl)));
-    failures.push(...(await runLegacyApiTests(baseUrl)));
     failures.push(...(await runRateLimitApiTests()));
     failures.push(...(await runGeneratedSdkTests(baseUrl)));
     failures.push(...(await runWorkbenchPivotTests()));

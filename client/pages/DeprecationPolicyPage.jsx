@@ -6,6 +6,7 @@ import { useAsyncData } from "../hooks/useAsyncData";
 function DeprecationPolicyPage() {
   const { data, loading, error } = useAsyncData(() => docsApi.getDeprecationPolicy(), []);
   const policy = data?.data;
+  const activeDeprecations = policy?.activeDeprecations || [];
   const headerSnippet = policy
     ? ["HTTP/1.1 200 OK", ...policy.headers.map((header) => header.example)].join("\n")
     : "";
@@ -23,13 +24,13 @@ function DeprecationPolicyPage() {
       <section className="hero-panel hero-panel-compact">
         <div>
           <div className="section-eyebrow">Deprecation Policy</div>
-          <h1>Legacy-маршруты должны предупреждать, а не удивлять</h1>
+          <h1>Изменения контракта должны объявляться заранее, а не ломать клиентов внезапно</h1>
           <p className="page-lead">{policy.summary}</p>
         </div>
         <div className="hero-side">
-          <div className="metric-chip">{policy.legacyEndpoints.length} legacy route-а</div>
+          <div className="metric-chip">{activeDeprecations.length} active deprecations</div>
           <div className="metric-chip">migration window: 90+ дней</div>
-          <div className="metric-chip">runtime headers включены</div>
+          <div className="metric-chip">one public api</div>
         </div>
       </section>
 
@@ -79,32 +80,39 @@ function DeprecationPolicyPage() {
         </div>
       </section>
 
-      <CodeBlock label="Пример ответа legacy endpoint-а">{headerSnippet}</CodeBlock>
+      <CodeBlock label="Пример deprecated response headers">{headerSnippet}</CodeBlock>
 
       <section className="section-card">
-        <h2>Пути миграции</h2>
-        <div className="policy-grid">
-          {policy.legacyEndpoints.map((endpoint) => (
-            <article key={`${endpoint.method}-${endpoint.path}`} className="policy-card">
-              <div className="policy-card-head">
-                <div>
-                  <div className="section-eyebrow">{endpoint.status}</div>
-                  <h3>
-                    {endpoint.method} {endpoint.path}
-                  </h3>
+        <h2>Активные deprecations</h2>
+        {activeDeprecations.length ? (
+          <div className="policy-grid">
+            {activeDeprecations.map((endpoint) => (
+              <article key={`${endpoint.method}-${endpoint.path}`} className="policy-card">
+                <div className="policy-card-head">
+                  <div>
+                    <div className="section-eyebrow">{endpoint.status}</div>
+                    <h3>
+                      {endpoint.method} {endpoint.path}
+                    </h3>
+                  </div>
+                  <div className="tag-list">
+                    <span className="tag">deprecated: {endpoint.deprecatedOn}</span>
+                    <span className="tag">sunset: {endpoint.sunsetOn}</span>
+                  </div>
                 </div>
-                <div className="tag-list">
-                  <span className="tag">deprecated: {endpoint.deprecatedOn}</span>
-                  <span className="tag">sunset: {endpoint.sunsetOn}</span>
-                </div>
-              </div>
-              <p>{endpoint.summary}</p>
-              <a className="query-link" href={endpoint.replacement}>
-                {endpoint.replacement}
-              </a>
-            </article>
-          ))}
-        </div>
+                <p>{endpoint.summary}</p>
+                <a className="query-link" href={endpoint.replacement}>
+                  {endpoint.replacement}
+                </a>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="muted-line">
+            Сейчас активных deprecated endpoint-ов нет. Когда они появятся, replacement paths и
+            sunset dates будут публиковаться здесь и в changelog.
+          </p>
+        )}
       </section>
     </div>
   );

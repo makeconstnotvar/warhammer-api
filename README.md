@@ -10,13 +10,14 @@
 
 - [API_TARGET.md](/C:/Github/warhammer-api/API_TARGET.md)
 
-Текущее transitional состояние репозитория все еще содержит legacy `/api`, но это больше не продуктовая цель и должно быть удалено по мере консолидации.
+Публичный surface уже сведен к одному контракту: `/api/v1`.
+Старый `/api/*` не обслуживается и отвечает `410 LEGACY_API_REMOVED`, а старые docs-алиасы перенаправляют в актуальные `/openapi` и `/openapi/reference`.
 
 ## Что уже есть
 
 - клиент-документация на Preact
 - `api/v1` с `overview`, `catalog/resources`, `query-guide`, `openapi.json`, `search`, `explore/graph`, `explore/path`, `examples/concurrency`, `examples/workbench`
-- docs-клиент со страницами `Quick Start`, `Resources`, `Query Guide`, `OpenAPI`, `Legacy API`, `Changelog`, `Deprecation Policy`, `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Concurrency`
+- docs-клиент со страницами `Quick Start`, `Resources`, `Query Guide`, `OpenAPI`, `Changelog`, `Deprecation Policy`, `Stats`, `Compare`, `Graph`, `Path`, `Playground`, `Concurrency`
 - каноническая схема PostgreSQL для `eras`, `races`, `planets`, `factions`, `characters`, `events`
 - домен расширен ресурсами `organizations`, `relics`, `campaigns`, `star-systems`, `battlefields`, `fleets`, `warp-routes`
 - seed-набор данных по известным сущностям Warhammer 40k
@@ -32,8 +33,6 @@
 - `Compare`, `Graph`, `Path` и `Playground` теперь показывают operation contract и live `curl` / `fetch` / `axios` snippets из текущего request path
 - `Compare`, `Graph` и `Path` теперь также читают placeholders и numeric option ranges из OpenAPI examples/defaults, а не держат их вручную в UI
 - `OpenAPI` теперь имеет локальный interactive reference viewer на `/openapi/reference`
-- deprecated `/api` теперь тоже имеет отдельный machine-readable contract на `/api/openapi.json` и локальный reference viewer на `/legacy/reference`
-- legacy `/api` теперь также валидирует `id`, pagination и basic write payload заранее, возвращая стабильные `400`/`404` вместо случайных `500` на обычных пользовательских ошибках
 - рядом со spec теперь есть generated SDK pair:
   - `/sdk/warhammerApiV1Client.mjs`
   - `/sdk/warhammerApiV1Client.d.ts`
@@ -116,13 +115,11 @@ CI:
 - `GET /api/v1/battlefields?include=planet,starSystem,era,factions,characters,campaigns`
 - `GET /api/v1/examples/concurrency`
 - `GET /api/v1/examples/workbench`
-- legacy `/api` now responds with `Deprecation`, `Sunset` and `Link` headers and points clients to `/deprecation-policy`
+- `GET /api/*` now returns `410 LEGACY_API_REMOVED` and points clients to `/api/v1`
 - `GET /api/v1/random/character?include=faction,race,homeworld`
 - `GET /api/v1/random/unit?include=factions,weapons,keywords`
 - `GET /api/v1/openapi.json`
-- `GET /api/openapi.json`
 - `GET /openapi/reference`
-- `GET /legacy/reference`
 - `GET /sdk/warhammerApiV1Client.mjs`
 - `GET /sdk/warhammerApiV1Client.d.ts`
 - `GET /api/v1/compare/factions?ids=imperium-of-man,black-legion&include=races,leaders,homeworld`
@@ -151,8 +148,7 @@ CI:
 Rate limiting для `api/v1` по умолчанию настроен как `120` запросов на `60` секунд и может быть переопределен через `API_V1_RATE_LIMIT_MAX_REQUESTS` и `API_V1_RATE_LIMIT_WINDOW_MS`.
 Ошибки валидации query-параметров теперь приходят как `VALIDATION_ERROR` с детальным массивом `details` по каждому некорректному полю.
 `/openapi/reference` отдает локальный Swagger UI поверх того же `/api/v1/openapi.json`, без внешней CDN.
-`/legacy/reference` отдает отдельный локальный Swagger UI поверх `/api/openapi.json`, чтобы deprecated CRUD-слой был задокументирован как явный контракт, а не только как набор старых handlers.
-legacy `/api` теперь также стабильно отвечает `400` для невалидных `id`/query/body и `404` для отсутствующих сущностей, сохраняя legacy response shape `{ "error": "..." }` и добавляя `details` для validation-ошибок.
+Старый `/api` больше не считается частью целевого публичного surface; любые оставшиеся transitional следы должны убираться в пользу одного контракта `/api/v1`.
 `/sdk/warhammerApiV1Client.mjs` отдает generated ESM client с `createWarhammerApiClient()`, deep-object query serialization и единым `WarhammerApiError`.
 `/sdk/warhammerApiV1Client.d.ts` отдает typed surface для того же клиента: operation ids, option types, response bodies и `WarhammerApiClient`.
 Если пакет подключать как dependency, SDK также доступен через `import { createWarhammerApiClient } from "warhammer-api/sdk"`.
@@ -164,7 +160,6 @@ legacy `/api` теперь также стабильно отвечает `400` 
 - `/changelog`
 - `/deprecation-policy`
 - `/openapi`
-- `/legacy-api`
 - `/compare?resource=units&ids=terminator-squad,intercessor-squad&include=factions,weapons,keywords`
 - `/compare?resource=star-systems&ids=sol-system,macragge-system&include=planets,era`
 - `/compare?resource=battlefields&ids=hesperon-void-line,kasr-partox-ruins&include=planet,starSystem,era,factions,characters,campaigns`

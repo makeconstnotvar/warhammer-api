@@ -301,15 +301,7 @@ export type DeprecationPolicyResponse = {
       example?: string;
       description?: string;
     }>;
-    legacyEndpoints?: Array<{
-      method?: string;
-      path?: string;
-      replacement?: string;
-      status?: string;
-      summary?: string;
-      deprecatedOn?: string;
-      sunsetOn?: string;
-    }>;
+    activeDeprecations?: Array<string>;
   };
   meta?: {
     basePath?: string;

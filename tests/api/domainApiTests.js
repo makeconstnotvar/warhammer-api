@@ -15,25 +15,21 @@ async function runDomainApiTests(baseUrl) {
         assert.equal(json.data.entries[0].status, "current");
         assert.ok(
           json.data.entries[0].changes.some(
-            (change) => change.type === "changed" && change.area === "legacy api"
+            (change) => change.type === "changed" && change.area === "contract"
           )
         );
       },
     },
     {
-      name: "deprecation policy endpoint documents legacy migration targets",
+      name: "deprecation policy endpoint documents one-api lifecycle rules",
       run: async () => {
         const { json, response } = await getJson(baseUrl, "/api/v1/deprecation-policy");
 
         assert.equal(response.status, 200);
-        assert.equal(json.data.legacyEndpoints.length, 3);
+        assert.equal(json.data.activeDeprecations.length, 0);
         assert.ok(json.data.headers.some((header) => header.name === "Deprecation"));
-        assert.ok(
-          json.data.legacyEndpoints.some(
-            (endpoint) =>
-              endpoint.path === "/api/factions" && endpoint.replacement === "/api/v1/factions"
-          )
-        );
+        assert.ok(json.data.guarantees.some((item) => item.includes("/api/v1")));
+        assert.match(json.data.summary, /активных deprecated endpoint-ов нет/i);
       },
     },
     {
@@ -89,38 +85,6 @@ async function runDomainApiTests(baseUrl) {
       },
     },
     {
-      name: "legacy openapi endpoint publishes deprecated CRUD contract",
-      run: async () => {
-        const { json, response } = await getJson(baseUrl, "/api/openapi.json");
-
-        assert.equal(response.status, 200);
-        assert.equal(json.openapi, "3.1.0");
-        assert.match(json.info.title, /Legacy CRUD API/i);
-        assert.ok(json.paths["/api/openapi.json"]);
-        assert.ok(json.paths["/api/factions"]);
-        assert.ok(json.paths["/api/factions/{id}"]);
-        assert.ok(json.paths["/api/characters"]);
-        assert.ok(json.paths["/api/races/{id}"]);
-        assert.equal(json.paths["/api/factions"].get.deprecated, true);
-        assert.equal(json.paths["/api/factions"].get["x-replacement"], "/api/v1/factions");
-        assert.ok(
-          json.paths["/api/characters"].get.parameters.some(
-            (parameter) => parameter.$ref === "#/components/parameters/LegacyFactionIdFilter"
-          )
-        );
-        assert.ok(json.paths["/api/characters/{id}"].get.responses["404"]);
-        assert.ok(json.paths["/api/characters/{id}"].put.responses["400"]);
-        assert.ok(json.paths["/api/factions"].post.responses["409"]);
-        assert.equal(json.components.headers.Deprecation.example, "@1772841600");
-        assert.equal(json.components.headers.Sunset.example, "Wed, 30 Sep 2026 23:59:59 GMT");
-        assert.ok(json.components.schemas.LegacyFactionResource);
-        assert.ok(json.components.schemas.LegacyCharacterWritePayload);
-        assert.ok(json.components.schemas.LegacyStringErrorResponse);
-        assert.ok(json.components.schemas.LegacyStringErrorResponse.properties.details);
-        assert.ok(json.components.schemas.LegacyErrorDetail);
-      },
-    },
-    {
       name: "openapi reference page serves local swagger ui shell",
       run: async () => {
         const response = await fetch(`${baseUrl}/openapi/reference`);
@@ -134,16 +98,19 @@ async function runDomainApiTests(baseUrl) {
       },
     },
     {
-      name: "legacy reference page serves local swagger ui shell",
+      name: "legacy docs aliases redirect to current one-api docs",
       run: async () => {
-        const response = await fetch(`${baseUrl}/legacy/reference`);
-        const html = await response.text();
+        const legacyReferenceResponse = await fetch(`${baseUrl}/legacy/reference`, {
+          redirect: "manual",
+        });
+        const legacyDocsResponse = await fetch(`${baseUrl}/legacy-api`, {
+          redirect: "manual",
+        });
 
-        assert.equal(response.status, 200);
-        assert.match(response.headers.get("content-type") || "", /text\/html/i);
-        assert.match(html, /swagger-ui-bundle\.js/);
-        assert.match(html, /\/api\/openapi\.json/);
-        assert.match(html, /Legacy API Reference/i);
+        assert.equal(legacyReferenceResponse.status, 302);
+        assert.equal(legacyReferenceResponse.headers.get("location"), "/openapi/reference");
+        assert.equal(legacyDocsResponse.status, 302);
+        assert.equal(legacyDocsResponse.headers.get("location"), "/openapi");
       },
     },
     {
@@ -189,19 +156,19 @@ async function runDomainApiTests(baseUrl) {
       },
     },
     {
-      name: "legacy api responses expose deprecation headers",
+      name: "removed /api surface returns explicit gone errors",
       run: async () => {
-        const response = await fetch(`${baseUrl}/api/factions`);
-        const json = await response.json();
-
-        assert.equal(response.status, 200);
-        assert.ok(Array.isArray(json.data));
-        assert.equal(response.headers.get("deprecation"), "@1772841600");
-        assert.equal(response.headers.get("sunset"), "Wed, 30 Sep 2026 23:59:59 GMT");
-        assert.equal(
-          response.headers.get("link"),
-          '</deprecation-policy>; rel="deprecation"; type="text/html"'
+        const { json: listJson, response: listResponse } = await getJson(baseUrl, "/api/factions");
+        const { json: openApiJson, response: openApiResponse } = await getJson(
+          baseUrl,
+          "/api/openapi.json"
         );
+
+        assert.equal(listResponse.status, 410);
+        assert.equal(listJson.error.code, "LEGACY_API_REMOVED");
+        assert.match(listJson.error.message, /use "\/api\/v1"/i);
+        assert.equal(openApiResponse.status, 410);
+        assert.equal(openApiJson.error.code, "LEGACY_API_REMOVED");
       },
     },
     {

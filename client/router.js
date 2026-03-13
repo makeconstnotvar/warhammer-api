@@ -6,7 +6,6 @@ import { Resources } from "./pages/Resources";
 import { ResourcePage } from "./pages/ResourcePage";
 import { QueryGuide } from "./pages/QueryGuide";
 import { OpenApiPage } from "./pages/OpenApiPage";
-import { LegacyApiPage } from "./pages/LegacyApiPage";
 import { Playground } from "./pages/Playground";
 import { ConcurrencyPage } from "./pages/ConcurrencyPage";
 import { Stats } from "./pages/Stats";
@@ -26,7 +25,6 @@ const Routes = () => (
         <ResourcePage path="/resources/:resource" />
         <QueryGuide path="/query-guide" />
         <OpenApiPage path="/openapi" />
-        <LegacyApiPage path="/legacy-api" />
         <ChangelogPage path="/changelog" />
         <DeprecationPolicyPage path="/deprecation-policy" />
         <Stats path="/stats" />

@@ -1,50 +1,3 @@
-const LEGACY_API_DEPRECATION_DATE = "2026-03-07T00:00:00Z";
-const LEGACY_API_SUNSET_DATE = "2026-09-30T23:59:59Z";
-const LEGACY_API_POLICY_PAGE = "/deprecation-policy";
-
-function toStructuredDateHeader(value) {
-  return `@${Math.floor(new Date(value).getTime() / 1000)}`;
-}
-
-function toSunsetHeader(value) {
-  return new Date(value).toUTCString();
-}
-
-const legacyApiMigrationTargets = [
-  {
-    method: "GET",
-    path: "/api/factions",
-    replacement: "/api/v1/factions",
-    status: "legacy",
-    summary:
-      "Legacy CRUD list for factions. Use `/api/v1/factions` for include, sort, filters and stable docs.",
-  },
-  {
-    method: "GET",
-    path: "/api/characters",
-    replacement: "/api/v1/characters",
-    status: "legacy",
-    summary:
-      "Legacy CRUD list for characters. Use `/api/v1/characters` for search, filters and graph-aware relations.",
-  },
-  {
-    method: "GET",
-    path: "/api/races",
-    replacement: "/api/v1/races",
-    status: "legacy",
-    summary: "Legacy CRUD list for races. Use `/api/v1/races` for the primary public contract.",
-  },
-];
-
-const legacyApiPolicy = {
-  deprecationDate: LEGACY_API_DEPRECATION_DATE,
-  deprecationHeader: toStructuredDateHeader(LEGACY_API_DEPRECATION_DATE),
-  linkHeader: `<${LEGACY_API_POLICY_PAGE}>; rel="deprecation"; type="text/html"`,
-  policyPage: LEGACY_API_POLICY_PAGE,
-  sunsetDate: LEGACY_API_SUNSET_DATE,
-  sunsetHeader: toSunsetHeader(LEGACY_API_SUNSET_DATE),
-};
-
 const changelog = {
   latestVersion: "1.0.0",
   note: "История changelog начинается 2026-03-07. Более ранние изменения не восстанавливаются задним числом без git-tagged релизов.",
@@ -54,7 +7,7 @@ const changelog = {
       releasedOn: "2026-03-07",
       status: "current",
       summary:
-        "Публичный docs-first API получил lifecycle-документацию, а legacy `/api` начал отдавать runtime deprecation headers.",
+        "Публичный docs-first API закреплен как единый контракт под `/api/v1`, с lifecycle-документацией, rate limiting, OpenAPI и generated SDK.",
       changes: [
         {
           area: "docs client",
@@ -72,9 +25,9 @@ const changelog = {
           text: "Query validation для `list`, `search`, `explore/graph` и `explore/path` теперь агрегирует ошибки в единый `VALIDATION_ERROR.details`.",
         },
         {
-          area: "legacy api",
+          area: "contract",
           type: "changed",
-          text: "Все маршруты под `/api` теперь отдают `Deprecation`, `Sunset` и `Link` headers, чтобы миграция на `/api/v1` была явной.",
+          text: "Продуктовый target зафиксирован как один публичный API без legacy surface, а docs/navigation выровнены под `/api/v1`.",
         },
         {
           area: "public surface",
@@ -88,8 +41,9 @@ const changelog = {
 
 const deprecationPolicy = {
   summary:
-    "Основной публичный контракт живет под `/api/v1`. Старый CRUD-слой `/api` поддерживается как переходный слой и помечен deprecated с 2026-03-07.",
+    "Основной публичный контракт живет под `/api/v1`. Сейчас активных deprecated endpoint-ов нет, а эта policy описывает, как будущие изменения будут объявляться и завершаться.",
   guarantees: [
+    "Публичный контракт у продукта один: `/api/v1`.",
     "Новые read-возможности и расширения домена публикуются только в `/api/v1`.",
     "Перед sunset deprecated-пути получают как минимум 90 дней миграционного окна.",
     "Каждое deprecation-решение фиксируется в changelog и в этой policy-странице.",
@@ -98,13 +52,14 @@ const deprecationPolicy = {
     {
       phase: "announce",
       window: "Не менее 90 дней до sunset",
-      description: "Маршрут получает changelog-запись, policy-обновление и migration target.",
+      description:
+        "Маршрут получает changelog-запись, policy-обновление и явный replacement или migration note.",
     },
     {
       phase: "deprecated",
       window: "До даты sunset",
       description:
-        "Runtime начинает отдавать `Deprecation`, `Sunset` и `Link`, а docs-клиент явно ведет в replacement endpoint.",
+        "Runtime начинает отдавать `Deprecation`, `Sunset` и `Link`, а docs-клиент явно показывает replacement или migration path.",
     },
     {
       phase: "sunset",
@@ -116,39 +71,25 @@ const deprecationPolicy = {
   headers: [
     {
       name: "Deprecation",
-      example: `Deprecation: ${legacyApiPolicy.deprecationHeader}`,
+      example: "Deprecation: @1798761600",
       description:
         "Structured date, показывающая момент, когда маршрут официально вошел в deprecated-состояние.",
     },
     {
       name: "Sunset",
-      example: `Sunset: ${legacyApiPolicy.sunsetHeader}`,
+      example: "Sunset: Tue, 01 Dec 2026 00:00:00 GMT",
       description: "Плановая дата завершения поддержки deprecated-маршрута.",
     },
     {
       name: "Link",
-      example: `Link: ${legacyApiPolicy.linkHeader}`,
+      example: 'Link: </deprecation-policy>; rel="deprecation"; type="text/html"',
       description: "Ссылка на человекочитаемую policy-страницу с правилами миграции.",
     },
   ],
-  legacyEndpoints: legacyApiMigrationTargets.map((item) => ({
-    ...item,
-    deprecatedOn: "2026-03-07",
-    sunsetOn: "2026-09-30",
-  })),
+  activeDeprecations: [],
 };
-
-function getLegacyApiDeprecationHeaders() {
-  return {
-    Deprecation: legacyApiPolicy.deprecationHeader,
-    Link: legacyApiPolicy.linkHeader,
-    Sunset: legacyApiPolicy.sunsetHeader,
-  };
-}
 
 module.exports = {
   changelog,
   deprecationPolicy,
-  getLegacyApiDeprecationHeaders,
-  legacyApiPolicy,
 };

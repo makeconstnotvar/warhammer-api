@@ -7,10 +7,9 @@ const cors = require("cors");
 const swaggerUiDist = require("swagger-ui-dist");
 const config = require("./config");
 const { sendError } = require("./lib/apiResponse");
+const { createApiError } = require("./lib/apiErrors");
 const { createApiRateLimit } = require("./lib/apiRateLimit");
-const { apiRoutes } = require("./routes");
 const { apiV1Routes } = require("./v1Routes");
-const { legacyDeprecationHeaders } = require("./middleware/legacyDeprecationHeaders");
 
 function createApp(options = {}) {
   const app = express();
@@ -25,7 +24,15 @@ function createApp(options = {}) {
 
   app.use(express.json());
   app.use("/api/v1", apiV1RateLimit, apiV1Routes);
-  app.use("/api", legacyDeprecationHeaders, apiRoutes);
+  app.use("/api", (req, res, next) => {
+    next(
+      createApiError(
+        410,
+        "LEGACY_API_REMOVED",
+        'The legacy "/api" surface has been removed. Use "/api/v1".'
+      )
+    );
+  });
 
   const distPath = path.join(__dirname, "../client/dist");
   const generatedSdkPath = path.join(__dirname, "../sdk");
@@ -46,7 +53,10 @@ function createApp(options = {}) {
     res.sendFile(path.join(openApiReferencePath, "index.html"));
   });
   app.get("/legacy/reference", (req, res) => {
-    res.sendFile(path.join(openApiReferencePath, "legacy-index.html"));
+    res.redirect(302, "/openapi/reference");
+  });
+  app.get("/legacy-api", (req, res) => {
+    res.redirect(302, "/openapi");
   });
   app.use(express.static(distPath));
 
